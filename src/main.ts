@@ -1,7 +1,7 @@
-
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './http-exception.filter';
 import cookieParser from 'cookie-parser';
@@ -23,6 +23,15 @@ async function bootstrap() {
     origin: true,
     credentials: true,
   });
+
+  const config = new DocumentBuilder()
+    .setTitle('Mafia API')
+    .setDescription('Capstone Design - Mafia 개발을 위한 API 문서입니다.')
+    .setVersion('1.0')
+    .addCookieAuth('connect.sid')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/document', app, document);
 
   app.use(cookieParser());
   app.use(
