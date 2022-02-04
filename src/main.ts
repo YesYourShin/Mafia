@@ -1,9 +1,9 @@
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './http-exception.filter';
-import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import passport from 'passport';
@@ -48,4 +48,5 @@ async function bootstrap() {
     module.hot.dispose(() => app.close());
   }
 }
+
 bootstrap();

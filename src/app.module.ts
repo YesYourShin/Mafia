@@ -8,8 +8,6 @@ import { MessageModule } from './event/message.module';
 import { UserModule } from './modules/user/user.module';
 import { OAuthModule } from './modules/auth/oauth.module';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
-import { NaverOauthModule } from './modules/auth/naver/naver-oauth.module';
-import { KakaoOauthModule } from './modules/auth/kakao/kakao-oauth.module';
 
 export let envFilePath = '.env.development';
 
