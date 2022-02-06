@@ -29,12 +29,12 @@ export class UserRepository extends AbstractRepository<User> {
     return qb;
   }
   async findOneByOauth(
-    memberShipCode: string,
+    socialId: string,
     provider: UserProvider,
   ): Promise<User> {
     const qb = await this.repository
       .createQueryBuilder('user')
-      .where('user.memberShipCode= :memberShipCode', { memberShipCode })
+      .where('user.socialId= :socialId', { socialId })
       .andWhere('user.provider= :provider', { provider })
       .getOne();
 
@@ -45,9 +45,9 @@ export class UserRepository extends AbstractRepository<User> {
   }
 
   async firstOrCreate(joinRequestUser: JoinRequestUserDto) {
-    const { memberShipCode, provider } = joinRequestUser;
+    const { socialId, provider } = joinRequestUser;
     try {
-      return await this.findOneByOauth(memberShipCode, provider);
+      return await this.findOneByOauth(socialId, provider);
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         const user = await this.repository
@@ -55,7 +55,7 @@ export class UserRepository extends AbstractRepository<User> {
           .insert()
           .into(User)
           .values({
-            memberShipCode,
+            socialId,
             provider,
           })
           .execute();

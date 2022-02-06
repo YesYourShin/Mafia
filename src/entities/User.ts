@@ -23,19 +23,19 @@ import { Recommendation } from './Recommendation';
 import { Report } from './Report';
 import { WholeChat } from './WholeChat';
 
-@Index('user_idx_membership_code_provider', ['memberShipCode', 'provider'], {
+@Index('user_idx_social_id_provider', ['socialId', 'provider'], {
   unique: true,
 })
 @Index('user_idx_nickname', ['nickname'], { unique: true })
-@Unique('user_uk_membership_code_provider', ['memberShipCode', 'provider'])
+@Unique('user_uk_social_id_provider', ['socialId', 'provider'])
 @Entity('user')
 export class User {
   @IsInt()
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
   id: number;
 
-  @Column({ type: 'varchar', name: 'membership_code' })
-  memberShipCode: string;
+  @Column({ type: 'varchar', name: 'social_id' })
+  socialId: string;
 
   @IsEnum(UserProvider)
   @Column({

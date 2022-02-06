@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ormconfig } from '../ormconfig';
 import { MessageModule } from './event/message.module';
 import { UserModule } from './modules/user/user.module';
-import { OAuthModule } from './modules/auth/oauth.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 
 export let envFilePath = '.env.development';
@@ -26,7 +26,7 @@ console.log(process.env.NODE_ENV);
     }),
     TypeOrmModule.forRoot(ormconfig),
     MessageModule,
-    OAuthModule,
+    AuthModule,
     UserModule,
   ],
   controllers: [AppController],
