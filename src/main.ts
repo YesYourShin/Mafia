@@ -2,6 +2,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import redis from 'redis';
+import RedisStore from 'connect-redis';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './http-exception.filter';
 import cookieParser from 'cookie-parser';
@@ -33,13 +35,31 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/document', app, document);
 
+  const redisClient = redis.createClient({
+    host: 'localhost',
+    port: process.env.REDIS_PORT,
+  });
+  const redisStore = RedisStore(session);
+
+  redisClient.on('error', function (err) {
+    console.log('Could not establish a connection with redis. ' + err);
+  });
+  redisClient.on('connect', function (err) {
+    console.log('Connected to redis successfully');
+  });
+
   app.use(cookieParser());
   app.use(
     session({
+      store: new redisStore({
+        client: redisClient,
+        logErrors: true,
+      }),
       resave: false,
       saveUninitialized: false,
       secret: process.env.COOKIE_SECRET,
       cookie: {
+        sameSite: true,
         httpOnly: true,
         maxAge: +process.env.COOKIE_MAX_AGE,
       },
