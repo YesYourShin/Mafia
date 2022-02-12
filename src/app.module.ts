@@ -8,6 +8,10 @@ import { MessageModule } from './event/message.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
+import { PostModule } from './modules/post/post.module';
+import { CommentModule } from './modules/comment/comment.module';
+import { GameModule } from './modules/game/game.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 export let envFilePath = '.env.development';
 
@@ -28,6 +32,10 @@ console.log(process.env.NODE_ENV);
     MessageModule,
     AuthModule,
     UserModule,
+    PostModule,
+    CommentModule,
+    GameModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

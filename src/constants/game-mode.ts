@@ -1,3 +1,3 @@
 export enum GameMode {
-  CLASSIC = 'classic',
+  CLASSIC = 0,
 }

@@ -4,17 +4,17 @@ import { Comment } from 'src/entities/Comment';
 import { DM } from 'src/entities/DM';
 import { Friend } from 'src/entities/Friend';
 import { Game } from 'src/entities/Game';
-import { GameChat } from 'src/entities/GameChat';
 import { GameMember } from 'src/entities/GameMember';
 import { GameRole } from 'src/entities/GameRole';
 import { Notification } from 'src/entities/Notification';
 import { Post } from 'src/entities/Post';
 import { PostCategory } from 'src/entities/PostCategory';
+import { Profile } from 'src/entities/Profile';
 import { Recommendation } from 'src/entities/Recommendation';
 import { Report } from 'src/entities/Report';
 import { ReportCategory } from 'src/entities/ReportCategory';
 import { User } from 'src/entities/User';
-import { WholeChat } from 'src/entities/WholeChat';
+import { View } from 'src/entities/View';
 
 dotenv.config();
 
@@ -35,12 +35,12 @@ export const ormconfig: TypeOrmModuleOptions = {
     Comment,
     Game,
     GameMember,
-    GameChat,
-    WholeChat,
     DM,
     Notification,
     Report,
     Recommendation,
+    Profile,
+    View,
   ],
   migrations: [__dirname + '/src/migrations/*.ts'],
   cli: { migrationsDir: 'src/migrations' },
