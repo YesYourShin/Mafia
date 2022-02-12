@@ -1,4 +1,5 @@
-import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsDate, IsEnum, IsInt, IsOptional, IsUUID } from 'class-validator';
 import { NotificationType } from 'src/constants/notification-type';
 import {
   Column,
@@ -14,17 +15,33 @@ import { User } from './User';
 
 @Entity('notification')
 export class Notification {
-  @IsInt()
-  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
-  id: number;
+  @ApiProperty({
+    example: 'fsadfsadhjwewiu213adaadfadsfasfhw1',
+    description: '알림 고유 UUID',
+  })
+  @IsUUID()
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
+  @ApiProperty({
+    example: 1,
+    description: '알림 타입',
+  })
   @IsEnum(NotificationType)
   @Column({ type: 'enum', enum: NotificationType, name: 'type' })
   type: NotificationType;
 
+  @ApiProperty({
+    example: '',
+    description: '알림 내용',
+  })
   @Column({ type: 'varchar', name: 'data' })
   data: string;
 
+  @ApiProperty({
+    example: 1,
+    description: '알림을 발송하는 유저',
+  })
   @IsInt()
   @Column({ type: 'bigint', name: 'user_id', nullable: true, unsigned: true })
   userId: number;
@@ -33,6 +50,10 @@ export class Notification {
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 
+  @ApiProperty({
+    example: 1,
+    description: '알림 받는 유저',
+  })
   @IsInt()
   @Column({ type: 'bigint', name: 'target_id', nullable: true, unsigned: true })
   targetId: number;
@@ -41,6 +62,10 @@ export class Notification {
   @JoinColumn({ name: 'target_id', referencedColumnName: 'id' })
   target: User;
 
+  @ApiProperty({
+    example: 1,
+    description: '1 - 읽음 0 - 안읽음',
+  })
   @Column({ type: 'tinyint', name: 'read', default: 0 })
   read: number;
 

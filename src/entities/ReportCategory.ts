@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional } from 'class-validator';
 import {
   Column,
@@ -12,12 +13,20 @@ import { Report } from './Report';
 
 @Entity('report_category')
 export class ReportCategory {
+  @ApiProperty({
+    example: 1,
+    description: '신고 카테고리 고유 ID',
+  })
   @IsInt()
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
   id: number;
 
-  @Column({ type: 'varchar', name: 'type', length: 20 })
-  type: string;
+  @ApiProperty({
+    example: '욕설',
+    description: '신고 유형',
+  })
+  @Column({ type: 'varchar', name: 'name', length: 20 })
+  name: string;
 
   @IsDate()
   @CreateDateColumn()

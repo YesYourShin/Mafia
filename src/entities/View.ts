@@ -5,31 +5,44 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  OneToMany,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Post } from './Post';
 
-@Entity('post_category')
-export class PostCategory {
+@Entity('view')
+export class View {
   @ApiProperty({
     example: 1,
-    description: '게시물 카테고리 ID',
+    description: '조회수 고유 ID',
   })
   @IsInt()
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
   id: number;
 
   @ApiProperty({
-    example: 1,
-    description: '게시물 카테고리 이름',
+    example: 21312,
+    description: '조회수',
   })
-  @Column({ type: 'varchar', length: 10 })
-  name: string;
+  @Column({ type: 'int', name: 'hit', unsigned: true })
+  hit: number;
 
-  @OneToMany(() => Post, (posts) => posts.postCategory)
-  posts: Post[];
+  @ApiProperty({
+    example: 1,
+    description: '게시물 아이디',
+  })
+  @IsInt()
+  @Column({ type: 'bigint', name: 'post_id', nullable: true, unsigned: true })
+  postId: number | null;
+
+  @ManyToOne(() => Post, (post) => post.views, {
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'post_id', referencedColumnName: 'id' })
+  post: Post;
 
   @IsDate()
   @CreateDateColumn()

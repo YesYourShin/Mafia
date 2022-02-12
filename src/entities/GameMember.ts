@@ -1,4 +1,6 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional } from 'class-validator';
+import { Score } from 'src/constants/score';
 import {
   Column,
   CreateDateColumn,
@@ -15,10 +17,18 @@ import { User } from './User';
 
 @Entity('game_member')
 export class GameMember {
+  @ApiProperty({
+    example: 1,
+    description: '게임 방 멤버 고유 ID',
+  })
   @IsInt()
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
   id: number;
 
+  @ApiProperty({
+    example: 1,
+    description: '방 ID',
+  })
   @IsInt()
   @Column({ type: 'bigint', name: 'game_id', nullable: true, unsigned: true })
   gameId: number | null;
@@ -30,6 +40,10 @@ export class GameMember {
   @JoinColumn({ name: 'game_id', referencedColumnName: 'id' })
   game: Game;
 
+  @ApiProperty({
+    example: 1,
+    description: '게임 참여 유저 ID',
+  })
   @IsInt()
   @Column({ type: 'bigint', name: 'user_id', nullable: true, unsigned: true })
   userId: number | null;
@@ -41,6 +55,10 @@ export class GameMember {
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 
+  @ApiProperty({
+    example: 1,
+    description: '게임 역할',
+  })
   @Column({
     type: 'bigint',
     name: 'game_role_id',
@@ -55,6 +73,14 @@ export class GameMember {
   })
   @JoinColumn({ name: 'game_role_id', referencedColumnName: 'id' })
   role: GameRole;
+
+  @ApiProperty({
+    example: 1,
+    description: '1 - 승/0 - 패',
+    required: false,
+  })
+  @Column({ type: 'tinyint', name: 'score' })
+  score?: Score;
 
   @IsDate()
   @CreateDateColumn()

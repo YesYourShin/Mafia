@@ -1,6 +1,6 @@
-import { int } from 'aws-sdk/clients/datapipeline';
-import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { UserProvider } from 'src/constants';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
+import { UserProvider, UserRole } from 'src/constants';
 import {
   Column,
   CreateDateColumn,
@@ -8,6 +8,7 @@ import {
   Entity,
   Index,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -16,27 +17,37 @@ import { Comment } from './Comment';
 import { DM } from './DM';
 import { Friend } from './Friend';
 import { Game } from './Game';
-import { GameChat } from './GameChat';
 import { Notification } from './Notification';
 import { Post } from './Post';
+import { Profile } from './Profile';
 import { Recommendation } from './Recommendation';
 import { Report } from './Report';
-import { WholeChat } from './WholeChat';
 
 @Index('user_idx_social_id_provider', ['socialId', 'provider'], {
   unique: true,
 })
-@Index('user_idx_nickname', ['nickname'], { unique: true })
 @Unique('user_uk_social_id_provider', ['socialId', 'provider'])
 @Entity('user')
 export class User {
+  @ApiProperty({
+    example: 1,
+    description: '유저 아이디',
+  })
   @IsInt()
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
   id: number;
 
+  @ApiProperty({
+    example: '1241824124u8192489121',
+    description: '소셜 회원 고유번호',
+  })
   @Column({ type: 'varchar', name: 'social_id' })
   socialId: string;
 
+  @ApiProperty({
+    example: 'google',
+    description: '플랫폼(google, naver, kakao)',
+  })
   @IsEnum(UserProvider)
   @Column({
     type: 'enum',
@@ -45,31 +56,26 @@ export class User {
   })
   provider: UserProvider;
 
-  @IsString()
-  @Column('varchar', {
-    name: 'nickname',
-    unique: true,
-    length: 20,
-    default: null,
+  @ApiProperty({
+    example: 0,
+    description: '유저 권한(0 유저 / 1 어드민) ',
   })
-  nickname: string | null;
+  @IsEnum(UserRole)
+  @Column({ type: 'tinyint', name: 'role' })
+  role: UserRole;
 
+  @IsDate()
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @IsDate()
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @IsDate()
   @IsOptional()
-  @Column('varchar', { name: 'image', nullable: true })
-  image: string | null;
-
-  @IsOptional()
-  @Column('varchar', { name: 'self_introduction', nullable: true })
-  selfIntroduction: string | null;
-
-  @Column('int', { name: 'manner', default: 50 })
-  manner: number;
-
-  @Column('int', { name: 'level', default: 1 })
-  level: string;
-
-  @Column('int', { name: 'exp', default: 0 })
-  exp: string;
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 
   @OneToMany(() => Recommendation, (recommendations) => recommendations.user)
   recommendations: Recommendation[];
@@ -89,12 +95,6 @@ export class User {
   @OneToMany(() => Game, (gameroom) => gameroom.owner)
   games: Game[];
 
-  @OneToMany(() => GameChat, (gamechats) => gamechats.sender)
-  gameChats: GameChat[];
-
-  @OneToMany(() => WholeChat, (wholeChats) => wholeChats.sender)
-  wholeChats: WholeChat[];
-
   @OneToMany(() => DM, (dms) => dms.sender)
   senderDm: DM[];
 
@@ -110,16 +110,6 @@ export class User {
   @OneToMany(() => Report, (reports) => reports.user)
   reports: Report[];
 
-  @IsDate()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @IsDate()
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @IsDate()
-  @IsOptional()
-  @DeleteDateColumn()
-  deletedAt: Date | null;
+  @OneToOne(() => Profile, (profile) => profile.user)
+  profile: Profile;
 }
