@@ -9,7 +9,7 @@ export interface UserFindOneOptions {
   provider?: string;
 }
 
-export const removeNilFromObject = (object: any) => {
+export const removeNilFromObject = (object: object) => {
   return pickBy(object, negate(isNil));
 };
 

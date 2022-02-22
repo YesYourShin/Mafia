@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -9,22 +9,59 @@ import { HttpExceptionFilter } from './http-exception.filter';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import passport from 'passport';
+import * as winston from 'winston';
+import {
+  utilities as nestWinstonModuleUtilities,
+  WinstonModule,
+} from 'nest-winston';
+import fs from 'fs';
+
 declare const module: any;
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // ssh 설정
+  // const httpsOptions = {
+  //   key: fs.readFileSync(process.env.HTTPS_KEY, 'utf-8'),
+  //   cert: fs.readFileSync(process.env.HTTPS_CERT, 'utf-8'),
+  // };
+  const logger = WinstonModule.createLogger({
+    transports: [
+      new winston.transports.Console({
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'silly',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          nestWinstonModuleUtilities.format.nestLike('Mafia', {
+            prettyPrint: true,
+          }),
+        ),
+      }),
+    ],
+  });
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger,
+    // httpsOptions,
+  });
   const PORT = process.env.PORT || 3065;
-  app.setGlobalPrefix('/api/v1');
+  app.setGlobalPrefix('/api');
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
     }),
   );
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+
+  if (process.env.NODE_ENV === 'production') {
+    app.enableCors({
+      origin: 'https://gjgjajaj.xyz',
+      credentials: true,
+    });
+  } else {
+    app.enableCors({
+      origin: true,
+      credentials: true,
+    });
+  }
 
   const config = new DocumentBuilder()
     .setTitle('Mafia API')
@@ -36,16 +73,18 @@ async function bootstrap() {
   SwaggerModule.setup('api/document', app, document);
 
   const redisClient = redis.createClient({
-    host: 'localhost',
+    host: process.env.REDIS_HOST,
     port: process.env.REDIS_PORT,
+    db: process.env.REDIS_DB,
+    password: process.env.REDIS_PASSWORD,
   });
   const redisStore = RedisStore(session);
 
   redisClient.on('error', function (err) {
-    console.log('Could not establish a connection with redis. ' + err);
+    Logger.error('Could not establish a connection with redis. ' + err);
   });
   redisClient.on('connect', function (err) {
-    console.log('Connected to redis successfully');
+    Logger.log('Connected to redis successfully');
   });
 
   app.use(cookieParser());
@@ -53,6 +92,7 @@ async function bootstrap() {
     session({
       store: new redisStore({
         client: redisClient,
+        prefix: 'session:',
         logErrors: true,
       }),
       resave: false,
@@ -62,6 +102,9 @@ async function bootstrap() {
         sameSite: true,
         httpOnly: true,
         maxAge: +process.env.COOKIE_MAX_AGE,
+        secure: false, // https일 경우 true로 변경해야 할 것
+        // secure: true, // https일 경우 true로 변경해야 할 것
+        domain: process.env.NODE_ENV === 'production' && 'gjgjajaj.xyz',
       },
     }),
   );

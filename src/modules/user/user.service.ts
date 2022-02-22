@@ -17,21 +17,29 @@ export class UserService {
   ) {}
 
   async findOne(id: number) {
-    return await this.userRepository.findOne({ id });
+    const user = await this.userRepository.findOne({ id });
+    if (!user) {
+      throw new NotFoundException('등록되지 않은 유저입니다.');
+    }
+    return user;
+  }
+  async findProfile(id: number): Promise<Profile> {
+    const exProfile: Profile = await this.profileRepository.findProfile(id);
+    if (!exProfile) {
+      throw new NotFoundException('등록된 프로필이 없습니다.');
+    }
+    return exProfile;
   }
   async createProfile(id: number, profile: CreateProfileDto) {
     const exProfile: Profile = await this.profileRepository.findProfile(id);
     if (exProfile) {
-      throw new ForbiddenException('프로필이 이미 존재합니다.');
+      throw new ForbiddenException('프로필이 이미 등록되어 있습니다.');
     }
     return await this.profileRepository.create(id, profile);
   }
 
   async updateProfile(id: number, profile: UpdateProfileDto) {
-    const exProfile: Profile = await this.profileRepository.findProfile(id);
-    if (!exProfile) {
-      throw new NotFoundException('프로필이 존재하지 않습니다.');
-    }
+    const exProfile: Profile = await this.findProfile(id);
     return await this.profileRepository.update(id, profile);
   }
   async checkDuplicateNickname(nickname: string) {
@@ -39,7 +47,7 @@ export class UserService {
       nickname,
     );
     if (exNickname) {
-      throw new ForbiddenException('이미 존재하는 닉네임입니다');
+      throw new ForbiddenException('중복된 닉네임입니다');
     }
     return { message: '사용 가능한 닉네임입니다.' };
   }

@@ -1,5 +1,5 @@
 export enum UserProvider {
-  KAKAO = 'kakao',
-  NAVER = 'naver',
-  GOOGLE = 'google',
+  KAKAO = 'KAKAO',
+  NAVER = 'NAVER',
+  GOOGLE = 'GOOGLE',
 }

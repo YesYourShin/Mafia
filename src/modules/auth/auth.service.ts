@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UserProvider } from 'src/constants';
 import { OauthProfile } from 'src/constants/oauth-provider';
 import { oauthVerifyCallback } from 'src/constants/oauth-verify-callback';
 import { JoinRequestUserDto } from '../user/dto/join-request-user.dto';
@@ -16,7 +17,7 @@ export class AuthService {
   ) {
     const joinRequestUser: JoinRequestUserDto = {
       socialId: profile.id,
-      provider: profile.provider,
+      provider: profile.provider.toUpperCase() as UserProvider,
     };
     try {
       const user = await this.userRepository.firstOrCreate(joinRequestUser);
