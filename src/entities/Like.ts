@@ -10,14 +10,14 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ReportCategory } from './ReportCategory';
+import { Post } from './Post';
 import { User } from './User';
 
-@Entity('report')
-export class Report {
+@Entity('like')
+export class Like {
   @ApiProperty({
     example: 1,
-    description: '신고 고유 ID',
+    description: '추천 고유 ID',
   })
   @IsInt()
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
@@ -25,37 +25,25 @@ export class Report {
 
   @ApiProperty({
     example: 1,
-    description: '신고 카테고리 ID',
+    description: '게시물 ID',
   })
   @IsInt()
-  @Column({
-    type: 'tinyint',
-    name: 'report_category_id',
-    nullable: true,
-    unsigned: true,
-  })
-  reportCategoryId: number;
+  @Column({ type: 'bigint', name: 'post_id', nullable: true, unsigned: true })
+  postId: number;
 
-  @ManyToOne(() => ReportCategory, (category) => category.reports)
-  @JoinColumn({ name: 'report_category_id', referencedColumnName: 'id' })
-  reportCategory: ReportCategory;
-
-  @ApiProperty({
-    example: 'OO유저가 저한테 욕설을 했습니다.',
-    description: '신고 내용',
-  })
-  @Column({ type: 'text' })
-  content: string;
+  @ManyToOne(() => Post, (post) => post.likes)
+  @JoinColumn({ name: 'post_id', referencedColumnName: 'id' })
+  post: Post;
 
   @ApiProperty({
     example: 1,
-    description: '신고 유저 ID',
+    description: '유저 ID',
   })
   @IsInt()
   @Column({ type: 'bigint', name: 'user_id', nullable: true, unsigned: true })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.reports)
+  @ManyToOne(() => User, (user) => user.likes)
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 

@@ -1,24 +1,24 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as dotenv from 'dotenv';
-import { Comment } from 'src/entities/Comment';
-import { DM } from 'src/entities/DM';
-import { Friend } from 'src/entities/Friend';
-import { Game } from 'src/entities/Game';
-import { GameMember } from 'src/entities/GameMember';
-import { GameRole } from 'src/entities/GameRole';
-import { Notification } from 'src/entities/Notification';
-import { Post } from 'src/entities/Post';
-import { PostCategory } from 'src/entities/PostCategory';
-import { Profile } from 'src/entities/Profile';
-import { Recommendation } from 'src/entities/Recommendation';
-import { Report } from 'src/entities/Report';
-import { ReportCategory } from 'src/entities/ReportCategory';
-import { User } from 'src/entities/User';
-import { View } from 'src/entities/View';
+import { Comment } from './src/entities/Comment';
+import { DM } from './src/entities/DM';
+import { Friend } from './src/entities/Friend';
+import { Game } from './src/entities/Game';
+import { GameMember } from './src/entities/GameMember';
+import { GameRole } from './src/entities/GameRole';
+import { Notification } from './src/entities/Notification';
+import { Post } from './src/entities/Post';
+import { PostCategory } from './src/entities/PostCategory';
+import { Profile } from './src/entities/Profile';
+import { Like } from './src/entities/Like';
+import { Report } from './src/entities/Report';
+import { ReportCategory } from './src/entities/ReportCategory';
+import { User } from './src/entities/User';
+import { View } from './src/entities/View';
 
 dotenv.config();
 
-export const ormconfig: TypeOrmModuleOptions = {
+const ormconfig: TypeOrmModuleOptions = {
   type: 'mysql',
   host: 'localhost',
   port: +process.env.DB_PORT,
@@ -38,7 +38,7 @@ export const ormconfig: TypeOrmModuleOptions = {
     DM,
     Notification,
     Report,
-    Recommendation,
+    Like,
     Profile,
     View,
   ],
@@ -50,3 +50,5 @@ export const ormconfig: TypeOrmModuleOptions = {
   logging: true,
   keepConnectionAlive: true,
 };
+
+export = ormconfig;

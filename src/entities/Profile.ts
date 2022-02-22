@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsDate,
-  IsDecimal,
-  IsInt,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,

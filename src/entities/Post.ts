@@ -13,7 +13,7 @@ import {
 } from 'typeorm';
 import { Comment } from './Comment';
 import { PostCategory } from './PostCategory';
-import { Recommendation } from './Recommendation';
+import { Like } from './Like';
 import { User } from './User';
 import { View } from './View';
 
@@ -49,7 +49,7 @@ export class Post {
   })
   @IsInt()
   @Column({
-    type: 'bigint',
+    type: 'tinyint',
     name: 'post_category_id',
     nullable: true,
     unsigned: true,
@@ -91,8 +91,8 @@ export class Post {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
-  @OneToMany(() => Recommendation, (recommendations) => recommendations.post)
-  recommendations: Recommendation[];
+  @OneToMany(() => Like, (likes) => likes.post)
+  likes: Like[];
 
   @OneToMany(() => Comment, (comments) => comments.post)
   comments: Comment[];

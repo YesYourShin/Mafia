@@ -1,17 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
-import { GameRoleType } from 'src/constants/game-role-type';
-
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { GameMember } from './GameMember';
+import { EGameRole } from '../constants';
 
 @Entity('game_role')
 export class GameRole {
@@ -20,16 +19,16 @@ export class GameRole {
     description: '게임 역할 고유 ID',
   })
   @IsInt()
-  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
+  @PrimaryColumn({ type: 'tinyint', name: 'id', unsigned: true })
   id: number;
 
   @ApiProperty({
     example: 'CITIZEN',
     description: '게임 역할 이름',
   })
-  @IsEnum(GameRoleType)
-  @Column({ type: 'enum', enum: GameRoleType, name: 'type' })
-  type: GameRoleType;
+  // @IsEnum(EGameRole)
+  @Column({ type: 'enum', enum: EGameRole, name: 'role' })
+  role: EGameRole;
 
   @IsDate()
   @CreateDateColumn()
@@ -44,6 +43,6 @@ export class GameRole {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
-  @OneToMany(() => GameMember, (members) => members.role)
+  @OneToMany(() => GameMember, (members) => members.gameRole)
   members: GameMember[];
 }

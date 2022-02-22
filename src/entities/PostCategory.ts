@@ -6,7 +6,7 @@ import {
   DeleteDateColumn,
   Entity,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Post } from './Post';
@@ -18,7 +18,7 @@ export class PostCategory {
     description: '게시물 카테고리 ID',
   })
   @IsInt()
-  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
+  @PrimaryColumn({ type: 'tinyint', name: 'id', unsigned: true })
   id: number;
 
   @ApiProperty({

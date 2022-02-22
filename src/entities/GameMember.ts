@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional } from 'class-validator';
-import { Score } from 'src/constants/score';
+import { Score } from '../constants';
 import {
   Column,
   CreateDateColumn,
@@ -60,7 +60,7 @@ export class GameMember {
     description: '게임 역할',
   })
   @Column({
-    type: 'bigint',
+    type: 'tinyint',
     name: 'game_role_id',
     nullable: true,
     unsigned: true,
@@ -72,7 +72,7 @@ export class GameMember {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'game_role_id', referencedColumnName: 'id' })
-  role: GameRole;
+  gameRole: GameRole;
 
   @ApiProperty({
     example: 1,

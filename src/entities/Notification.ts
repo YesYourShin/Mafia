@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsOptional, IsUUID } from 'class-validator';
-import { NotificationType } from 'src/constants/notification-type';
+import { NotificationType } from '../constants';
 import {
   Column,
   CreateDateColumn,
@@ -21,10 +21,10 @@ export class Notification {
   })
   @IsUUID()
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  uuid: string;
 
   @ApiProperty({
-    example: 1,
+    example: 'DM',
     description: '알림 타입',
   })
   @IsEnum(NotificationType)

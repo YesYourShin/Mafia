@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
-import { GameMode } from 'src/constants/game-mode';
+import { GameMode } from '../constants';
 import {
   Check,
   Column,

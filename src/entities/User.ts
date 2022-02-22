@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
-import { UserProvider, UserRole } from 'src/constants';
+import { UserProvider, UserRole } from '../constants';
 import {
   Column,
   CreateDateColumn,
@@ -20,7 +20,7 @@ import { Game } from './Game';
 import { Notification } from './Notification';
 import { Post } from './Post';
 import { Profile } from './Profile';
-import { Recommendation } from './Recommendation';
+import { Like } from './Like';
 import { Report } from './Report';
 
 @Index('user_idx_social_id_provider', ['socialId', 'provider'], {
@@ -61,7 +61,7 @@ export class User {
     description: '유저 권한(0 유저 / 1 어드민) ',
   })
   @IsEnum(UserRole)
-  @Column({ type: 'tinyint', name: 'role' })
+  @Column({ type: 'tinyint', name: 'role', default: 0 })
   role: UserRole;
 
   @IsDate()
@@ -77,8 +77,8 @@ export class User {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
-  @OneToMany(() => Recommendation, (recommendations) => recommendations.user)
-  recommendations: Recommendation[];
+  @OneToMany(() => Like, (likes) => likes.user)
+  likes: Like[];
 
   @OneToMany(() => Post, (posts) => posts.user)
   posts: Post[];

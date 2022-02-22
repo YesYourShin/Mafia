@@ -6,7 +6,7 @@ import {
   DeleteDateColumn,
   Entity,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Report } from './Report';
@@ -18,14 +18,14 @@ export class ReportCategory {
     description: '신고 카테고리 고유 ID',
   })
   @IsInt()
-  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id', unsigned: true })
+  @PrimaryColumn({ type: 'tinyint', name: 'id', unsigned: true })
   id: number;
 
   @ApiProperty({
     example: '욕설',
     description: '신고 유형',
   })
-  @Column({ type: 'varchar', name: 'name', length: 20 })
+  @Column({ type: 'varchar', name: 'name', length: 100 })
   name: string;
 
   @IsDate()
