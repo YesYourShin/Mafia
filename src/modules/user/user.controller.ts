@@ -7,15 +7,19 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiConsumes,
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -24,19 +28,27 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ResponseDto } from 'src/common/dto';
+import { ApiFile } from 'src/decorators/api-file.decorator';
 import { UserDecorator } from 'src/decorators/user.decorator';
-import { Profile } from 'src/entities/Profile';
-import { User } from 'src/entities/User';
-import { LoggedInGuard } from '../auth/guards/logged-in.guard';
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { ResponseUserProfileDto } from './dto/response-user-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { User, Profile } from 'src/entities';
+import { s3 } from 'src/shared/MulterS3Service ';
+import { LoggedInGuard } from '../auth/guards';
+import {
+  ResponseUserProfileDto,
+  UpdateProfileDto,
+  ResponseProfileDto,
+  CreateProfileDto,
+} from './dto';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @ApiParam({
     name: 'nickname',
@@ -46,13 +58,15 @@ export class UserController {
   @ApiOkResponse({
     description: '중복된 닉네임이 아닌 경우',
     schema: {
-      example: { message: '사용 가능한 닉네임입니다.' },
+      example: new ResponseDto(true, 200, {
+        message: '사용 가능한 닉네임입니다',
+      }),
     },
   })
   @ApiConflictResponse({
     description: '중복된 이름일 경우',
     schema: {
-      example: '중복된 닉네임입니다.',
+      example: new ResponseDto(false, 409, '중복된 닉네임입니다'),
     },
   })
   @ApiCookieAuth('connect.sid')
@@ -62,36 +76,15 @@ export class UserController {
   async checkDuplicateNickname(@Param('nickname') nickname: string) {
     return await this.userService.checkDuplicateNickname(nickname);
   }
-  @ApiOkResponse({
-    description: '유저 프로필 불러오기 성공',
-    type: Profile,
-  })
-  @ApiNotFoundResponse({
-    description: '프로필이 존재하지 않을 때',
-    schema: {
-      example: '프로필이 존재하지 않습니다.',
-    },
-  })
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: '유저 번호',
-  })
-  @ApiOperation({ summary: '특정 유저 정보 불러오기' })
-  @UseGuards(LoggedInGuard)
-  @Get('profile')
-  async getMyProfile(@UserDecorator() user): Promise<Profile> {
-    return user;
-  }
 
   @ApiOkResponse({
     description: '유저 프로필 불러오기 성공',
-    type: Profile,
+    type: ResponseProfileDto,
   })
   @ApiNotFoundResponse({
     description: '프로필이 존재하지 않을 때',
     schema: {
-      example: '프로필이 존재하지 않습니다.',
+      example: new ResponseDto(false, 404, '프로필이 존재하지 않습니다'),
     },
   })
   @ApiParam({
@@ -105,18 +98,26 @@ export class UserController {
     return await this.userService.findProfile(+id);
   }
 
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponse({
     description: '프로필 이미지 저장 성공',
-    schema: { example: { url: 'https://aaa.com/cat.jpg' } },
+    schema: {
+      example: new ResponseDto(true, 201, { url: 'https://aaa.com/cat.jpg' }),
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '잘못된 형식으로 이미지를 보냈을 때',
+    schema: {
+      example: new ResponseDto(false, 400, '이미지만 업로드 가능합니다'),
+    },
   })
   @ApiCookieAuth('connect.sid')
+  @ApiConsumes('multipart/form-data')
+  @ApiFile('image')
   @ApiOperation({ summary: '프로필 이미지 저장' })
   @UseGuards(LoggedInGuard)
-  @ApiConsumes('multipart/form-data')
   @Post('profile/image')
   @UseInterceptors(FileInterceptor('image'))
-  async uploadProfileImage(@UploadedFile() image: Express.Multer.File) {
+  async uploadProfileImage(@UploadedFile() image: Express.MulterS3.File) {
     console.log(image);
   }
 
@@ -127,7 +128,9 @@ export class UserController {
   })
   @ApiForbiddenResponse({
     description: '프로필이 이미 존재할 때',
-    schema: { example: '프로필이 이미 존재합니다.' },
+    schema: {
+      example: new ResponseDto(false, 403, '등록된 프로필이 존재합니다'),
+    },
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 생성' })
@@ -144,15 +147,23 @@ export class UserController {
 
   @ApiOkResponse({
     description: '친구 신청 성공',
-    schema: { example: { message: '친구 신청이 되었습니다.' } },
+    schema: {
+      example: new ResponseDto(true, 200, {
+        message: '친구 신청 완료',
+      }),
+    },
   })
   @ApiForbiddenResponse({
     description: '유저를 친구 추가 불가능 할 경우',
-    schema: { example: '친구 추가를 할 수 없습니다.' },
+    schema: {
+      example: new ResponseDto(false, 403, '친구 추가를 할 수 없습니다'),
+    },
   })
   @ApiNotFoundResponse({
     description: '유저가 존재하지 않는 경우',
-    schema: { example: '등록되지 않은 유저입니다.' },
+    schema: {
+      example: new ResponseDto(false, 404, '등록되지 않은 유저입니다'),
+    },
   })
   @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
   @ApiCookieAuth('connect.sid')
@@ -163,15 +174,21 @@ export class UserController {
 
   @ApiOkResponse({
     description: '친구 삭제 성공',
-    schema: { example: { message: '친구를 삭제 했습니다.' } },
+    schema: {
+      example: new ResponseDto(true, 200, { message: '친구 삭제 완료' }),
+    },
   })
   @ApiForbiddenResponse({
     description: '친구 삭제할 권한이 없을 때(친구가 아닌 상태 등)',
-    schema: { example: '친구 삭제할 권한이 없습니다.' },
+    schema: {
+      example: new ResponseDto(false, 403, '친구 삭제할 권한이 없습니다'),
+    },
   })
   @ApiNotFoundResponse({
     description: '유저가 존재하지 않는 경우',
-    schema: { example: '등록되지 않은 유저입니다.' },
+    schema: {
+      example: new ResponseDto(false, 404, '등록되지 않은 유저입니다'),
+    },
   })
   @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
   @ApiCookieAuth('connect.sid')
@@ -187,11 +204,14 @@ export class UserController {
   })
   @ApiNotFoundResponse({
     description: '프로필이 없는 경우',
-    schema: { example: '등록된 프로필이 없습니다.' },
+    schema: {
+      example: new ResponseDto(false, 404, '등록된 프로필이 없습니다'),
+    },
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 수정' })
   @UseGuards(LoggedInGuard)
+  @HttpCode(201)
   @Patch('profile')
   async updateProfile(
     @UserDecorator() user: User,
@@ -210,5 +230,17 @@ export class UserController {
   @Delete()
   async destroy(@UserDecorator() user: User) {
     return await this.userService.remove(user.id);
+  }
+  //게시물 존재 및 게시물 권한 확인
+  @ApiOperation({ summary: '게시물 이미지 삭제' })
+  @Delete('profile/image')
+  async removeImage(@Query('key') key: string) {
+    s3.deleteObject(
+      {
+        Bucket: this.configService.get('AWS_S3_BUCKET'),
+        Key: key,
+      },
+      function (err, data) {},
+    );
   }
 }

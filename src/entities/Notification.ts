@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsOptional, IsUUID } from 'class-validator';
-import { NotificationType } from '../constants';
+import { NotificationType } from '../common/constants';
 import {
   Column,
   CreateDateColumn,

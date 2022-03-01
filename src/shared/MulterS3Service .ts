@@ -34,7 +34,7 @@ export class MulterS3Service implements MulterOptionsFactory {
           return cb(null, true);
         }
 
-        cb(new BadRequestException('이미지만 업로드 가능합니다.'), false);
+        cb(new BadRequestException('이미지만 업로드 가능합니다'), false);
       },
     };
   }

@@ -16,23 +16,27 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PostService } from './post.service';
-import { CreatePostDto } from './dto/create-post.dto';
-import { UpdatePostDto } from './dto/update-post.dto';
-import { LoggedInGuard } from '../auth/guards/logged-in.guard';
-import { UserDecorator } from 'src/decorators/user.decorator';
-import { User } from 'src/entities/User';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { ResponsePostWithCommentsDto } from './dto/ResponsePostWithCommentsDto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { s3 } from 'src/shared/MulterS3Service ';
+import {
+  CreatePostDto,
+  ResponsePostsDto,
+  ResponsePostWithCommentsDto,
+  UpdatePostDto,
+} from './dto';
+import { UserProfile } from '../user/dto';
+import { LoggedInGuard } from '../auth/guards';
+import { UserDecorator } from 'src/decorators';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -43,7 +47,11 @@ export class PostController {
     private readonly configService: ConfigService,
   ) {}
 
-  @ApiOperation({ summary: '전체 게시물 보기' })
+  @ApiOkResponse({
+    description: '게시물들 불러오기',
+    type: ResponsePostsDto,
+  })
+  @ApiOperation({ summary: '게시물들 불러오기' })
   @Get()
   async findAll(
     @Query('category') categoryId: string,
@@ -81,7 +89,7 @@ export class PostController {
   @Post()
   async create(
     @Body() createPostDto: CreatePostDto,
-    @UserDecorator() user: User,
+    @UserDecorator() user: UserProfile,
   ) {
     return await this.postService.create(user.id, createPostDto);
   }
@@ -107,7 +115,7 @@ export class PostController {
   async update(
     @Param('id') id: string,
     @Body() updatePostDto: UpdatePostDto,
-    @UserDecorator() user: User,
+    @UserDecorator() user: UserProfile,
   ) {
     return await this.postService.update(+id, user.id, updatePostDto);
   }
@@ -121,10 +129,16 @@ export class PostController {
   @ApiOperation({ summary: '게시물 추천' })
   @UseGuards(LoggedInGuard)
   @Patch('like/:id')
-  async recommendPost(@Param('id') id: string, @UserDecorator() user: User) {
+  async recommendPost(
+    @Param('id') id: string,
+    @UserDecorator() user: UserProfile,
+  ) {
     return this.postService.like(+id, user.id);
   }
-  @Delete('file')
+
+  //게시물 존재 및 게시물 권한 확인
+  @ApiOperation({ summary: '게시물 이미지 삭제' })
+  @Delete('image')
   async removeImage(@Query('key') key: string) {
     this.logger.log('key', key);
     s3.deleteObject(
@@ -145,7 +159,10 @@ export class PostController {
   @ApiOperation({ summary: '게시물 추천 취소' })
   @UseGuards(LoggedInGuard)
   @Delete('like/:id')
-  async unrecommendPost(@Param('id') id: string, @UserDecorator() user: User) {
+  async unrecommendPost(
+    @Param('id') id: string,
+    @UserDecorator() user: UserProfile,
+  ) {
     return await this.postService.unlike(+id, user.id);
   }
 
@@ -158,7 +175,7 @@ export class PostController {
   @ApiOperation({ summary: '게시물 삭제' })
   @UseGuards(LoggedInGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string, @UserDecorator() user) {
+  async remove(@Param('id') id: string, @UserDecorator() user: UserProfile) {
     return await this.postService.remove(+id, user.id);
   }
 }

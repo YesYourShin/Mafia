@@ -1,15 +1,20 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CreatePostDto } from './dto/create-post.dto';
-import { UpdatePostDto } from './dto/update-post.dto';
+import { ResponseDto } from 'src/common/dto';
+import { CreatePostDto, UpdatePostDto } from './dto';
 import { PostRepository } from './post.repository';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly postRepository: PostRepository) {}
+  constructor(
+    private readonly postRepository: PostRepository,
+    @Inject(Logger) private readonly logger: Logger,
+  ) {}
 
   async create(userId: number, createPostDto: CreatePostDto) {
     const qb = await this.postRepository.create(userId, createPostDto);
@@ -23,12 +28,13 @@ export class PostService {
     }
     return post;
   }
-  async findAll(categoryId: number, page: number) {
+  async findAll(categoryId = 1, page = 1) {
+    this.logger.log(page);
     const posts = await this.postRepository.findAll(categoryId, page * 10);
     const pages = await this.postRepository.findPagesCountByCategoryId(
       categoryId,
     );
-    return { ...posts, ...pages };
+    return new ResponseDto(true, 200, { ...posts, ...pages });
   }
 
   async update(id: number, userId: number, updatePostDto: UpdatePostDto) {

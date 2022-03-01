@@ -2,16 +2,11 @@ import {
   Controller,
   Get,
   HttpCode,
-  HttpStatus,
   Inject,
   Logger,
   LoggerService,
   Post,
   Redirect,
-  Req,
-  Request,
-  Response,
-  Session,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -21,20 +16,28 @@ import {
   ApiCookieAuth,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Session as ExpressSession } from 'express-session';
-import { ClearCookieInterceptor } from 'src/interceptors/ClearCookieInterceptor';
-import { GoogleOauthGuard } from './guards/google-oauth.guard';
-import { KakaoOauthGuard } from './guards/kakao-oauth.guard';
-import { LoggedInGuard } from './guards/logged-in.guard';
-import { NaverOauthGuard } from './guards/naver-oauth.guard';
-import { NotLoggedInGuard } from './guards/not-logged-in.guard';
+import { ResponseDto } from 'src/common/dto';
+import { UserDecorator } from 'src/decorators/user.decorator';
+import { ClearCookieInterceptor } from 'src/interceptors/clear-cookie.interceptor';
+import { UserProfile } from '../user/dto';
+import { AuthService } from './auth.service';
+import {
+  GoogleOauthGuard,
+  KakaoOauthGuard,
+  LoggedInGuard,
+  NaverOauthGuard,
+  NotLoggedInGuard,
+} from './guards';
 
 @ApiTags('Auth')
 @Controller('/auth')
 export class AuthController {
-  constructor(@Inject(Logger) private readonly logger: LoggerService) {}
+  constructor(
+    @Inject(Logger) private readonly logger: LoggerService,
+    private readonly authService: AuthService,
+  ) {}
 
-  @ApiOperation({ summary: 'Google 로그인' })
+  @ApiOperation({ summary: 'Google 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
   @Get('google/login')
   googleAuth() {}
@@ -44,14 +47,12 @@ export class AuthController {
     status: 301,
     description: '로그인 성공 후 쿠키 전송',
   })
-  @Redirect('https://gjgjajaj.xyz', 301)
+  @Redirect('https://localhost:3065/api/users/profile/1', 301)
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
   @Get('google/redirect')
-  googleAuthRedirect(@Req() req) {
-    return req.user;
-  }
+  googleAuthRedirect() {}
 
-  @ApiOperation({ summary: 'Naver 로그인' })
+  @ApiOperation({ summary: 'Naver 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/login')
   naverAuth() {}
@@ -61,14 +62,12 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Naver 로그인 callback url' })
-  @Redirect('https://gjgjajaj.xyz', 301)
+  @Redirect('https://localhost:3065/api/users/profile', 301)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
-  naverAuthRedirect(@Req() req) {
-    return req.user;
-  }
+  naverAuthRedirect() {}
 
-  @ApiOperation({ summary: 'Kakao 로그인' })
+  @ApiOperation({ summary: 'Kakao 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/login')
   kakaoAuth() {}
@@ -78,16 +77,20 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Kakao 로그인 callback url' })
-  @Redirect('https://gjgjajaj.xyz', 301)
+  @Redirect('https://localhost:3065/api/users/profile', 301)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
-  kakaoAuthRedirect(@Req() req) {
-    return req.user;
-  }
+  kakaoAuthRedirect() {}
 
   @ApiResponse({
     status: 200,
     description: '로그아웃 성공',
+    schema: {
+      example: new ResponseDto(true, 200, {
+        userId: 1,
+        logout: true,
+      }),
+    },
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '로그아웃' })
@@ -95,8 +98,7 @@ export class AuthController {
   @UseGuards(LoggedInGuard)
   @HttpCode(200)
   @Post('logout')
-  async logout(@Session() session: ExpressSession) {
-    session.destroy((err) => {});
-    return { success: true };
+  async logout(@UserDecorator() user: UserProfile): Promise<object> {
+    return await this.authService.logout(user);
   }
 }

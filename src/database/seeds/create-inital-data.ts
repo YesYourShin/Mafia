@@ -3,7 +3,7 @@ import { Factory, Seeder } from 'typeorm-seeding';
 import { GameRole } from '../../entities/GameRole';
 import { PostCategory } from '../../entities/PostCategory';
 import { ReportCategory } from '../../entities/ReportCategory';
-import { EGameRole } from '../../constants';
+import { EGameRole } from '../../common/constants';
 
 export class CreateInitialData implements Seeder {
   public async run(factory: Factory, connection: Connection): Promise<any> {

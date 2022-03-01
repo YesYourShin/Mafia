@@ -1,7 +1,7 @@
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { OauthProfile } from 'src/constants/oauth-provider';
+import { OauthProfile } from 'src/common/constants/oauth-provider';
 import { AuthService } from './auth.service';
 
 @Injectable()

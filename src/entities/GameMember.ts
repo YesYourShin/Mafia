@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional } from 'class-validator';
-import { Score } from '../constants';
+import { Score } from '../common/constants';
 import {
   Column,
   CreateDateColumn,
@@ -48,7 +48,7 @@ export class GameMember {
   @Column({ type: 'bigint', name: 'user_id', nullable: true, unsigned: true })
   userId: number | null;
 
-  @ManyToOne(() => User, (user) => user.games, {
+  @ManyToOne(() => User, (user) => user.gameMembers, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })

@@ -1,20 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
-import { GameMode } from '../constants';
+import { GameMode } from '../common/constants';
 import {
   Check,
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { GameMember } from './GameMember';
-import { User } from './User';
 
 @Check(`"limit" > 5 AND "limit" < 11`)
 @Entity('game')
@@ -53,7 +50,7 @@ export class Game {
   })
   @IsString()
   @Column({ type: 'varchar', name: 'password', length: 20, nullable: true })
-  password: string;
+  password?: string;
 
   @ApiProperty({
     example: 8,
@@ -62,21 +59,6 @@ export class Game {
   @IsInt()
   @Column({ type: 'tinyint', name: 'limit' })
   limit: number;
-
-  @ApiProperty({
-    example: 1,
-    description: '방장 ID',
-  })
-  @IsInt()
-  @Column({ type: 'bigint', name: 'owner_id', nullable: true, unsigned: true })
-  ownerId: number | null;
-
-  @ManyToOne(() => User, (user) => user.games, {
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'owner_id', referencedColumnName: 'id' })
-  owner: User;
 
   @IsDate()
   @CreateDateColumn()

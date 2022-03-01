@@ -19,7 +19,7 @@ export class PostRepository extends AbstractRepository<Post> {
     const qb = await this.repository
       .createQueryBuilder('post')
       .select('post.*')
-      .addSelect('SUM(post.comments)', 'sum')
+      // .addSelect('SUM(comment)', 'sum')
       .where('post.postCategoryId = :postCategoryId', {
         postCategoryId: categoryId,
       })

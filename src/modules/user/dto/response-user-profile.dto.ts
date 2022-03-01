@@ -1,20 +1,17 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { Profile } from 'src/entities/Profile';
-import { User } from 'src/entities/User';
-import { ProfileInfo } from './profile-info';
+import { ResponseDto } from 'src/common/dto';
+import { UserProfile } from './user-profile.dto';
 
-export class ResponseUserProfileDto extends PickType(User, ['id', 'role']) {
-  @ApiProperty({ type: () => ProfileInfo })
-  profile: ProfileInfo;
+export class ResponseUserProfileDto<ResponseUserProfile> extends PickType(
+  ResponseDto,
+  ['success', 'status', 'data'],
+) {
+  @ApiProperty({ type: () => ResponseUserProfile })
+  data: ResponseUserProfile;
 }
 
-export class ResponseProfileDto extends PickType(Profile, [
+class ResponseUserProfile extends PickType(UserProfile, [
   'id',
-  'nickname',
-  'image',
-  'selfIntroduction',
-  'manner',
-  'level',
-  'exp',
-  'userId',
+  'role',
+  'profile',
 ]) {}

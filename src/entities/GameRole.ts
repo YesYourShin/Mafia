@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { GameMember } from './GameMember';
-import { EGameRole } from '../constants';
+import { EGameRole } from '../common/constants';
 
 @Entity('game_role')
 export class GameRole {

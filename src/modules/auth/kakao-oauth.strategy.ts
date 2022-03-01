@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { OauthProfile } from 'src/constants/oauth-provider';
+import { OauthProfile } from 'src/common/constants/oauth-provider';
 import { Strategy } from 'passport-kakao';
 import { AuthService } from './auth.service';
 

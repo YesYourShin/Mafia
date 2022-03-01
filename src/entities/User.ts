@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
-import { UserProvider, UserRole } from '../constants';
+import { UserProvider, UserRole } from '../common/constants';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
   Index,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -22,6 +23,7 @@ import { Post } from './Post';
 import { Profile } from './Profile';
 import { Like } from './Like';
 import { Report } from './Report';
+import { GameMember } from './GameMember';
 
 @Index('user_idx_social_id_provider', ['socialId', 'provider'], {
   unique: true,
@@ -92,8 +94,8 @@ export class User {
   @OneToMany(() => Friend, (friends) => friends.friend)
   friend2: Comment[];
 
-  @OneToMany(() => Game, (gameroom) => gameroom.owner)
-  games: Game[];
+  @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
+  gameMembers: GameMember[];
 
   @OneToMany(() => DM, (dms) => dms.sender)
   senderDm: DM[];
