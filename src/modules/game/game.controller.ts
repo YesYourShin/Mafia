@@ -20,16 +20,18 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { LoggedInGuard } from '../auth/guards/logged-in.guard';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { UserProfile } from '../user/dto';
 import {
-  GameInfo,
   GameInfoWithGameMembers,
+  GameInfoWithMemberCount,
+  ResponseCurrentGamesInfo,
   ResponseGameInfoWithGameMembersDto,
-  ResponseGamesInfoDto,
+  ResponseGameInfoWithMemberCountDto,
 } from './dto';
 import { ResponseDto } from 'src/common/dto';
 import {
@@ -37,6 +39,7 @@ import {
   GameMemberGuard,
   ValidateLimitGuard,
 } from './guards';
+import { concatMap, from, interval, map, Observable } from 'rxjs';
 
 @ApiCookieAuth('connect.sid')
 @UseGuards(LoggedInGuard)
@@ -47,19 +50,24 @@ export class GameController {
 
   @ApiOkResponse({
     description: '전체 게임 방 불러오기 성공',
-    type: ResponseGamesInfoDto,
+    type: ResponseGameInfoWithMemberCountDto,
   })
   @ApiOperation({ summary: '전체 게임 방 불러오기' })
   @Get()
-  async findAll(): Promise<GameInfo[]> {
+  async findAll(): Promise<GameInfoWithMemberCount[]> {
     return await this.gameService.findAll();
   }
 
-  // @Sse('sse')
-  // sse(): Observable<MessageEvent> {
-  // data: this.gameService.findAll(),
-  // return interval(5000).pipe(take(this.gameService.findAll()));
-  // }
+  @ApiResponse({
+    description: '5초마다 게임 방 정보 최신화해서 보내 줌',
+    type: ResponseCurrentGamesInfo,
+  })
+  @Sse('sse')
+  sse(): Observable<MessageEvent> {
+    return interval(5000)
+      .pipe(concatMap(() => from(this.gameService.findAll())))
+      .pipe(map((response) => ({ data: response })));
+  }
 
   @ApiOkResponse({
     description: '게임 방 정보와 멤버 정보 불러오기 성공',
