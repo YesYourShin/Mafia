@@ -64,7 +64,7 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Naver 로그인 callback url' })
-  @Redirect(process.env.FRONT_URL, 301)
+  @Redirect('http://localhost:7000', 301)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
   naverAuthRedirect(@UserDecorator() user: UserProfile) {}
@@ -79,7 +79,7 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Kakao 로그인 callback url' })
-  @Redirect(process.env.FRONT_URL, 301)
+  @Redirect('http://localhost:7000', 301)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
   kakaoAuthRedirect(@UserDecorator() user: UserProfile) {}

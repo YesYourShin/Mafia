@@ -26,10 +26,10 @@ declare const module: any;
 
 async function bootstrap() {
   // ssh 설정
-  const httpsOptions = {
-    key: fs.readFileSync(process.env.HTTPS_KEY, 'utf-8'),
-    cert: fs.readFileSync(process.env.HTTPS_CERT, 'utf-8'),
-  };
+  // const httpsOptions = {
+  //   key: fs.readFileSync(process.env.HTTPS_KEY, 'utf-8'),
+  //   cert: fs.readFileSync(process.env.HTTPS_CERT, 'utf-8'),
+  // };
   //winston logger
   const logger = WinstonModule.createLogger({
     transports: [
@@ -47,7 +47,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger,
-    httpsOptions,
+    // httpsOptions,
   });
 
   const PORT = process.env.PORT || 3065;
@@ -117,8 +117,8 @@ async function bootstrap() {
         sameSite: true,
         httpOnly: true,
         maxAge: +process.env.COOKIE_MAX_AGE,
-        // secure: false, // https일 경우 true로 변경해야 할 것
-        secure: true, // https일 경우 true로 변경해야 할 것
+        secure: false, // https일 경우 true로 변경해야 할 것
+        // secure: true, // https일 경우 true로 변경해야 할 것
         // domain: process.env.NODE_ENV === 'production' && 'gjgjajaj.xyz',
       },
     }),
