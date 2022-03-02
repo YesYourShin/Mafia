@@ -3,10 +3,12 @@ import {
   Post,
   Body,
   UseGuards,
-  Patch,
   Param,
   Delete,
   Get,
+  Sse,
+  MessageEvent,
+  HttpStatus,
 } from '@nestjs/common';
 import { GameService } from './game.service';
 import { CreateGameDto } from './dto/create-game.dto';
@@ -52,6 +54,13 @@ export class GameController {
   async findAll(): Promise<GameInfo[]> {
     return await this.gameService.findAll();
   }
+
+  // @Sse('sse')
+  // sse(): Observable<MessageEvent> {
+  // data: this.gameService.findAll(),
+  // return interval(5000).pipe(take(this.gameService.findAll()));
+  // }
+
   @ApiOkResponse({
     description: '게임 방 정보와 멤버 정보 불러오기 성공',
     type: ResponseGameInfoWithGameMembersDto,
@@ -76,7 +85,11 @@ export class GameController {
   @ApiBadRequestResponse({
     description: '최대 인원 수 설정 실패',
     schema: {
-      example: new ResponseDto(false, 400, '잘못된 게임 최대 인원 수 설정'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.BAD_REQUEST,
+        '잘못된 게임 최대 인원 수 설정',
+      ),
     },
   })
   @ApiBody({
@@ -111,7 +124,7 @@ export class GameController {
   })
   @ApiOperation({ summary: '게임 방 참가' })
   @UseGuards(ExistGameRoomGuard)
-  @Patch('join/:gameNumber')
+  @Post(':gameNumber')
   async join(
     @Param('gameNumber') gameNumber: string,
     @UserDecorator() user: UserProfile,
@@ -129,7 +142,10 @@ export class GameController {
   @ApiOkResponse({
     description: '게임 방 나가기 성공',
     schema: {
-      example: new ResponseDto(true, 200, { gameNumber: 1, exit: true }),
+      example: new ResponseDto(true, HttpStatus.OK, {
+        gameNumber: 1,
+        exit: true,
+      }),
     },
   })
   @ApiParam({
@@ -159,7 +175,10 @@ export class GameController {
   @ApiOkResponse({
     description: '게임 방 삭제 성공',
     schema: {
-      example: new ResponseDto(true, 200, { gameNumber: 1, delete: true }),
+      example: new ResponseDto(true, HttpStatus.OK, {
+        gameNumber: 1,
+        delete: true,
+      }),
     },
   })
   @ApiParam({

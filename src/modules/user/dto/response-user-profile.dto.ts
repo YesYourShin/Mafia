@@ -12,6 +12,10 @@ export class ResponseUserProfileDto<ResponseUserProfile> extends PickType(
 
 class ResponseUserProfile extends PickType(UserProfile, [
   'id',
+  'socialId',
+  'provider',
   'role',
+  'createdAt',
+  'updatedAt',
   'profile',
 ]) {}

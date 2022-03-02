@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
   ApiOperation,
@@ -34,6 +35,7 @@ import {
 export class AuthController {
   constructor(
     @Inject(Logger) private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
     private readonly authService: AuthService,
   ) {}
 
@@ -47,10 +49,10 @@ export class AuthController {
     status: 301,
     description: '로그인 성공 후 쿠키 전송',
   })
-  @Redirect('https://localhost:3065/api/users/profile/1', 301)
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
+  @Redirect('http://localhost:7000', 301)
   @Get('google/redirect')
-  googleAuthRedirect() {}
+  googleAuthRedirect(@UserDecorator() user: UserProfile) {}
 
   @ApiOperation({ summary: 'Naver 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
@@ -62,10 +64,10 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Naver 로그인 callback url' })
-  @Redirect('https://localhost:3065/api/users/profile', 301)
+  @Redirect(process.env.FRONT_URL, 301)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
-  naverAuthRedirect() {}
+  naverAuthRedirect(@UserDecorator() user: UserProfile) {}
 
   @ApiOperation({ summary: 'Kakao 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
@@ -77,10 +79,10 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Kakao 로그인 callback url' })
-  @Redirect('https://localhost:3065/api/users/profile', 301)
+  @Redirect(process.env.FRONT_URL, 301)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
-  kakaoAuthRedirect() {}
+  kakaoAuthRedirect(@UserDecorator() user: UserProfile) {}
 
   @ApiResponse({
     status: 200,

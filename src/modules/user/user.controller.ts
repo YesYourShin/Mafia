@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -39,6 +40,7 @@ import {
   UpdateProfileDto,
   ResponseProfileDto,
   CreateProfileDto,
+  UserProfile,
 } from './dto';
 import { UserService } from './user.service';
 
@@ -58,7 +60,7 @@ export class UserController {
   @ApiOkResponse({
     description: '중복된 닉네임이 아닌 경우',
     schema: {
-      example: new ResponseDto(true, 200, {
+      example: new ResponseDto(true, HttpStatus.OK, {
         message: '사용 가능한 닉네임입니다',
       }),
     },
@@ -66,7 +68,11 @@ export class UserController {
   @ApiConflictResponse({
     description: '중복된 이름일 경우',
     schema: {
-      example: new ResponseDto(false, 409, '중복된 닉네임입니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.CONFLICT,
+        '중복된 닉네임입니다',
+      ),
     },
   })
   @ApiCookieAuth('connect.sid')
@@ -78,13 +84,27 @@ export class UserController {
   }
 
   @ApiOkResponse({
+    description: '내 정보 가져오기 성공',
+    type: ResponseUserProfileDto,
+  })
+  @ApiCookieAuth('connect.sid')
+  @ApiOperation({ summary: '내 정보 가져오기' })
+  @Get()
+  async getMyInfo(@UserDecorator() user: UserProfile) {
+    return user || false;
+  }
+  @ApiOkResponse({
     description: '유저 프로필 불러오기 성공',
     type: ResponseProfileDto,
   })
   @ApiNotFoundResponse({
     description: '프로필이 존재하지 않을 때',
     schema: {
-      example: new ResponseDto(false, 404, '프로필이 존재하지 않습니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.NOT_FOUND,
+        '프로필이 존재하지 않습니다',
+      ),
     },
   })
   @ApiParam({
@@ -101,13 +121,19 @@ export class UserController {
   @ApiCreatedResponse({
     description: '프로필 이미지 저장 성공',
     schema: {
-      example: new ResponseDto(true, 201, { url: 'https://aaa.com/cat.jpg' }),
+      example: new ResponseDto(true, HttpStatus.CREATED, {
+        url: 'https://aaa.com/cat.jpg',
+      }),
     },
   })
   @ApiBadRequestResponse({
     description: '잘못된 형식으로 이미지를 보냈을 때',
     schema: {
-      example: new ResponseDto(false, 400, '이미지만 업로드 가능합니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.BAD_REQUEST,
+        '이미지만 업로드 가능합니다',
+      ),
     },
   })
   @ApiCookieAuth('connect.sid')
@@ -122,23 +148,27 @@ export class UserController {
   }
 
   @ApiOkResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: '프로필 생성 성공',
     type: ResponseUserProfileDto,
   })
   @ApiForbiddenResponse({
     description: '프로필이 이미 존재할 때',
     schema: {
-      example: new ResponseDto(false, 403, '등록된 프로필이 존재합니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '등록된 프로필이 존재합니다',
+      ),
     },
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 생성' })
   @UseGuards(LoggedInGuard)
-  @HttpCode(201)
+  @HttpCode(HttpStatus.CREATED)
   @Post('profile')
   async createProfile(
-    @UserDecorator() user: User,
+    @UserDecorator() user: UserProfile,
     @Body() profile: CreateProfileDto,
   ) {
     await this.userService.createProfile(user.id, profile);
@@ -148,7 +178,7 @@ export class UserController {
   @ApiOkResponse({
     description: '친구 신청 성공',
     schema: {
-      example: new ResponseDto(true, 200, {
+      example: new ResponseDto(true, HttpStatus.OK, {
         message: '친구 신청 완료',
       }),
     },
@@ -156,13 +186,21 @@ export class UserController {
   @ApiForbiddenResponse({
     description: '유저를 친구 추가 불가능 할 경우',
     schema: {
-      example: new ResponseDto(false, 403, '친구 추가를 할 수 없습니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '친구 추가를 할 수 없습니다',
+      ),
     },
   })
   @ApiNotFoundResponse({
     description: '유저가 존재하지 않는 경우',
     schema: {
-      example: new ResponseDto(false, 404, '등록되지 않은 유저입니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.NOT_FOUND,
+        '등록되지 않은 유저입니다',
+      ),
     },
   })
   @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
@@ -175,19 +213,29 @@ export class UserController {
   @ApiOkResponse({
     description: '친구 삭제 성공',
     schema: {
-      example: new ResponseDto(true, 200, { message: '친구 삭제 완료' }),
+      example: new ResponseDto(true, HttpStatus.OK, {
+        message: '친구 삭제 완료',
+      }),
     },
   })
   @ApiForbiddenResponse({
     description: '친구 삭제할 권한이 없을 때(친구가 아닌 상태 등)',
     schema: {
-      example: new ResponseDto(false, 403, '친구 삭제할 권한이 없습니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '친구 삭제할 권한이 없습니다',
+      ),
     },
   })
   @ApiNotFoundResponse({
     description: '유저가 존재하지 않는 경우',
     schema: {
-      example: new ResponseDto(false, 404, '등록되지 않은 유저입니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.NOT_FOUND,
+        '등록되지 않은 유저입니다',
+      ),
     },
   })
   @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
@@ -198,30 +246,34 @@ export class UserController {
   async removeFriend() {}
 
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: '프로필 수정 성공',
     type: ResponseUserProfileDto,
   })
   @ApiNotFoundResponse({
     description: '프로필이 없는 경우',
     schema: {
-      example: new ResponseDto(false, 404, '등록된 프로필이 없습니다'),
+      example: new ResponseDto(
+        false,
+        HttpStatus.NOT_FOUND,
+        '등록된 프로필이 없습니다',
+      ),
     },
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 수정' })
   @UseGuards(LoggedInGuard)
-  @HttpCode(201)
+  @HttpCode(HttpStatus.CREATED)
   @Patch('profile')
   async updateProfile(
-    @UserDecorator() user: User,
+    @UserDecorator() user: UserProfile,
     @Body() profile: UpdateProfileDto,
   ) {
     await this.userService.updateProfile(user.id, profile);
     return await this.userService.findOne(user.id);
   }
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: '회원 탈퇴 성공',
   })
   @ApiOperation({ summary: '회원 탈퇴' })

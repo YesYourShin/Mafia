@@ -14,6 +14,7 @@ import {
   LoggerService,
   Inject,
   Logger,
+  HttpStatus,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import {
@@ -110,7 +111,7 @@ export class PostController {
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 수정' })
   @UseGuards(LoggedInGuard)
-  @HttpCode(201)
+  @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   async update(
     @Param('id') id: string,

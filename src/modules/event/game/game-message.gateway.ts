@@ -8,15 +8,20 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway({ namespace: /\/game-.+/ })
+@WebSocketGateway(3060, { namespace: /\/game-.+/ })
 export class GameMessageGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  constructor(@Inject(Logger) private readonly logger: Logger) {}
+  constructor(
+    @Inject(Logger) private readonly logger: Logger,
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
   //나중에 DI 주입해서 활용할 프로퍼티
   @WebSocketServer() public server: Server;
+
   @SubscribeMessage('message')
   handleMessage(client: any, payload: any): string {
     return 'Hello world!';

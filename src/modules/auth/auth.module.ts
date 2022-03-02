@@ -1,4 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserRepository } from '../user/user.repository';
@@ -22,6 +23,7 @@ import { SessionSerializer } from './session.serializer';
     NaverOauthStrategy,
     KakaoOauthStrategy,
     Logger,
+    ConfigService,
   ],
 })
 export class AuthModule {}

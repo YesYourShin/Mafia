@@ -10,7 +10,7 @@ import { PostModule } from './modules/post/post.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { GameModule } from './modules/game/game.module';
 import { NotificationModule } from './modules/notification/notification.module';
-import { EventModule } from './event/event.module';
+import { EventModule } from './modules/event/event.module';
 import * as ormconfig from '../ormconfig';
 
 // export let envFilePath = '.env.development';
