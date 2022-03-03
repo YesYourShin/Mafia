@@ -132,7 +132,8 @@ export class GameService {
     return { userId: profile.userId, exit: true };
   }
   async removeGameRoom(gameNumber: number): Promise<object> {
-    await this.redis.unlink(
+    //del -> unlink로 바꿔야함 window redis version때문에 어쩔 수 없음
+    await this.redis.del(
       this.getKeyOfSavedGameInfo(gameNumber),
       this.getKeyOfSavedUserInfoInGame(gameNumber),
     );
