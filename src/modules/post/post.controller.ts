@@ -38,6 +38,7 @@ import {
 import { UserProfile } from '../user/dto';
 import { LoggedInGuard } from '../auth/guards';
 import { UserDecorator } from 'src/decorators';
+import { ExistedProfileGuard } from 'src/common/guards';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -73,7 +74,7 @@ export class PostController {
 
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '이미지들 저장' })
-  @UseGuards(LoggedInGuard)
+  @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('image'))
   async uploadFile(@UploadedFile() file: Express.MulterS3.File) {
@@ -110,7 +111,7 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 수정' })
-  @UseGuards(LoggedInGuard)
+  @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   async update(
@@ -128,17 +129,18 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 추천' })
-  @UseGuards(LoggedInGuard)
+  @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Patch('like/:id')
   async recommendPost(
     @Param('id') id: string,
     @UserDecorator() user: UserProfile,
   ) {
-    return this.postService.like(+id, user.id);
+    return await this.postService.like(+id, user.id);
   }
 
   //게시물 존재 및 게시물 권한 확인
   @ApiOperation({ summary: '게시물 이미지 삭제' })
+  @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Delete('image')
   async removeImage(@Query('key') key: string) {
     this.logger.log('key', key);
@@ -158,7 +160,7 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 추천 취소' })
-  @UseGuards(LoggedInGuard)
+  @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Delete('like/:id')
   async unrecommendPost(
     @Param('id') id: string,
@@ -174,7 +176,7 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 삭제' })
-  @UseGuards(LoggedInGuard)
+  @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Delete(':id')
   async remove(@Param('id') id: string, @UserDecorator() user: UserProfile) {
     return await this.postService.remove(+id, user.id);

@@ -13,6 +13,7 @@ import {
   utilities as nestWinstonModuleUtilities,
   WinstonModule,
 } from 'nest-winston';
+import helmet from 'helmet';
 import fs from 'fs';
 import { RedisSessionOption } from './modules/redis';
 import Redis from 'ioredis';
@@ -64,18 +65,6 @@ async function bootstrap() {
     new ExcludeUndefinedInterceptor(),
   );
 
-  //cors
-  if (process.env.NODE_ENV === 'production') {
-    app.enableCors({
-      origin: 'https://gjgjajaj.xyz',
-      credentials: true,
-    });
-  } else {
-    app.enableCors({
-      origin: true,
-      credentials: true,
-    });
-  }
   //swagger
   const config = new DocumentBuilder()
     .setTitle('Mafia API')
@@ -84,7 +73,20 @@ async function bootstrap() {
     .addCookieAuth('connect.sid')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/document', app, document);
+
+  if (process.env.NODE_ENV === 'production') {
+    app.enableCors({
+      origin: 'https://gjgjajaj.xyz',
+      credentials: true,
+    });
+    app.use(helmet());
+  } else {
+    app.enableCors({
+      origin: true,
+      credentials: true,
+    });
+    SwaggerModule.setup('api/document', app, document);
+  }
 
   //redis session store
   const redisClient = new Redis(RedisSessionOption);

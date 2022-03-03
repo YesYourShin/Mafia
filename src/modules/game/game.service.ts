@@ -1,7 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CreateGameDto } from './dto/create-game.dto';
-import dayjs from 'dayjs';
-import 'dayjs/locale/ko';
 import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import {
   GameInfo,
@@ -9,10 +7,8 @@ import {
   GameInfoWithMemberCount,
   UserProfileInGame,
 } from './dto';
-import { validate } from 'class-validator';
 import IORedis from 'ioredis';
-
-dayjs.locale('ko');
+import { GamePrefix } from './constants/prefix';
 
 export type Ok = 'OK';
 
@@ -20,20 +16,13 @@ export type Ok = 'OK';
 export class GameService {
   constructor(
     @Inject(Logger) private readonly logger: Logger,
-    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis('game') private readonly redis: Redis,
   ) {}
 
   async create(
     createGameDto: CreateGameDto,
     profile: UserProfileInGame,
   ): Promise<GameInfoWithGameMembers> {
-    validate(createGameDto).then((errors) => {
-      if (errors.length > 0) {
-        this.logger.error(errors);
-      } else {
-        this.logger.log('validation succeed');
-      }
-    });
     const gameNumber: number = await this.getGameIdOnToday();
     createGameDto.gameNumber = gameNumber;
     await this.saveGameInfo(gameNumber, createGameDto);
@@ -52,7 +41,7 @@ export class GameService {
     gameNumber: number,
   ): Promise<GameInfoWithGameMembers> {
     const gameInfo: GameInfoWithGameMembers = await this.findGameInfo(
-      this.getKeyOfsavedGameInfo(gameNumber),
+      this.getKeyOfSavedGameInfo(gameNumber),
     );
     gameInfo.members = await this.findUsersInGameRoom(gameNumber);
     return gameInfo;
@@ -63,7 +52,7 @@ export class GameService {
     createGameDto: CreateGameDto,
   ): Promise<Ok | null> {
     return await this.redis.set(
-      this.getKeyOfsavedGameInfo(gameNumber),
+      this.getKeyOfSavedGameInfo(gameNumber),
       JSON.stringify(createGameDto),
     );
   }
@@ -114,12 +103,9 @@ export class GameService {
   }
 
   async findAllGameKeys(): Promise<IORedis.KeyType[]> {
-    return await this.redis.keys('game:info#*');
+    return await this.redis.keys(`${GamePrefix.gameInfo}*`);
   }
-  isMember(
-    members: UserProfileInGame[],
-    userId: UserProfileInGame['userId'],
-  ): boolean {
+  isMember(members: UserProfileInGame[], userId: number): boolean {
     for (const member of members) {
       if (member.userId === userId) return true;
     }
@@ -128,7 +114,6 @@ export class GameService {
   async isLastMember(gameNumber: number): Promise<boolean> {
     const memberCount: number = await this.countUsersInGame(gameNumber);
     if (memberCount === 1) return true;
-
     return false;
   }
 
@@ -148,23 +133,20 @@ export class GameService {
   }
   async removeGameRoom(gameNumber: number): Promise<object> {
     await this.redis.unlink(
-      this.getKeyOfsavedGameInfo(gameNumber),
+      this.getKeyOfSavedGameInfo(gameNumber),
       this.getKeyOfSavedUserInfoInGame(gameNumber),
     );
     return { gameNumber, delete: true };
   }
-
   async getGameIdOnToday(): Promise<number> {
-    return await this.redis.incr(
-      `game:${dayjs(Date.now()).format('YYYYMMDD')}`,
-    );
+    return await this.redis.incr(GamePrefix.gameNumber);
   }
 
-  getKeyOfsavedGameInfo(gameNumber: number): IORedis.KeyType {
-    return `game:info#${gameNumber}`;
+  getKeyOfSavedGameInfo(gameNumber: number): IORedis.KeyType {
+    return `${GamePrefix.gameInfo}${gameNumber}`;
   }
 
   getKeyOfSavedUserInfoInGame(gameNumber: number): IORedis.KeyType {
-    return `game:users#${gameNumber}`;
+    return `${GamePrefix.gameMembers}${gameNumber}`;
   }
 }

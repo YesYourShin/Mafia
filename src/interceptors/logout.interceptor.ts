@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 @Injectable()
-export class ClearCookieInterceptor implements NestInterceptor {
+export class LogoutInterceptor implements NestInterceptor {
   constructor(@Inject(Logger) private readonly logger: Logger) {}
 
   intercept(
@@ -21,9 +21,14 @@ export class ClearCookieInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
 
-    return next
-      .handle()
-      .pipe(tap(() => request.session.destroy((err) => {})))
-      .pipe(tap(() => response.clearCookie('connect.sid', { httpOnly: true })));
+    return (
+      next
+        .handle()
+        .pipe(tap(() => request.logout()))
+        // .pipe(tap(() => (request.session.cookie.maxAge = 0)));
+        .pipe(
+          tap(() => response.clearCookie('connect.sid', { httpOnly: true })),
+        )
+    );
   }
 }

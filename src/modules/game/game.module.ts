@@ -5,14 +5,17 @@ import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from '@svtslv/nestjs-ioredis';
 @Module({
   imports: [
-    RedisModule.forRootAsync({
-      useFactory: () => ({
-        config: {
-          url: 'redis://localhost:6379',
-          db: +process.env.REDIS_GAME_DB,
-        },
-      }),
-    }),
+    RedisModule.forRootAsync(
+      {
+        useFactory: () => ({
+          config: {
+            url: 'redis://localhost:6379',
+            db: +process.env.REDIS_GAME_DB,
+          },
+        }),
+      },
+      'game',
+    ),
     ConfigModule,
   ],
   controllers: [GameController],

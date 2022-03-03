@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpStatus,
   Inject,
   Logger,
   LoggerService,
@@ -19,7 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
 import { UserDecorator } from 'src/decorators/user.decorator';
-import { ClearCookieInterceptor } from 'src/interceptors/clear-cookie.interceptor';
+import { LogoutInterceptor } from 'src/interceptors';
 import { UserProfile } from '../user/dto';
 import { AuthService } from './auth.service';
 import {
@@ -64,7 +65,7 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Naver 로그인 callback url' })
-  @Redirect('http://localhost:7000', 301)
+  @Redirect(process.env.FRONT_URL, 301)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
   naverAuthRedirect(@UserDecorator() user: UserProfile) {}
@@ -79,7 +80,7 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Kakao 로그인 callback url' })
-  @Redirect('http://localhost:7000', 301)
+  @Redirect(process.env.FRONT_URL, 301)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
   kakaoAuthRedirect(@UserDecorator() user: UserProfile) {}
@@ -96,7 +97,7 @@ export class AuthController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '로그아웃' })
-  @UseInterceptors(ClearCookieInterceptor)
+  @UseInterceptors(LogoutInterceptor)
   @UseGuards(LoggedInGuard)
   @HttpCode(200)
   @Post('logout')

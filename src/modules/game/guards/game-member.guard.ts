@@ -21,7 +21,7 @@ export class GameMemberGuard implements CanActivate {
 
     const members: UserProfileInGame[] =
       await this.gameService.findUsersInGameRoom(+gameNumber);
-    const isMember: boolean = this.gameService.isMember(members, userId);
+    const isMember = this.gameService.isMember(members, userId);
     if (!isMember) {
       throw new ForbiddenException('게임 방 멤버가 아닙니다');
     }

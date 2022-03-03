@@ -1,6 +1,7 @@
 import { Inject, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
@@ -10,42 +11,63 @@ import {
 } from '@nestjs/websockets';
 import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import { Server, Socket } from 'socket.io';
+import { UserProfile } from 'src/modules/user/dto';
 
-@WebSocketGateway(3060, { namespace: /\/game-.+/ })
+@WebSocketGateway({
+  // path: '/socket.io' <- defaut path,
+  transports: ['websocket'],
+  cors: { origin: '*' },
+  cookie: true,
+  namespace: /\/game-.+/,
+})
 export class GameMessageGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   constructor(
     @Inject(Logger) private readonly logger: Logger,
-    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis('game') private readonly redis: Redis,
   ) {}
-  //나중에 DI 주입해서 활용할 프로퍼티
   @WebSocketServer() public server: Server;
 
   @SubscribeMessage('message')
   handleMessage(client: any, payload: any): string {
     return 'Hello world!';
   }
-
-  afterInit(server: any) {
-    this.logger.log('after init');
+  @SubscribeMessage('join')
+  async handleJoinGame(
+    @MessageBody() data: { user: UserProfile; gameNumber: number },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const newNamespace = socket.nsp;
+    await this.redis.sadd(`:${socket.nsp.name}`, JSON.stringify(data.user));
+    newNamespace.emit(
+      'onlineList',
+      await this.redis.smembers(`:${socket.nsp.name}`),
+    );
+    this.logger.log(`join game ${data.gameNumber} - ${socket.id}`);
+    socket.join(`${socket.nsp.name}-${data.gameNumber}`);
   }
+
+  @SubscribeMessage('enter')
+  async handleEnterLobby(@MessageBody() data: { user }) {}
 
   //연결 됐을때
   handleConnection(@ConnectedSocket() socket: Socket) {
-    this.logger.log('connected', socket.nsp.name);
-    // namespace 존재하지 않다면 생성
+    this.logger.log(`socket connected ${socket.nsp.name} ${socket.id}`);
     socket.emit('hello', socket.nsp.name);
   }
 
   //연결 끊었을 때
   handleDisconnect(@ConnectedSocket() socket: Socket) {
-    this.logger.log('handle disconnect');
+    this.logger.log(`socket disconnected: ${socket.id}`);
     const newNamespace = socket.nsp;
-    // 레디스에서 namespace안에 있는 socket 삭제
     newNamespace.emit(
       'onlineList',
       '현재 지금 레디스 안에 소켓 네임스페이스 객체',
     );
+  }
+
+  afterInit(server: any) {
+    this.logger.log('after init');
   }
 }

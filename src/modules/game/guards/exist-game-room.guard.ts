@@ -20,7 +20,7 @@ export class ExistGameRoomGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest();
     const { gameNumber } = request.params;
     const game: GameInfo = await this.gameService.findGameInfo(
-      this.gameService.getKeyOfsavedGameInfo(+gameNumber),
+      this.gameService.getKeyOfSavedGameInfo(+gameNumber),
     );
     if (!game) throw new NotFoundException('존재하지 않는 게임 방입니다');
     return true;
