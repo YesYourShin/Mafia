@@ -1,3 +1,5 @@
+import { Module } from '@nestjs/common';
+
 export * from './Comment';
 export * from './DM';
 export * from './Friend';

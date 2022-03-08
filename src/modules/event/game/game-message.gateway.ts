@@ -11,13 +11,16 @@ import {
 } from '@nestjs/websockets';
 import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import { Server, Socket } from 'socket.io';
+import { GamePrefix } from 'src/modules/game/constants';
+import { UserProfileInGame } from 'src/modules/game/dto';
+import { GameService } from 'src/modules/game/game.service';
 import { UserProfile } from 'src/modules/user/dto';
+import { Event } from './constants';
 
 @WebSocketGateway({
   // path: '/socket.io' <- defaut path,
   transports: ['websocket'],
   cors: { origin: '*' },
-  cookie: true,
   namespace: /\/game-.+/,
 })
 export class GameMessageGateway
@@ -26,48 +29,125 @@ export class GameMessageGateway
   constructor(
     @Inject(Logger) private readonly logger: Logger,
     @InjectRedis('game') private readonly redis: Redis,
+    private readonly gameService: GameService,
   ) {}
   @WebSocketServer() public server: Server;
 
-  @SubscribeMessage('message')
-  handleMessage(client: any, payload: any): string {
-    return 'Hello world!';
-  }
-  @SubscribeMessage('join')
-  async handleJoinGame(
+  @SubscribeMessage(Event.JOIN)
+  async handleJoin(
     @MessageBody() data: { user: UserProfile; gameNumber: number },
     @ConnectedSocket() socket: Socket,
   ) {
     const newNamespace = socket.nsp;
-    await this.redis.sadd(`:${socket.nsp.name}`, JSON.stringify(data.user));
-    newNamespace.emit(
-      'onlineList',
-      await this.redis.smembers(`:${socket.nsp.name}`),
-    );
-    this.logger.log(`join game ${data.gameNumber} - ${socket.id}`);
+
     socket.join(`${socket.nsp.name}-${data.gameNumber}`);
+
+    const members = await this.gameService.findUsersInGameRoom(data.gameNumber);
+    newNamespace.emit(Event.ONLINELIST, members);
+  }
+  @SubscribeMessage(Event.READY)
+  async handleReady(
+    @MessageBody() data: { user: UserProfile; gameNumber: number },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const user = JSON.stringify(data.user);
+    const newNamespace = socket.nsp;
+    const isReady = await this.redis.sismember(
+      `game:ready#${socket.nsp.name}`,
+      user,
+    );
+    if (!isReady) {
+      await this.redis.sadd(`game:ready#${socket.nsp.name}`, user);
+      const members = await this.getGameRoomMemberList(
+        `game:ready#${socket.nsp.name}`,
+      );
+      newNamespace.emit(Event.READY, members);
+    }
   }
 
-  @SubscribeMessage('enter')
-  async handleEnterLobby(@MessageBody() data: { user }) {}
+  @SubscribeMessage(Event.UNREADY)
+  async handleUnready(
+    @MessageBody() data: { user: UserProfile; gameNumber: number },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const user = JSON.stringify(data.user);
+    const newNamespace = socket.nsp;
+    const isReady = await this.redis.sismember(
+      `game:ready#${socket.nsp.name}`,
+      user,
+    );
+    if (isReady) {
+      await this.redis.srem(`game:ready#${socket.nsp.name}`, user);
+      const members = await this.getGameRoomMemberList(
+        `game:ready#${socket.nsp.name}`,
+      );
+      newNamespace.emit(Event.READY, members);
+    }
+  }
+  @SubscribeMessage(Event.START)
+  async handleStart(
+    @MessageBody() data: { user: UserProfile; gameNumber: number },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const newNamespace = socket.nsp;
+    const leader: UserProfileInGame = JSON.parse(
+      await this.redis.lindex(`${GamePrefix.gameMembers}${data.gameNumber}`, 0),
+    );
+    if (data.user.id === leader.userId) {
+      const readyCount = await this.redis.scard(
+        `game:ready#${socket.nsp.name}`,
+      );
+      const memberCount = await this.redis.llen(
+        `${GamePrefix.gameMembers}${data.gameNumber}`,
+      );
+      if (memberCount === readyCount + 1) {
+        newNamespace.emit(Event.START, {
+          start: true,
+          gameNumber: data.gameNumber,
+        });
+      } else {
+        newNamespace.emit(Event.START, {
+          start: false,
+          gameNumber: data.gameNumber,
+        });
+      }
+    } else {
+      newNamespace.emit(Event.START, {
+        start: false,
+        gameNumber: data.gameNumber,
+      });
+    }
+  }
 
-  //연결 됐을때
-  handleConnection(@ConnectedSocket() socket: Socket) {
+  @SubscribeMessage(Event.MESSAGE)
+  async handleMessage(
+    @MessageBody() data: { message: object },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    socket.nsp.emit(Event.MESSAGE, data.message);
+  }
+
+  @SubscribeMessage(Event.SERVER_MESSAGE)
+  async handleServerMessage(
+    @MessageBody() data: { message: object },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    socket.nsp.emit(Event.SERVER_MESSAGE, data.message);
+  }
+
+  async handleConnection(@ConnectedSocket() socket: Socket) {
     this.logger.log(`socket connected ${socket.nsp.name} ${socket.id}`);
-    socket.emit('hello', socket.nsp.name);
   }
 
-  //연결 끊었을 때
   handleDisconnect(@ConnectedSocket() socket: Socket) {
     this.logger.log(`socket disconnected: ${socket.id}`);
-    const newNamespace = socket.nsp;
-    newNamespace.emit(
-      'onlineList',
-      '현재 지금 레디스 안에 소켓 네임스페이스 객체',
-    );
   }
 
   afterInit(server: any) {
     this.logger.log('after init');
+  }
+
+  async getGameRoomMemberList(key: string): Promise<UserProfile[]> {
+    return (await this.redis.smembers(key)).map((member) => JSON.parse(member));
   }
 }

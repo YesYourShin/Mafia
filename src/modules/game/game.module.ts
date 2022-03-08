@@ -20,5 +20,6 @@ import { RedisModule } from '@svtslv/nestjs-ioredis';
   ],
   controllers: [GameController],
   providers: [GameService, Logger],
+  exports: [GameService],
 })
 export class GameModule {}
