@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   HttpCode,
-  HttpStatus,
   Inject,
   Logger,
   LoggerService,

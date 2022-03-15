@@ -1,1 +1,1 @@
-export * from './RedisOption';
+export * from './redis-option';

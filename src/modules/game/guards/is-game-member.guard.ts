@@ -10,7 +10,7 @@ import { UserProfileInGame } from '../dto';
 import { GameService } from '../game.service';
 
 @Injectable()
-export class GameMemberGuard implements CanActivate {
+export class IsGameMemberGuard implements CanActivate {
   constructor(private readonly gameService: GameService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
@@ -23,8 +23,8 @@ export class GameMemberGuard implements CanActivate {
       +gameNumber,
     );
     const isMember = this.gameService.isMember(members, userId);
-    if (!isMember) {
-      throw new ForbiddenException('게임 방 멤버가 아닙니다');
+    if (isMember) {
+      throw new ForbiddenException('게임 참여할 권한이 없습니다');
     }
     return true;
   }

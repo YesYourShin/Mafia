@@ -1,9 +1,7 @@
 import { Connection } from 'typeorm';
 import { Factory, Seeder } from 'typeorm-seeding';
-import { GameRole } from '../../entities/GameRole';
-import { PostCategory } from '../../entities/PostCategory';
-import { ReportCategory } from '../../entities/ReportCategory';
-import { EGameRole } from '../../common/constants';
+import { ECategory, EGameRole } from '../../common/constants';
+import { Category, GameRole, ReportType } from '../../entities';
 
 export class CreateInitialData implements Seeder {
   public async run(factory: Factory, connection: Connection): Promise<any> {
@@ -21,7 +19,7 @@ export class CreateInitialData implements Seeder {
     await connection
       .createQueryBuilder()
       .insert()
-      .into(ReportCategory)
+      .into(ReportType)
       .values([
         {
           id: 1,
@@ -52,11 +50,11 @@ export class CreateInitialData implements Seeder {
     await connection
       .createQueryBuilder()
       .insert()
-      .into(PostCategory)
+      .into(Category)
       .values([
-        { id: 1, name: '공지 사항' },
-        { id: 2, name: '자유 게시판' },
-        { id: 3, name: '정보 게시판' },
+        { id: 1, name: ECategory.ANNOUNCEMENT },
+        { id: 2, name: ECategory.FREEBOARD },
+        { id: 3, name: ECategory.INFORMATION },
       ])
       .execute();
   }

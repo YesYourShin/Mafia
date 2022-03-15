@@ -6,3 +6,6 @@ export * from './oauth-verify-callback';
 export * from './score';
 export * from './user-role';
 export * from './user-provider';
+export * from './ICategory';
+export * from './remove-nil-from-object';
+export * from './ECategory';

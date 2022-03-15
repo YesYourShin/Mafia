@@ -14,23 +14,17 @@ import {
   WinstonModule,
 } from 'nest-winston';
 import helmet from 'helmet';
-import fs from 'fs';
-import { RedisSessionOption } from './modules/redis';
 import Redis from 'ioredis';
 import {
   ExcludeUndefinedInterceptor,
   TransformResponseInterceptor,
 } from './interceptors';
 import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
+import { ConfigService } from '@nestjs/config';
 
 declare const module: any;
 
 async function bootstrap() {
-  // ssh 설정
-  // const httpsOptions = {
-  //   key: fs.readFileSync(process.env.HTTPS_KEY, 'utf-8'),
-  //   cert: fs.readFileSync(process.env.HTTPS_CERT, 'utf-8'),
-  // };
   //winston logger
   const logger = WinstonModule.createLogger({
     transports: [
@@ -48,10 +42,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger,
-    // httpsOptions,
   });
 
+  const configService = app.get(ConfigService);
   const PORT = process.env.PORT || 3065;
+
   //global setting
   app.setGlobalPrefix('/api');
   app.useGlobalFilters(new HttpExceptionFilter());
@@ -65,16 +60,7 @@ async function bootstrap() {
     new ExcludeUndefinedInterceptor(),
   );
 
-  //swagger
-  const config = new DocumentBuilder()
-    .setTitle('Mafia API')
-    .setDescription('Capstone Design - Mafia 개발을 위한 API 문서입니다.')
-    .setVersion('1.0')
-    .addCookieAuth('connect.sid')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-
-  if (process.env.NODE_ENV === 'production') {
+  if (configService.get('NODE_ENV') === 'production') {
     app.enableCors({
       origin: 'https://gjgjajaj.xyz',
       credentials: true,
@@ -85,11 +71,24 @@ async function bootstrap() {
       origin: true,
       credentials: true,
     });
+
+    //swagger
+    const config = new DocumentBuilder()
+      .setTitle('Mafia API')
+      .setDescription('Capstone Design - Mafia 개발을 위한 API 문서입니다.')
+      .setVersion('1.0')
+      .addCookieAuth('connect.sid')
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/document', app, document);
   }
 
   //redis session store
-  const redisClient = new Redis(RedisSessionOption);
+  const redisClient = new Redis(
+    `redis://${configService.get('REDIS_HOST')}:${configService.get(
+      'REDIS_PORT',
+    )}/${configService.get('REDIS_SESSION_DB')}`,
+  );
   const redisStore = RedisStore(session);
 
   redisClient.on('error', function (err) {
@@ -119,9 +118,9 @@ async function bootstrap() {
         sameSite: true,
         httpOnly: true,
         maxAge: +process.env.COOKIE_MAX_AGE,
-        secure: false, // https일 경우 true로 변경해야 할 것
-        // secure: true, // https일 경우 true로 변경해야 할 것
-        // domain: process.env.NODE_ENV === 'production' && 'gjgjajaj.xyz',
+        secure: configService.get('NODE_ENV') === 'production' ? true : false,
+        domain:
+          configService.get('NODE_ENV') === 'production' && 'gjgjajaj.xyz',
       },
     }),
   );

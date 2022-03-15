@@ -1,22 +1,30 @@
 import { Logger, Module } from '@nestjs/common';
 import { GameService } from './game.service';
 import { GameController } from './game.controller';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from '@svtslv/nestjs-ioredis';
+import { EventModule } from '../event/event.module';
+import { REDIS_GAME } from '../redis';
+
 @Module({
   imports: [
     RedisModule.forRootAsync(
       {
-        useFactory: () => ({
+        inject: [ConfigService],
+        useFactory: async (configService: ConfigService) => ({
           config: {
-            url: 'redis://localhost:6379',
-            db: +process.env.REDIS_GAME_DB,
+            url: `redis://${configService.get(
+              'REDIS_HOST',
+            )}:${configService.get('REDIS_PORT')}/${configService.get(
+              'REDIS_GAME_DB',
+            )}`,
           },
         }),
       },
-      'game',
+      REDIS_GAME,
     ),
     ConfigModule,
+    EventModule,
   ],
   controllers: [GameController],
   providers: [GameService, Logger],

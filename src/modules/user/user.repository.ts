@@ -1,17 +1,8 @@
 import { User } from 'src/entities/User';
 import { AbstractRepository, EntityRepository } from 'typeorm';
 import { JoinRequestUserDto } from './dto/join-request-user.dto';
-import { pickBy, isNil, negate } from 'lodash';
-
-export interface UserFindOneOptions {
-  id?: number;
-  socialId?: string;
-  provider?: string;
-}
-
-export const removeNilFromObject = (object: object) => {
-  return pickBy(object, negate(isNil));
-};
+import { UserFindOneOptions } from './constants';
+import { removeNilFromObject } from 'src/common/constants';
 
 @EntityRepository(User)
 export class UserRepository extends AbstractRepository<User> {

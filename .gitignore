@@ -38,9 +38,9 @@ lerna-debug.log*
 postgres
 
 # docker
-docker-compose.yml
-docker-entrypoint.sh
+docker*
 Dockerfile
+.dockerignore
 
 # todo list
 todo.md
@@ -50,11 +50,8 @@ todo.md
 .env.development
 .env.production
 .env.testing
+.env.*
 =======
-# markdown
-todo.md
 # ssh
-key.pem
-cert.pem
 mkcert
 main.temp.ts

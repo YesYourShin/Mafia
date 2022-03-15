@@ -13,20 +13,16 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { EventModule } from './modules/event/event.module';
 import * as ormconfig from '../ormconfig';
 
-// export let envFilePath = '.env.development';
-
-// if (process.env.NODE_ENV === 'production') {
-//   envFilePath = '.env.production';
-// } else if (process.env.NODE_ENV === 'test') {
-//   envFilePath = '.env.testing';
-// }
-// console.log(envFilePath);
-// console.log(process.env.NODE_ENV);
-
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath:
+        process.env.NODE_ENV === 'production'
+          ? '.env.production'
+          : process.env.NODE_ENV === 'testing'
+          ? '.env.testing'
+          : '.env.development',
     }),
     TypeOrmModule.forRoot(ormconfig),
     AuthModule,
