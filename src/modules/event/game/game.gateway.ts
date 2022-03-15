@@ -13,7 +13,7 @@ import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import { Server, Socket } from 'socket.io';
 import { GamePrefix } from 'src/modules/game/constants';
 import { UserProfileInGame } from 'src/modules/game/dto';
-import { GameService } from 'src/modules/game/game.service';
+import { REDIS_GAME } from 'src/modules/redis';
 import { UserProfile } from 'src/modules/user/dto';
 import { Event } from './constants';
 
@@ -23,13 +23,12 @@ import { Event } from './constants';
   cors: { origin: '*' },
   namespace: /\/game-.+/,
 })
-export class GameMessageGateway
+export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   constructor(
     @Inject(Logger) private readonly logger: Logger,
-    @InjectRedis('game') private readonly redis: Redis,
-    private readonly gameService: GameService,
+    @InjectRedis(REDIS_GAME) private readonly redis: Redis, // private readonly gameService: GameService,
   ) {}
   @WebSocketServer() public server: Server;
 
@@ -39,11 +38,9 @@ export class GameMessageGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const newNamespace = socket.nsp;
-
     socket.join(`${socket.nsp.name}-${data.gameNumber}`);
-
-    const members = await this.gameService.findUsersInGameRoom(data.gameNumber);
-    newNamespace.emit(Event.ONLINELIST, members);
+    // const members = await this.gameService.findMembers(data.gameNumber);
+    // newNamespace.emit(Event.ONLINELIST, members);
   }
   @SubscribeMessage(Event.READY)
   async handleReady(
@@ -139,8 +136,12 @@ export class GameMessageGateway
     this.logger.log(`socket connected ${socket.nsp.name} ${socket.id}`);
   }
 
-  handleDisconnect(@ConnectedSocket() socket: Socket) {
+  async handleDisconnect(@ConnectedSocket() socket: Socket) {
     this.logger.log(`socket disconnected: ${socket.id}`);
+    const members = await this.getGameRoomMemberList(
+      `game:ready#${socket.nsp.name}`,
+    );
+    socket.nsp.emit(Event.LEAVE, members);
   }
 
   afterInit(server: any) {
