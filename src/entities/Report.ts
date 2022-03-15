@@ -10,7 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ReportCategory } from './ReportCategory';
+import { ReportType } from './ReportType';
 import { User } from './User';
 
 @Entity('report')
@@ -30,15 +30,15 @@ export class Report {
   @IsInt()
   @Column({
     type: 'tinyint',
-    name: 'report_category_id',
+    name: 'report_type_id',
     nullable: true,
     unsigned: true,
   })
-  reportCategoryId: number;
+  reportTypeId: number;
 
-  @ManyToOne(() => ReportCategory, (category) => category.reports)
-  @JoinColumn({ name: 'report_category_id', referencedColumnName: 'id' })
-  reportCategory: ReportCategory;
+  @ManyToOne(() => ReportType, (reportType) => reportType.reports)
+  @JoinColumn({ name: 'report_type_id', referencedColumnName: 'id' })
+  reportType: ReportType;
 
   @ApiProperty({
     example: 'OO유저가 저한테 욕설을 했습니다.',

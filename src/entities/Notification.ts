@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsOptional, IsUUID } from 'class-validator';
-import { NotificationType } from '../common/constants';
 import {
   Column,
   CreateDateColumn,
@@ -11,6 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { NotificationType } from '../common/constants';
 import { User } from './User';
 
 @Entity('notification')

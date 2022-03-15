@@ -7,23 +7,20 @@ import {
   DeleteDateColumn,
   Entity,
   Index,
-  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { Comment } from './Comment';
-import { DM } from './DM';
-import { Friend } from './Friend';
-import { Game } from './Game';
-import { Notification } from './Notification';
-import { Post } from './Post';
-import { Profile } from './Profile';
 import { Like } from './Like';
-import { Report } from './Report';
+import { Comment } from './Comment';
+import { Friend } from './Friend';
 import { GameMember } from './GameMember';
+import { DM } from './DM';
+import { Notification } from './Notification';
+import { Profile } from './Profile';
+import { Report } from './Report';
 
 @Index('user_idx_social_id_provider', ['socialId', 'provider'], {
   unique: true,
@@ -82,17 +79,11 @@ export class User {
   @OneToMany(() => Like, (likes) => likes.user)
   likes: Like[];
 
-  @OneToMany(() => Post, (posts) => posts.user)
-  posts: Post[];
-
-  @OneToMany(() => Comment, (comments) => comments.user)
-  comments: Comment[];
-
   @OneToMany(() => Friend, (friends) => friends.user)
-  friend1: Comment[];
+  friend1: Friend[];
 
   @OneToMany(() => Friend, (friends) => friends.friend)
-  friend2: Comment[];
+  friend2: Friend[];
 
   @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
   gameMembers: GameMember[];

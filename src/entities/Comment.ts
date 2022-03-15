@@ -3,15 +3,15 @@ import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Post } from './Post';
-import { User } from './User';
+import { Profile } from './Profile';
 
 @Entity('comment')
 export class Comment {
@@ -39,12 +39,12 @@ export class Comment {
   @Column({ type: 'bigint', name: 'user_id', nullable: true, unsigned: true })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.posts, {
+  @ManyToOne(() => Profile, (profile) => profile.comments, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'userId' })
+  profile: Profile;
 
   @ApiProperty({
     example: 1,
@@ -61,16 +61,38 @@ export class Comment {
   @JoinColumn({ name: 'post_id', referencedColumnName: 'id' })
   post: Post;
 
+  @ApiProperty({
+    example: 1,
+    description: '댓글 부모 아이디',
+  })
+  @IsInt()
+  @IsOptional()
+  @Column({ type: 'bigint', name: 'parent_id', nullable: true, unsigned: true })
+  parentId?: number | null;
+
+  @ManyToOne(() => Comment, (comment) => comment.children, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'parent_id', referencedColumnName: 'id' })
+  parent: Comment;
+
+  @OneToMany(() => Comment, (comment) => comment.parent)
+  children: Comment[];
+
+  @ApiProperty({
+    example: '2022-03-12T12:32:25.716Z',
+    description: '생성 날짜',
+  })
   @IsDate()
   @CreateDateColumn()
   createdAt: Date;
 
+  @ApiProperty({
+    example: '2022-03-12T12:32:25.716Z',
+    description: '수정 날짜',
+  })
   @IsDate()
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @IsDate()
-  @IsOptional()
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 }

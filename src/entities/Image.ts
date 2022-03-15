@@ -23,8 +23,8 @@ export class Image {
   @Column('decimal', { precision: 10, scale: 2 })
   size: number;
 
-  @Column({})
-  url: string;
+  @Column()
+  location: string;
 
   @CreateDateColumn()
   createdAt: Date;

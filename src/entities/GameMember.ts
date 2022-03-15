@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional } from 'class-validator';
-import { Score } from '../common/constants';
 import {
   Column,
   CreateDateColumn,
@@ -11,6 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Score } from '../common/constants';
 import { Game } from './Game';
 import { GameRole } from './GameRole';
 import { User } from './User';

@@ -7,10 +7,13 @@ import {
   Entity,
   Index,
   JoinColumn,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Comment } from './Comment';
+import { Post } from './Post';
 import { User } from './User';
 
 @Index('user_idx_nickname', ['nickname'], { unique: true })
@@ -104,4 +107,10 @@ export class Profile {
   @IsOptional()
   @DeleteDateColumn()
   deletedAt: Date | null;
+
+  @OneToMany(() => Post, (posts) => posts.profile)
+  posts: Post[];
+
+  @OneToMany(() => Comment, (comments) => comments.profile)
+  comments: Comment[];
 }

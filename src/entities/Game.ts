@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
-import { GameMode } from '../common/constants';
 import {
   Check,
   Column,
@@ -12,6 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { GameMember } from './GameMember';
+import { GameMode } from '../common/constants';
 
 @Check(`"limit" > 5 AND "limit" < 11`)
 @Entity('game')

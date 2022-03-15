@@ -11,10 +11,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Category } from './Category';
 import { Comment } from './Comment';
-import { PostCategory } from './PostCategory';
 import { Like } from './Like';
-import { User } from './User';
+import { Profile } from './Profile';
 import { View } from './View';
 
 @Entity('post')
@@ -50,18 +50,18 @@ export class Post {
   @IsInt()
   @Column({
     type: 'tinyint',
-    name: 'post_category_id',
+    name: 'category_id',
     nullable: true,
     unsigned: true,
   })
-  postCategoryId: number;
+  categoryId: number;
 
-  @ManyToOne(() => PostCategory, (category) => category.posts, {
+  @ManyToOne(() => Category, (category) => category.posts, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'post_category_id', referencedColumnName: 'id' })
-  postCategory: PostCategory;
+  @JoinColumn({ name: 'category_id', referencedColumnName: 'id' })
+  category: Category;
 
   @ApiProperty({
     example: 1,
@@ -71,12 +71,12 @@ export class Post {
   @Column({ type: 'bigint', name: 'user_id', nullable: true, unsigned: true })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.posts, {
+  @ManyToOne(() => Profile, (profile) => profile.posts, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'userId' })
+  profile: Profile;
 
   @IsDate()
   @CreateDateColumn()
