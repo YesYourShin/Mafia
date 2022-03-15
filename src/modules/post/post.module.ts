@@ -7,10 +7,15 @@ import { ImageRepository } from './image.repository';
 import { ConfigService } from '@nestjs/config';
 import { MulterModule } from '@nestjs/platform-express';
 import { MulterS3Service } from 'src/shared/MulterS3Service ';
+import { CommentRepository } from '../comment/comment.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostRepository, ImageRepository]),
+    TypeOrmModule.forFeature([
+      PostRepository,
+      ImageRepository,
+      CommentRepository,
+    ]),
     MulterModule.registerAsync({ useClass: MulterS3Service }),
   ],
   controllers: [PostController],

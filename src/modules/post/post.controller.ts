@@ -31,14 +31,17 @@ import { ConfigService } from '@nestjs/config';
 import { s3 } from 'src/shared/MulterS3Service ';
 import {
   CreatePostDto,
-  ResponsePostsDto,
-  ResponsePostWithCommentsDto,
+  FindAllResponseDto,
+  FindOneResponseDto,
   UpdatePostDto,
 } from './dto';
 import { UserProfile } from '../user/dto';
 import { LoggedInGuard } from '../auth/guards';
 import { UserDecorator } from 'src/decorators';
 import { ExistedProfileGuard } from 'src/common/guards';
+import { CategoryRangeGuard, ExistPostGuard } from './guards';
+import { PostOwnerGuard } from './guards/post-owner.guard';
+import { ResponseDto } from 'src/common/dto';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -50,40 +53,47 @@ export class PostController {
   ) {}
 
   @ApiOkResponse({
-    description: '게시물들 불러오기',
-    type: ResponsePostsDto,
+    description: '게시물 하나 상세 보기',
+    type: FindOneResponseDto,
   })
-  @ApiOperation({ summary: '게시물들 불러오기' })
-  @Get()
-  async findAll(
-    @Query('category') categoryId: string,
-    @Query('page') page: string,
-  ) {
-    return await this.postService.findAll(+categoryId, +page);
-  }
   @ApiParam({
-    name: 'id',
+    name: 'postId',
     required: true,
     description: '게시물 아이디',
   })
-  @ApiOperation({ summary: '게시물 자세히 보기' })
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: '게시물 하나 상세 보기' })
+  @UseGuards(ExistPostGuard)
+  @Get(':postId')
+  async findOne(@Param('postId') id: string) {
     return await this.postService.findOne(+id);
   }
 
+  @ApiOkResponse({
+    description: '게시물들 불러오기',
+    type: FindAllResponseDto,
+  })
+  @ApiOperation({ summary: '게시물들 불러오기' })
+  @UseGuards(CategoryRangeGuard)
+  @Get()
+  async findAll(
+    @Query('category') category: string,
+    @Query('page') page: string,
+  ) {
+    return await this.postService.findAll(+category, +page);
+  }
+
   @ApiCookieAuth('connect.sid')
-  @ApiOperation({ summary: '이미지들 저장' })
+  @ApiOperation({ summary: '이미지 저장' })
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('image'))
   async uploadFile(@UploadedFile() file: Express.MulterS3.File) {
-    return this.postService.uploadImage(file);
+    return await this.postService.uploadImage(file);
   }
 
   @ApiCreatedResponse({
     description: '게시물 등록 성공',
-    type: Post,
+    type: FindOneResponseDto,
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 등록' })
@@ -98,7 +108,7 @@ export class PostController {
 
   @ApiCreatedResponse({
     description: '게시물 수정 성공',
-    type: ResponsePostWithCommentsDto,
+    type: FindOneResponseDto,
   })
   @ApiNotFoundResponse({
     description: '게시물 존재 하지 않는 경우',
@@ -111,17 +121,22 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 수정' })
-  @UseGuards(LoggedInGuard, ExistedProfileGuard)
+  @UseGuards(LoggedInGuard, ExistedProfileGuard, ExistPostGuard, PostOwnerGuard)
   @HttpCode(HttpStatus.CREATED)
-  @Patch(':id')
+  @Patch(':postId')
   async update(
-    @Param('id') id: string,
+    @Param('postId') id: string,
     @Body() updatePostDto: UpdatePostDto,
-    @UserDecorator() user: UserProfile,
   ) {
-    return await this.postService.update(+id, user.id, updatePostDto);
+    return await this.postService.update(+id, updatePostDto);
   }
 
+  @ApiOkResponse({
+    description: '게시물 추천 성공',
+    schema: {
+      example: new ResponseDto(true, HttpStatus.OK, { postId: 1, like: true }),
+    },
+  })
   @ApiParam({
     name: 'id',
     required: true,
@@ -130,19 +145,18 @@ export class PostController {
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 추천' })
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
-  @Patch('like/:id')
-  async recommendPost(
-    @Param('id') id: string,
+  @Patch('like/:postId')
+  async likePost(
+    @Param('postId') id: string,
     @UserDecorator() user: UserProfile,
   ) {
     return await this.postService.like(+id, user.id);
   }
 
-  //게시물 존재 및 게시물 권한 확인
   @ApiOperation({ summary: '게시물 이미지 삭제' })
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Delete('image')
-  async removeImage(@Query('key') key: string) {
+  async removeImage(@Query('image') key: string) {
     this.logger.log('key', key);
     s3.deleteObject(
       {
@@ -153,6 +167,15 @@ export class PostController {
     );
   }
 
+  @ApiOkResponse({
+    description: '게시물 추천 취소 성공',
+    schema: {
+      example: new ResponseDto(true, HttpStatus.OK, {
+        postId: 1,
+        unlike: true,
+      }),
+    },
+  })
   @ApiParam({
     name: 'id',
     required: true,
@@ -160,15 +183,24 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 추천 취소' })
-  @UseGuards(LoggedInGuard, ExistedProfileGuard)
-  @Delete('like/:id')
-  async unrecommendPost(
-    @Param('id') id: string,
+  @UseGuards(LoggedInGuard, ExistedProfileGuard, ExistPostGuard)
+  @Delete('like/:postId')
+  async unlikePost(
+    @Param('postId') id: string,
     @UserDecorator() user: UserProfile,
   ) {
     return await this.postService.unlike(+id, user.id);
   }
 
+  @ApiOkResponse({
+    description: '게시물 삭제 성공',
+    schema: {
+      example: new ResponseDto(true, HttpStatus.OK, {
+        postId: 1,
+        delete: true,
+      }),
+    },
+  })
   @ApiParam({
     name: 'id',
     required: true,
@@ -176,9 +208,9 @@ export class PostController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 삭제' })
-  @UseGuards(LoggedInGuard, ExistedProfileGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string, @UserDecorator() user: UserProfile) {
-    return await this.postService.remove(+id, user.id);
+  @UseGuards(LoggedInGuard, ExistedProfileGuard, ExistPostGuard, PostOwnerGuard)
+  @Delete(':postId')
+  async remove(@Param('postId') id: string) {
+    return await this.postService.remove(+id);
   }
 }

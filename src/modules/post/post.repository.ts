@@ -3,46 +3,95 @@ import { Like } from 'src/entities/Like';
 import { AbstractRepository, EntityRepository } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { ICategory } from 'src/common/constants';
 
 @EntityRepository(Post)
 export class PostRepository extends AbstractRepository<Post> {
-  async findOne(id: number) {
-    const qb = await this.repository
+  async existPost(id: number) {
+    return await this.repository
       .createQueryBuilder('post')
-      .leftJoinAndSelect('post.comments', 'comment')
-      .where('post.id = :id', { id })
+      .where('id = :id', { id })
       .getOne();
-
-    return qb;
+  }
+  async findOne(id: number) {
+    return this.repository
+      .createQueryBuilder('post')
+      .leftJoin('post.profile', 'postProfile')
+      .leftJoin('post.comments', 'comment')
+      .leftJoin('comment.profile', 'commentProfile')
+      .select(['post.id', 'post.title', 'post.content', 'post.updatedAt'])
+      .addSelect(['postProfile.id', 'postProfile.nickname'])
+      .addSelect(['comment.id', 'comment.content', 'comment.updatedAt'])
+      .addSelect(['commentProfile.id', 'commentProfile.nickname'])
+      .orderBy('comment.updatedAt')
+      .loadRelationCountAndMap('post.likeCount', 'post.likes')
+      .loadRelationCountAndMap('comment.replyCount', 'comment.children')
+      .where('post.id = :id', { id })
+      .andWhere('comment.parentId IS NULL')
+      .getOne();
   }
   async findAll(categoryId: number, skip: number) {
-    const qb = await this.repository
+    console.log('skip', skip);
+    const qb = this.repository
       .createQueryBuilder('post')
-      .select('post.*')
-      // .addSelect('SUM(comment)', 'sum')
-      .where('post.postCategoryId = :postCategoryId', {
-        postCategoryId: categoryId,
-      })
-      .leftJoin('post.comments', 'comment')
-      .groupBy('post.id')
+      .leftJoin('post.profile', 'profile')
+      .select(['post.id', 'post.title', 'post.updatedAt', 'post.categoryId'])
+      .addSelect(['profile.id', 'profile.nickname'])
+      .orderBy('post.id', 'DESC')
       .take(10)
       .skip(skip)
-      .getMany();
+      .loadRelationCountAndMap('post.commentCount', 'post.comments')
+      .loadRelationCountAndMap('post.likeCount', 'post.likes')
+      .loadRelationCountAndMap('post.views', 'post.views');
 
-    return qb;
+    if (
+      categoryId === ICategory.ANNOUNCEMENT ||
+      categoryId === ICategory.FREEBOARD ||
+      categoryId === ICategory.INFORMATIN
+    ) {
+      qb.where('post.categoryId = :categoryId', { categoryId });
+    } else if (categoryId === ICategory.GENERAL) {
+      qb.where('post.categoryId IN (:...categoryId)', {
+        categoryId: [2, 3],
+      });
+    } else if (categoryId === ICategory.POPULAR) {
+      qb.where('post.categoryId IN (:...categoryId)', {
+        categoryId: [2, 3],
+      })
+        .leftJoin('post.likes', 'likes')
+        .groupBy('post.id')
+        .having('COUNT(likes.id) > 5');
+    }
+
+    return await qb.getMany();
   }
   async findPagesCountByCategoryId(categoryId: number) {
-    const qb = await this.repository
-      .createQueryBuilder()
-      .select('COUNT(id)')
-      .where('postCategoryId = :postCategoryId', {
-        postCategoryId: categoryId,
+    const qb = this.repository
+      .createQueryBuilder('post')
+      .select('COUNT(*) AS postCount');
+    if (
+      categoryId === ICategory.ANNOUNCEMENT ||
+      categoryId === ICategory.FREEBOARD ||
+      categoryId === ICategory.INFORMATIN
+    ) {
+      qb.where('post.categoryId = :categoryId', { categoryId });
+    } else if (categoryId === ICategory.GENERAL) {
+      qb.where('post.categoryId IN (:...categoryId)', {
+        categoryId: [2, 3],
+      });
+    } else if (categoryId === ICategory.POPULAR) {
+      qb.where('post.categoryId IN (:...categoryId)', {
+        categoryId: [2, 3],
       })
-      .getOne();
-    return qb;
+        .leftJoin('post.likes', 'likes')
+        .groupBy('post.id')
+        .having('COUNT(likes.id) > 5');
+    }
+
+    return await qb.getCount();
   }
   async create(userId: number, createPostDto: CreatePostDto) {
-    const { title, content, postCategoryId } = createPostDto;
+    const { title, content, categoryId } = createPostDto;
     return await this.repository
       .createQueryBuilder()
       .insert()
@@ -50,13 +99,13 @@ export class PostRepository extends AbstractRepository<Post> {
       .values({
         title,
         content,
-        postCategoryId,
+        categoryId,
         userId,
       })
       .execute();
   }
   async update(id: number, updatePostDto: UpdatePostDto) {
-    const { title, content, postCategoryId } = updatePostDto;
+    const { title, content, categoryId } = updatePostDto;
 
     const qb = this.repository
       .createQueryBuilder()
@@ -64,7 +113,7 @@ export class PostRepository extends AbstractRepository<Post> {
       .set({
         title,
         content,
-        postCategoryId,
+        categoryId,
       })
       .where('id = :id', { id })
       .execute();

@@ -4,5 +4,5 @@ import { Post } from 'src/entities/Post';
 export class CreatePostDto extends PickType(Post, [
   'title',
   'content',
-  'postCategoryId',
+  'categoryId',
 ]) {}
