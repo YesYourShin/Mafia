@@ -2,11 +2,13 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpStatus,
   Inject,
   Logger,
   LoggerService,
   Post,
   Redirect,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import {
   ApiCookieAuth,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { ResponseDto } from 'src/common/dto';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { LogoutInterceptor } from 'src/interceptors';
@@ -50,9 +53,13 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
-  @Redirect('http://localhost:7000', 301)
   @Get('google/redirect')
-  googleAuthRedirect(@UserDecorator() user: UserProfile) {}
+  googleAuthRedirect(@Res() res: Response) {
+    return res.redirect(
+      this.configService.get('FRONT_URL') as string,
+      HttpStatus.MOVED_PERMANENTLY,
+    );
+  }
 
   @ApiOperation({ summary: 'Naver 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
@@ -67,7 +74,12 @@ export class AuthController {
   @Redirect(process.env.FRONT_URL, 301)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
-  naverAuthRedirect(@UserDecorator() user: UserProfile) {}
+  naverAuthRedirect(@Res() res: Response) {
+    return res.redirect(
+      this.configService.get('FRONT_URL') as string,
+      HttpStatus.MOVED_PERMANENTLY,
+    );
+  }
 
   @ApiOperation({ summary: 'Kakao 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
@@ -82,7 +94,12 @@ export class AuthController {
   @Redirect(process.env.FRONT_URL, 301)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
-  kakaoAuthRedirect(@UserDecorator() user: UserProfile) {}
+  kakaoAuthRedirect(@Res() res: Response) {
+    return res.redirect(
+      this.configService.get('FRONT_URL') as string,
+      HttpStatus.MOVED_PERMANENTLY,
+    );
+  }
 
   @ApiResponse({
     status: 200,
