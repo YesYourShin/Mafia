@@ -39,8 +39,6 @@ postgres
 
 # docker
 docker*
-Dockerfile
-.dockerignore
 
 # todo list
 todo.md
@@ -52,6 +50,3 @@ todo.md
 .env.testing
 .env.*
 =======
-# ssh
-mkcert
-main.temp.ts
