@@ -1,26 +1,28 @@
-name: Node.js CI
+# NestJs application build
+name: Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node-version: [12.x, 14,x]
-        
+        node-version: [12.x, 14.x]
+
     steps:
       - uses: actions/checkout@v2
       - name: npm install and build
         run: |
           npm install
           npm run build
+
 #       - uses: actions/upload-artifact@master
 #         with:
 #           name: build artifacts
@@ -32,7 +34,7 @@ jobs:
 #     steps:
 #     - uses: actions/checkout@v2
 #     - uses: actions/download-artifact@master
-#       with: 
+#       with:
 #         name: build artifacts
 #         path: public
 #     - name: Use Node.js ${{ matrix.node-version }}
