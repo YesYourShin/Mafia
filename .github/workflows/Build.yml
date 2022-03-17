@@ -80,12 +80,12 @@ jobs:
     needs: push
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
       - name: Run scripts in server
         uses: appleboy/ssh-action@master
         with:
-          key: ${{ secrets.SSH_KEY }}
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             ./deploy.sh
