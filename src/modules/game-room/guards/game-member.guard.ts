@@ -7,11 +7,11 @@ import {
 import { Request } from 'express';
 import { UserProfile } from 'src/modules/user/dto';
 import { UserProfileInGame } from '../dto';
-import { GameService } from '../game.service';
+import { GameRoomService } from '../game-room.service';
 
 @Injectable()
-export class IsGameMemberGuard implements CanActivate {
-  constructor(private readonly gameService: GameService) {}
+export class GameMemberGuard implements CanActivate {
+  constructor(private readonly gameRoomService: GameRoomService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
 
@@ -19,12 +19,12 @@ export class IsGameMemberGuard implements CanActivate {
     const { userId } = profile;
     const { gameNumber } = request.params;
 
-    const members: UserProfileInGame[] = await this.gameService.findMembers(
+    const members: UserProfileInGame[] = await this.gameRoomService.findMembers(
       +gameNumber,
     );
-    const isMember = this.gameService.isMember(members, userId);
-    if (isMember) {
-      throw new ForbiddenException('게임 참여할 권한이 없습니다');
+    const isMember = this.gameRoomService.isMember(members, userId);
+    if (!isMember) {
+      throw new ForbiddenException('게임 방 멤버가 아닙니다');
     }
     return true;
   }

@@ -1,6 +1,6 @@
 import { Logger, Module } from '@nestjs/common';
-import { GameService } from './game.service';
-import { GameController } from './game.controller';
+import { GameRoomService } from './game-room.service';
+import { GameRoomController } from './game-room.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule } from '@svtslv/nestjs-ioredis';
 import { EventModule } from '../event/event.module';
@@ -26,8 +26,8 @@ import { REDIS_GAME } from '../redis';
     ConfigModule,
     EventModule,
   ],
-  controllers: [GameController],
-  providers: [GameService, Logger],
-  exports: [GameService],
+  controllers: [GameRoomController],
+  providers: [GameRoomService, Logger],
+  exports: [GameRoomService],
 })
-export class GameModule {}
+export class GameRoomModule {}

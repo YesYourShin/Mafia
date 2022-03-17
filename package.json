@@ -52,7 +52,6 @@
     "class-validator": "^0.13.2",
     "connect-redis": "^6.1.0",
     "cookie-parser": "^1.4.6",
-    "cross-env": "^7.0.3",
     "dayjs": "^1.10.7",
     "express-session": "^1.17.2",
     "helmet": "^5.0.2",

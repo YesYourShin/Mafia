@@ -11,8 +11,8 @@ import {
   HttpStatus,
   Patch,
 } from '@nestjs/common';
-import { GameService } from './game.service';
-import { CreateGameDto } from './dto/create-game.dto';
+import { GameRoomService } from './game-room.service';
+import { CreateGameRoomDto } from './dto/create-game-room.dto';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -29,13 +29,13 @@ import { LoggedInGuard } from '../auth/guards/logged-in.guard';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { UserProfile } from '../user/dto';
 import {
-  GameInfo,
+  GameRoomInfo,
   GameInfoWithGameMembers,
-  GameInfoWithMemberCount,
+  GameRoomInfoWithMemberCount,
   ResponseCurrentGamesInfo,
   ResponseGameInfoWithGameMembersDto,
   ResponseGameInfoWithMemberCountDto,
-  UpdateGameDto,
+  UpdateGameRoomDto,
 } from './dto';
 import { ResponseDto } from 'src/common/dto';
 import {
@@ -44,14 +44,14 @@ import {
   ValidateLimitGuard,
 } from './guards';
 import { concatMap, from, interval, map, Observable } from 'rxjs';
-import { IsGameMemberGuard } from './guards/is-game-member.guard';
+import { IsGameRoomMemberGuard } from './guards/is-game-room-member.guard';
 
 @ApiCookieAuth('connect.sid')
 @UseGuards(LoggedInGuard)
-@ApiTags('Games')
-@Controller('games')
-export class GameController {
-  constructor(private readonly gameService: GameService) {}
+@ApiTags('Rooms')
+@Controller('games/rooms')
+export class GameRoomController {
+  constructor(private readonly gameRoomService: GameRoomService) {}
 
   @ApiOkResponse({
     description: '전체 게임 방 불러오기 성공',
@@ -59,8 +59,8 @@ export class GameController {
   })
   @ApiOperation({ summary: '전체 게임 방 불러오기' })
   @Get()
-  async findAll(): Promise<GameInfoWithMemberCount[]> {
-    return await this.gameService.findAll();
+  async findAll(): Promise<GameRoomInfoWithMemberCount[]> {
+    return await this.gameRoomService.findAll();
   }
 
   @ApiResponse({
@@ -70,7 +70,7 @@ export class GameController {
   @Sse('sse')
   sse(): Observable<MessageEvent> {
     return interval(5000)
-      .pipe(concatMap(() => from(this.gameService.findAll())))
+      .pipe(concatMap(() => from(this.gameRoomService.findAll())))
       .pipe(map((response) => ({ data: response })));
   }
 
@@ -79,16 +79,16 @@ export class GameController {
   //   type: ResponseGameInfoWithGameMembersDto,
   // })
   // @ApiParam({
-  //   name: 'gameNumber',
+  //   name: 'gameRoomNumber',
   //   description: '게임 방 번호',
   //   example: 1,
   // })
   // @ApiOperation({ summary: '특정 게임 방 정보 불러오기 ' })
-  // @Get(':gameNumber')
+  // @Get(':gameRoomNumber')
   // async findUsersInGameRoomWithRoomInfo(
-  //   @Param('gameNumber') gameNumber: string,
+  //   @Param('gameRoomNumber') gameRoomNumber: string,
   // ): Promise<GameInfoWithGameMembers> {
-  //   return await this.gameService.mergeGameInfoAndMembers(+gameNumber);
+  //   return await this.gameRoomService.mergeGameInfoAndMembers(+gameRoomNumber);
   // }
 
   @ApiCreatedResponse({
@@ -107,18 +107,18 @@ export class GameController {
   })
   @ApiBody({
     description: '방 생성 시 필요한 정보',
-    type: CreateGameDto,
+    type: CreateGameRoomDto,
   })
   @ApiOperation({ summary: '게임 방 생성' })
   @UseGuards(ValidateLimitGuard)
   @Post()
   async create(
-    @Body() createGameDto: CreateGameDto,
+    @Body() createGameDto: CreateGameRoomDto,
     @UserDecorator() user: UserProfile,
-  ): Promise<GameInfo> {
+  ): Promise<GameRoomInfo> {
     // ): Promise<GameInfoWithGameMembers> {
     const { id, nickname, image, level, userId } = user.profile;
-    return await this.gameService.create(createGameDto, {
+    return await this.gameRoomService.create(createGameDto, {
       id,
       nickname,
       image,
@@ -142,19 +142,19 @@ export class GameController {
     },
   })
   @ApiParam({
-    name: 'gameNumber',
+    name: 'gameRoomNumber',
     description: '게임 방 번호',
     example: 1,
   })
   @ApiOperation({ summary: '게임 방 참가' })
-  @UseGuards(ExistGameRoomGuard, IsGameMemberGuard)
-  @Post(':gameNumber')
+  @UseGuards(ExistGameRoomGuard, IsGameRoomMemberGuard)
+  @Post(':gameRoomNumber')
   async join(
-    @Param('gameNumber') gameNumber: string,
+    @Param('gameRoomNumber') gameRoomNumber: string,
     @UserDecorator() user: UserProfile,
   ): Promise<GameInfoWithGameMembers> {
     const { id, nickname, image, level, userId } = user.profile;
-    return await this.gameService.join(+gameNumber, {
+    return await this.gameRoomService.join(+gameRoomNumber, {
       id,
       nickname,
       image,
@@ -179,19 +179,19 @@ export class GameController {
   })
   @ApiBody({
     description: '방 생성 시 필요한 정보',
-    type: CreateGameDto,
+    type: CreateGameRoomDto,
   })
   @ApiOperation({ summary: '게임 방 생성' })
   @UseGuards(ValidateLimitGuard)
-  @Patch(':gameNumber')
+  @Patch(':gameRoomNumber')
   async update(
-    @Body() updateGameDto: UpdateGameDto,
+    @Body() updateGameDto: UpdateGameRoomDto,
     @UserDecorator() user: UserProfile,
-    @Param('gameNumber') gameNumber: string,
+    @Param('gameRoomNumber') gameRoomNumber: string,
   ): Promise<object> {
     // ): Promise<GameInfoWithGameMembers> {
     const { id, nickname, image, level, userId } = user.profile;
-    return await this.gameService.update(+gameNumber, updateGameDto, {
+    return await this.gameRoomService.update(+gameRoomNumber, updateGameDto, {
       id,
       nickname,
       image,
@@ -203,13 +203,13 @@ export class GameController {
     description: '게임 방 나가기 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        gameNumber: 1,
+        gameRoomNumber: 1,
         exit: true,
       }),
     },
   })
   @ApiParam({
-    name: 'gameNumber',
+    name: 'gameRoomNumber',
     description: '게임 방 번호',
     example: 1,
   })
@@ -217,13 +217,13 @@ export class GameController {
     summary: '게임 방 나가기 (나가는 사람이 마지막 사람이면 자동 방 파괴',
   })
   @UseGuards(ExistGameRoomGuard, GameMemberGuard)
-  @Delete(':gameNumber/users/me')
+  @Delete(':gameRoomNumber/users/me')
   async leaveGameRoom(
-    @Param('gameNumber') gameNumber: string,
+    @Param('gameRoomNumber') gameRoomNumber: string,
     @UserDecorator() user: UserProfile,
   ): Promise<object> {
     const { id, nickname, image, level, userId } = user.profile;
-    return this.gameService.leave(+gameNumber, {
+    return this.gameRoomService.leave(+gameRoomNumber, {
       id,
       nickname,
       image,
@@ -236,20 +236,22 @@ export class GameController {
     description: '게임 방 삭제 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        gameNumber: 1,
+        gameRoomNumber: 1,
         delete: true,
       }),
     },
   })
   @ApiParam({
-    name: 'gameNumber',
+    name: 'gameRoomNumber',
     description: '게임 방 번호',
     example: 1,
   })
   @ApiOperation({ summary: '게임 방 삭제 (게임 끝났을 경우 이 경로)' })
   @UseGuards(ExistGameRoomGuard, GameMemberGuard)
-  @Delete(':gameNumber')
-  async removeGame(@Param('gameNumber') gameNumber: string): Promise<object> {
-    return await this.gameService.remove(+gameNumber);
+  @Delete(':gameRoomNumber')
+  async removeGame(
+    @Param('gameRoomNumber') gameRoomNumber: string,
+  ): Promise<object> {
+    return await this.gameRoomService.remove(+gameRoomNumber);
   }
 }

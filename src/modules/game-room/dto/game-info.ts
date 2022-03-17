@@ -2,7 +2,7 @@ import { ApiProperty, OmitType, PickType } from '@nestjs/swagger';
 import { Game } from 'src/entities/Game';
 import { UserProfileInGame } from '.';
 
-export class GameInfoWithMemberCount extends PickType(Game, [
+export class GameRoomInfoWithMemberCount extends PickType(Game, [
   'mode',
   'name',
   'password',
@@ -12,23 +12,23 @@ export class GameInfoWithMemberCount extends PickType(Game, [
     description: '일일 방 번호',
     example: 1,
   })
-  gameNumber: number;
+  gameRoomNumber: number;
   @ApiProperty({
     description: '유저 현재 인원 수',
     example: 1,
   })
   memberCount?: number;
 }
-export class GameInfo extends OmitType(GameInfoWithMemberCount, [
+export class GameRoomInfo extends OmitType(GameRoomInfoWithMemberCount, [
   'memberCount',
 ]) {}
 
-export class GameInfoWithGameMembers extends PickType(GameInfo, [
+export class GameInfoWithGameMembers extends PickType(GameRoomInfo, [
   'mode',
   'name',
   'password',
   'limit',
-  'gameNumber',
+  'gameRoomNumber',
 ]) {
   @ApiProperty({ type: () => UserProfileInGame, isArray: true })
   members?: UserProfileInGame[];

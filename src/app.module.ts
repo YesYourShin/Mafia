@@ -8,7 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 import { PostModule } from './modules/post/post.module';
 import { CommentModule } from './modules/comment/comment.module';
-import { GameModule } from './modules/game/game.module';
+import { GameRoomModule } from './modules/game-room/game-room.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { EventModule } from './modules/event/event.module';
 import * as ormconfig from '../ormconfig';
@@ -29,7 +29,7 @@ import * as ormconfig from '../ormconfig';
     UserModule,
     PostModule,
     CommentModule,
-    GameModule,
+    GameRoomModule,
     NotificationModule,
     EventModule,
   ],

@@ -11,8 +11,8 @@ import {
 } from '@nestjs/websockets';
 import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import { Server, Socket } from 'socket.io';
-import { GamePrefix } from 'src/modules/game/constants';
-import { UserProfileInGame } from 'src/modules/game/dto';
+import { GamePrefix } from 'src/modules/game-room/constants';
+import { UserProfileInGame } from 'src/modules/game-room/dto';
 import { REDIS_GAME } from 'src/modules/redis';
 import { UserProfile } from 'src/modules/user/dto';
 import { Event } from './constants';
@@ -88,14 +88,17 @@ export class GameGateway
   ) {
     const newNamespace = socket.nsp;
     const leader: UserProfileInGame = JSON.parse(
-      await this.redis.lindex(`${GamePrefix.gameMembers}${data.gameNumber}`, 0),
+      await this.redis.lindex(
+        `${GamePrefix.gameRoomMembers}${data.gameNumber}`,
+        0,
+      ),
     );
     if (data.user.id === leader.userId) {
       const readyCount = await this.redis.scard(
         `game:ready#${socket.nsp.name}`,
       );
       const memberCount = await this.redis.llen(
-        `${GamePrefix.gameMembers}${data.gameNumber}`,
+        `${GamePrefix.gameRoomMembers}${data.gameNumber}`,
       );
       if (memberCount === readyCount + 1) {
         newNamespace.emit(Event.START, {
