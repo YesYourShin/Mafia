@@ -1,4 +1,4 @@
-# NestJs application build
+# NestJs application deploy
 name: Deploy
 
 on:
