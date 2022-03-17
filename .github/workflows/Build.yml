@@ -76,7 +76,7 @@ jobs:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
-  SSH:
+  deploy:
     needs: push
     runs-on: ubuntu-latest
     steps:
