@@ -1,5 +1,5 @@
 # NestJs application build
-name: Build
+name: Deploy
 
 on:
   push:
