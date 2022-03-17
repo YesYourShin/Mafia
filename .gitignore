@@ -38,7 +38,7 @@ lerna-debug.log*
 postgres
 
 # docker
-docker*
+docker-compose.yml
 
 # todo list
 todo.md
@@ -49,4 +49,3 @@ todo.md
 .env.production
 .env.testing
 .env.*
-=======
