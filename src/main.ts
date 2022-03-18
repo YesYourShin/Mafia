@@ -113,14 +113,15 @@ async function bootstrap() {
       }),
       resave: false,
       saveUninitialized: false,
-      secret: process.env.COOKIE_SECRET,
+      secret: configService.get('COOKIE_SECRET'),
+      proxy: configService.get('NODE_ENV') === 'production' && true,
       cookie: {
         sameSite: true,
         httpOnly: true,
         maxAge: +process.env.COOKIE_MAX_AGE,
         secure: configService.get('NODE_ENV') === 'production' ? true : false,
         domain:
-          configService.get('NODE_ENV') === 'production' && 'gjgjajaj.xyz',
+          configService.get('NODE_ENV') === 'production' && '.gjgjajaj.xyz',
       },
     }),
   );
