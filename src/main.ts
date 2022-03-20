@@ -14,6 +14,7 @@ import {
   WinstonModule,
 } from 'nest-winston';
 import helmet from 'helmet';
+import hpp from 'hpp';
 import Redis from 'ioredis';
 import {
   ExcludeUndefinedInterceptor,
@@ -66,6 +67,8 @@ async function bootstrap() {
       credentials: true,
     });
     app.use(helmet());
+    app.use(hpp());
+    app.set('truxt proxy', 1);
   } else {
     app.enableCors({
       origin: true,

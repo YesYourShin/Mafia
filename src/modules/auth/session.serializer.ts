@@ -1,22 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PassportSerializer } from '@nestjs/passport';
-import { User } from 'src/entities/User';
-import { UserRepository } from '../user/user.repository';
+import { UserProfile } from '../user/dto';
 
 @Injectable()
 export class SessionSerializer extends PassportSerializer {
-  constructor(private readonly userRepository: UserRepository) {
+  constructor() {
     super();
   }
 
-  serializeUser(user: User, done: CallableFunction) {
+  serializeUser(user: UserProfile, done: CallableFunction) {
     console.log('serializeUser', user);
-    done(null, user.id);
+    done(null, user);
   }
 
-  async deserializeUser(id: number, done: CallableFunction) {
+  async deserializeUser(user: UserProfile, done: CallableFunction) {
     try {
-      const user = await this.userRepository.findOne({ id });
       console.log('deserializeUser', user);
       done(null, user);
     } catch (error) {
