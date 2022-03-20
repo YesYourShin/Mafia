@@ -106,6 +106,7 @@ async function bootstrap() {
   await redisIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisIoAdapter);
 
+  app.disable('etag');
   app.use(cookieParser());
   app.use(
     session({
