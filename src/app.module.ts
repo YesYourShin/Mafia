@@ -11,6 +11,7 @@ import { CommentModule } from './modules/comment/comment.module';
 import { GameRoomModule } from './modules/game-room/game-room.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { EventModule } from './modules/event/event.module';
+import { GameModule } from './modules/game/game.module';
 import * as ormconfig from '../ormconfig';
 
 @Module({
@@ -32,6 +33,7 @@ import * as ormconfig from '../ormconfig';
     GameRoomModule,
     NotificationModule,
     EventModule,
+    GameModule,
   ],
   controllers: [AppController],
   providers: [AppService],
