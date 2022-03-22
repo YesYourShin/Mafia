@@ -29,6 +29,13 @@ module.exports = {
           "{}": false
         }
       }
-    ]
+    ],
+    'prettier/prettier': [
+      'error',
+      {
+          endOfLine: 'auto',
+     
+      },
+    ],
   },
 };

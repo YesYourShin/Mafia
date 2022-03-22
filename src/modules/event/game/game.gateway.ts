@@ -134,11 +134,11 @@ export class GameGateway
   ) {
     socket.nsp.emit(Event.SERVER_MESSAGE, data.message);
   }
-
+  // socket이 연결됐을 때
   async handleConnection(@ConnectedSocket() socket: Socket) {
     this.logger.log(`socket connected ${socket.nsp.name} ${socket.id}`);
   }
-
+  // socket이 연결됐을 때
   async handleDisconnect(@ConnectedSocket() socket: Socket) {
     this.logger.log(`socket disconnected: ${socket.id}`);
     const members = await this.getGameRoomMemberList(
