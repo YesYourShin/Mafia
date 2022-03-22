@@ -4,24 +4,22 @@ name: Deploy
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
-
+    
 jobs:
-  build:
-    runs-on: ubuntu-latest
+#   build:
+#     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node-version: [12.x, 14.x]
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest]
+#         node-version: [12.x, 14.x]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: npm install and build
-        run: |
-          npm install
-          npm run build
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: npm install and build
+#         run: |
+#           npm install
+#           npm run build
   #       - uses: actions/upload-artifact@master
   #         with:
   #           name: build artifacts
@@ -47,7 +45,7 @@ jobs:
   #       env:
   #         CI: true
   push:
-    needs: build
+#     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
