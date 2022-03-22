@@ -18,9 +18,9 @@ export class ExistGameRoomGuard implements CanActivate {
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
-    const { gameNumber } = request.params;
+    const { gameRoomNumber } = request.params;
     const game: GameRoomInfo = await this.gameRoomService.findGameInfo(
-      this.gameRoomService.getKeyOfSavedGameInfo(+gameNumber),
+      this.gameRoomService.getKeyOfSavedGameInfo(+gameRoomNumber),
     );
     if (!game) throw new NotFoundException('존재하지 않는 게임 방입니다');
     return true;

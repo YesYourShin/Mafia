@@ -1,26 +1,23 @@
 import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
-import { CreateGameRoomDto } from './dto/create-game-room.dto';
 import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
+import IORedis from 'ioredis';
+import { GamePrefix } from 'src/modules/game-room/constants';
 import {
+  CreateGameRoomDto,
   GameRoomInfo,
   GameRoomInfoWithMemberCount,
   UpdateGameRoomDto,
   UserProfileInGame,
-} from './dto';
-import IORedis from 'ioredis';
-import { GamePrefix } from './constants/prefix';
-import { GameRoomGateway } from '../event/game-room/game-room.gateway';
-import { Event } from '../event/game-room/constants';
-import { REDIS_GAME } from '../redis';
+} from 'src/modules/game-room/dto';
+import { REDIS_GAME } from 'src/modules/redis';
 
 export type Ok = 'OK';
 
 @Injectable()
-export class GameRoomService {
+export class GameRoomEventService {
   constructor(
     @Inject(Logger) private readonly logger: Logger,
     @InjectRedis(REDIS_GAME) private readonly redis: Redis,
-    private readonly gameGateway: GameRoomGateway,
   ) {}
 
   async create(
@@ -48,9 +45,6 @@ export class GameRoomService {
     const gameRoomInfo = await this.findGameInfo(
       this.getKeyOfSavedGameInfo(gameRoomNumber),
     );
-    this.gameGateway.server
-      .to(`game-${gameRoomNumber}`)
-      .emit(Event.UPDATE, gameRoomInfo);
     return { message: '방 정보가 수정 완료' };
   }
 
@@ -103,8 +97,14 @@ export class GameRoomService {
   }
 
   async findMembers(gameRoomNumber: number): Promise<UserProfileInGame[]> {
+    const count = await this.countUsersInGame(gameRoomNumber);
+    console.log('findMembers', count);
     return (
-      await this.redis.lrange(this.getKeyOfSavedUserInfo(gameRoomNumber), 0, 9)
+      await this.redis.lrange(
+        this.getKeyOfSavedUserInfo(gameRoomNumber),
+        0,
+        count,
+      )
     ).map((member) => JSON.parse(member));
   }
 
@@ -157,7 +157,7 @@ export class GameRoomService {
     }
     await this.redis.lrem(
       this.getKeyOfSavedUserInfo(gameRoomNumber),
-      1,
+      0,
       JSON.stringify(profile),
     );
     return { userId: profile.userId, exit: true };

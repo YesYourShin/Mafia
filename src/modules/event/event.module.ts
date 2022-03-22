@@ -1,10 +1,10 @@
 import { Logger, Module } from '@nestjs/common';
-import { GameGateway } from './game/game.gateway';
-import { UserMessageGateway } from './user/user-message.gateway';
+import { GameRoomEventService } from './game-room/game-room-event.service';
+import { GameRoomGateway } from './game-room/game-room.gateway';
+import { UserGateway } from './user/user.gateway';
 
 @Module({
-  imports: [],
-  providers: [GameGateway, UserMessageGateway, Logger],
-  exports: [GameGateway, UserMessageGateway],
+  providers: [GameRoomGateway, UserGateway, Logger, GameRoomEventService],
+  exports: [GameRoomGateway, UserGateway],
 })
 export class EventModule {}

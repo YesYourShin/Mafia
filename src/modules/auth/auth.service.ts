@@ -22,6 +22,10 @@ export class AuthService {
     };
     try {
       const user = await this.userRepository.firstOrCreate(joinRequestUser);
+      console.log(
+        'user id나 profile 안에 number 정보들 string으로 나오나 확인할 것',
+        user,
+      );
       done(null, user);
     } catch (error) {
       done(error, null);

@@ -17,10 +17,10 @@ export class GameMemberGuard implements CanActivate {
 
     const { profile } = request.user as UserProfile;
     const { userId } = profile;
-    const { gameNumber } = request.params;
+    const { gameRoomNumber } = request.params;
 
     const members: UserProfileInGame[] = await this.gameRoomService.findMembers(
-      +gameNumber,
+      +gameRoomNumber,
     );
     const isMember = this.gameRoomService.isMember(members, userId);
     if (!isMember) {
