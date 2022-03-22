@@ -3,23 +3,17 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
-  Logger,
-  LoggerService,
   Post,
   Redirect,
-  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
   ApiOperation,
   ApiCookieAuth,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Response } from 'express';
 import { ResponseDto } from 'src/common/dto';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { LogoutInterceptor } from 'src/interceptors';
@@ -33,14 +27,15 @@ import {
   NotLoggedInGuard,
 } from './guards';
 
+export const FRONT_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'https://gjgjajaj.xyz'
+    : 'http://localhost:7000';
+
 @ApiTags('Auth')
 @Controller('/auth')
 export class AuthController {
-  constructor(
-    @Inject(Logger) private readonly logger: LoggerService,
-    private readonly configService: ConfigService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({ summary: 'Google 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
@@ -52,14 +47,10 @@ export class AuthController {
     status: 301,
     description: '로그인 성공 후 쿠키 전송',
   })
+  @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
   @Get('google/redirect')
-  googleAuthRedirect(@Res() res: Response) {
-    return res.redirect(
-      this.configService.get('FRONT_URL') as string,
-      HttpStatus.MOVED_PERMANENTLY,
-    );
-  }
+  googleAuthRedirect() {}
 
   @ApiOperation({ summary: 'Naver 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
@@ -71,15 +62,10 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Naver 로그인 callback url' })
-  @Redirect(process.env.FRONT_URL, 301)
+  @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
-  naverAuthRedirect(@Res() res: Response) {
-    return res.redirect(
-      this.configService.get('FRONT_URL') as string,
-      HttpStatus.MOVED_PERMANENTLY,
-    );
-  }
+  naverAuthRedirect() {}
 
   @ApiOperation({ summary: 'Kakao 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
@@ -91,15 +77,10 @@ export class AuthController {
     description: '로그인 성공 후 쿠키 전송',
   })
   @ApiOperation({ summary: 'Kakao 로그인 callback url' })
-  @Redirect(process.env.FRONT_URL, 301)
+  @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
-  kakaoAuthRedirect(@Res() res: Response) {
-    return res.redirect(
-      this.configService.get('FRONT_URL') as string,
-      HttpStatus.MOVED_PERMANENTLY,
-    );
-  }
+  kakaoAuthRedirect() {}
 
   @ApiResponse({
     status: 200,

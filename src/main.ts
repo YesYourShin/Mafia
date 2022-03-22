@@ -14,6 +14,7 @@ import {
   WinstonModule,
 } from 'nest-winston';
 import helmet from 'helmet';
+import hpp from 'hpp';
 import Redis from 'ioredis';
 import {
   ExcludeUndefinedInterceptor,
@@ -66,6 +67,8 @@ async function bootstrap() {
       credentials: true,
     });
     app.use(helmet());
+    app.use(hpp());
+    app.set('truxt proxy', 1);
   } else {
     app.enableCors({
       origin: true,
@@ -103,6 +106,7 @@ async function bootstrap() {
   await redisIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisIoAdapter);
 
+  app.disable('etag');
   app.use(cookieParser());
   app.use(
     session({
@@ -113,14 +117,15 @@ async function bootstrap() {
       }),
       resave: false,
       saveUninitialized: false,
-      secret: process.env.COOKIE_SECRET,
+      secret: configService.get('COOKIE_SECRET'),
+      proxy: configService.get('NODE_ENV') === 'production' && true,
       cookie: {
         sameSite: true,
         httpOnly: true,
         maxAge: +process.env.COOKIE_MAX_AGE,
         secure: configService.get('NODE_ENV') === 'production' ? true : false,
         domain:
-          configService.get('NODE_ENV') === 'production' && 'gjgjajaj.xyz',
+          configService.get('NODE_ENV') === 'production' && '.gjgjajaj.xyz',
       },
     }),
   );

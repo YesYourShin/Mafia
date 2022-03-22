@@ -89,9 +89,10 @@ export class UserController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '내 정보 가져오기' })
+  @UseGuards(LoggedInGuard)
   @Get()
   async getMyInfo(@UserDecorator() user: UserProfile) {
-    return user || false;
+    return user;
   }
   @ApiOkResponse({
     description: '유저 프로필 불러오기 성공',
