@@ -1,5 +1,5 @@
 import { AbstractRepository, EntityRepository } from 'typeorm';
-import { Comment } from 'src/entities/Comment';
+import { Comment } from 'src/entities';
 import { CreateCommentDto, UpdateCommentDto } from './dto';
 
 @EntityRepository(Comment)

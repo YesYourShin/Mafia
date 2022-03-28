@@ -1,4 +1,4 @@
-import { Profile } from 'src/entities/Profile';
+import { Profile } from 'src/entities';
 import { AbstractRepository, EntityRepository } from 'typeorm';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';

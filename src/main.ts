@@ -16,12 +16,14 @@ import {
 import helmet from 'helmet';
 import hpp from 'hpp';
 import Redis from 'ioredis';
+import { BaseWsExceptionFilter } from '@nestjs/websockets';
 import {
   ExcludeUndefinedInterceptor,
   TransformResponseInterceptor,
 } from './interceptors';
-import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
 import { ConfigService } from '@nestjs/config';
+import { SessionAdapter } from './shared/adapter/SessionAdapter';
+import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
 
 declare const module: any;
 
@@ -50,7 +52,10 @@ async function bootstrap() {
 
   //global setting
   app.setGlobalPrefix('/api');
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(
+    new HttpExceptionFilter(),
+    // , new BaseWsExceptionFilter()
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -101,36 +106,35 @@ async function bootstrap() {
     Logger.log('Connected to redis successfully');
   });
 
-  // websocket adapter -> redis adapter
-  const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
-
   app.disable('etag');
   app.use(cookieParser());
-  app.use(
-    session({
-      store: new redisStore({
-        client: redisClient,
-        logErrors: true,
-        prefix: 'SESSION:',
-      }),
-      resave: false,
-      saveUninitialized: false,
-      secret: configService.get('COOKIE_SECRET'),
-      proxy: configService.get('NODE_ENV') === 'production' && true,
-      cookie: {
-        sameSite: true,
-        httpOnly: true,
-        maxAge: +process.env.COOKIE_MAX_AGE,
-        secure: configService.get('NODE_ENV') === 'production' ? true : false,
-        domain:
-          configService.get('NODE_ENV') === 'production' && '.gjgjajaj.xyz',
-      },
+  const sessionMiddleware = session({
+    store: new redisStore({
+      client: redisClient,
+      logErrors: true,
+      prefix: 'SESSION:',
     }),
-  );
+    resave: false,
+    saveUninitialized: false,
+    secret: configService.get('COOKIE_SECRET'),
+    proxy: configService.get('NODE_ENV') === 'production' && true,
+    cookie: {
+      sameSite: true,
+      httpOnly: true,
+      maxAge: +process.env.COOKIE_MAX_AGE,
+      secure: configService.get('NODE_ENV') === 'production' ? true : false,
+      domain: configService.get('NODE_ENV') === 'production' && '.gjgjajaj.xyz',
+    },
+  });
+  app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // websocket adapter -> redis adapter
+  // const redisIoAdapter = new RedisIoAdapter(sessionMiddleware, app);
+  // await redisIoAdapter.connectToRedis();
+  // app.useWebSocketAdapter(redisIoAdapter);
+  app.useWebSocketAdapter(new SessionAdapter(sessionMiddleware, app));
 
   await app.listen(PORT);
   console.log(`server listening on port ${PORT}`);
