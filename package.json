@@ -12,7 +12,8 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "typeorm": "ts-node -r tsconfig-paths/,register ./node_modules/typeorm/cli.js --config server/environments/database.ts",
-    "start:dev": "NODE_ENV=development nest build --webpack --webpackPath webpack-hmr.config.js --watch",
+    "start:webpack": "NODE_ENV=development nest build --webpack --webpackPath webpack-hmr.config.js --watch",
+    "start:dev": "nest start --watch",
     "start:save": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/src/main.js",
@@ -28,6 +29,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/axios": "^0.0.7",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^1.1.6",
     "@nestjs/core": "^8.0.0",
@@ -36,6 +38,7 @@
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/platform-socket.io": "^8.2.5",
     "@nestjs/swagger": "^5.2.0",
+    "@nestjs/terminus": "^8.0.6",
     "@nestjs/typeorm": "^8.0.2",
     "@nestjs/websockets": "^8.2.5",
     "@socket.io/redis-adapter": "^7.1.0",

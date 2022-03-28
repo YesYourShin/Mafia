@@ -7,15 +7,18 @@ export class RoomLimitationGuard implements CanActivate {
   constructor(private readonly gameRoomEventService: GameRoomEventService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { gameRoomNumber } = context.switchToWs().getData();
-    const count = await this.gameRoomEventService.countUsersInGame(
+
+    const members =
+      await this.gameRoomEventService.findAllMemberByGameRoomNumber(
+        gameRoomNumber,
+      );
+
+    const { limit } = await this.gameRoomEventService.findGameRoomInfo({
       gameRoomNumber,
-    );
-    const gameInfo = await this.gameRoomEventService.findGameInfo(
-      this.gameRoomEventService.getKeyOfSavedGameInfo(gameRoomNumber),
-    );
-    console.log('count', count);
-    console.log('gameInfo', gameInfo);
-    if (gameInfo.limit <= count) {
+    });
+
+    if (limit <= members.length) {
+      console.log(`limit: ${limit} / members.length: ${members.length}`);
       throw new WsException('방이 꽉 찼습니다');
     }
     return true;

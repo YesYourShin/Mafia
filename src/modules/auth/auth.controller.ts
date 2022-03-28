@@ -14,6 +14,7 @@ import {
   ApiCookieAuth,
   ApiResponse,
 } from '@nestjs/swagger';
+import s from 'connect-redis';
 import { ResponseDto } from 'src/common/dto';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { LogoutInterceptor } from 'src/interceptors';
@@ -50,7 +51,9 @@ export class AuthController {
   @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
   @Get('google/redirect')
-  googleAuthRedirect() {}
+  googleAuthRedirect() {
+    return;
+  }
 
   @ApiOperation({ summary: 'Naver 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)

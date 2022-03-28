@@ -1,5 +1,5 @@
 import { PickType } from '@nestjs/swagger';
-import { Post } from 'src/entities/Post';
+import { Post } from 'src/entities';
 
 export class CreatePostDto extends PickType(Post, [
   'title',

@@ -4,13 +4,7 @@ dayjs.locale('ko');
 
 const gamePrefixDayFormat = `game:${dayjs(Date.now()).format('YYYYMMDD')}`;
 
-interface Prefix {
-  gameRoomInfo: string;
-  gameRoomMembers: string;
-  gameRoomNumber: string;
-}
-
-export const GamePrefix: Prefix = {
+export const GameRoomPrefix = {
   gameRoomInfo: `${gamePrefixDayFormat}:info#`,
   gameRoomMembers: `${gamePrefixDayFormat}:users#`,
   gameRoomNumber: gamePrefixDayFormat,

@@ -35,7 +35,7 @@ import { ResponseDto } from 'src/common/dto';
 import { ApiFile } from 'src/decorators/api-file.decorator';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { User, Profile } from 'src/entities';
-import { s3 } from 'src/shared/MulterS3Service ';
+import { s3 } from 'src/shared/multer-s3.service';
 import { LoggedInGuard } from '../auth/guards';
 import {
   ResponseUserProfileDto,

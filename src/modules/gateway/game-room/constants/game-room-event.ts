@@ -1,12 +1,6 @@
-import dayjs from 'dayjs';
-import 'dayjs/locale/ko';
-dayjs.locale('ko');
-
-const gamePrefixDayFormat = `game:${dayjs(Date.now()).format('YYYYMMDD')}`;
-
 const Prefix = 'GAME:';
 
-export const Event = {
+export const GameRoomEvent = {
   CREATE: `${Prefix}CREATE`,
   UPDATE: `${Prefix}UPDATE`,
   JOIN: `${Prefix}JOIN`,

@@ -5,13 +5,13 @@ import {
   GameRoomInfo,
   GameRoomInfoWithMemberCount,
   UpdateGameRoomDto,
-  UserProfileInGame,
+  Member,
 } from './dto';
 import IORedis from 'ioredis';
-import { GamePrefix } from './constants/prefix';
-import { GameRoomGateway } from '../event/game-room/game-room.gateway';
-import { Event } from '../event/game-room/constants';
 import { REDIS_GAME } from '../redis';
+import { GameRoomEvent } from '../gateway/game-room/constants';
+import { GameRoomGateway } from '../gateway/game-room/game-room.gateway';
+import { GameRoomPrefix } from './constants';
 
 export type Ok = 'OK';
 
@@ -25,7 +25,7 @@ export class GameRoomService {
 
   async create(
     createGameDto: CreateGameRoomDto,
-    profile: UserProfileInGame,
+    profile: Member,
   ): Promise<GameRoomInfo> {
     const gameRoomNumber: number = await this.getGameId();
     createGameDto.gameRoomNumber = gameRoomNumber;
@@ -37,7 +37,7 @@ export class GameRoomService {
   async update(
     gameRoomNumber: number,
     updateGameDto: UpdateGameRoomDto,
-    profile: UserProfileInGame,
+    profile: Member,
   ) {
     const leader = await this.findMember(gameRoomNumber, 0);
     if (leader.userId !== profile.userId) {
@@ -50,14 +50,11 @@ export class GameRoomService {
     );
     this.gameGateway.server
       .to(`game-${gameRoomNumber}`)
-      .emit(Event.UPDATE, gameRoomInfo);
+      .emit(GameRoomEvent.UPDATE, gameRoomInfo);
     return { message: '방 정보가 수정 완료' };
   }
 
-  async join(
-    gameRoomNumber: number,
-    profile: UserProfileInGame,
-  ): Promise<GameRoomInfo> {
+  async join(gameRoomNumber: number, profile: Member): Promise<GameRoomInfo> {
     await this.addUserInGame(gameRoomNumber, profile);
     return await this.findGameInfo(this.getKeyOfSavedGameInfo(gameRoomNumber));
   }
@@ -83,17 +80,14 @@ export class GameRoomService {
 
   async addUserInGame(
     gameRoomNumber: number,
-    profile: UserProfileInGame,
+    profile: Member,
   ): Promise<number> {
     return await this.redis.rpush(
       this.getKeyOfSavedUserInfo(gameRoomNumber),
       JSON.stringify(profile),
     );
   }
-  async findMember(
-    gameRoomNumber: number,
-    index: number,
-  ): Promise<UserProfileInGame> {
+  async findMember(gameRoomNumber: number, index: number): Promise<Member> {
     return JSON.parse(
       await this.redis.lindex(
         this.getKeyOfSavedUserInfo(gameRoomNumber),
@@ -102,7 +96,7 @@ export class GameRoomService {
     );
   }
 
-  async findMembers(gameRoomNumber: number): Promise<UserProfileInGame[]> {
+  async findMembers(gameRoomNumber: number): Promise<Member[]> {
     return (
       await this.redis.lrange(this.getKeyOfSavedUserInfo(gameRoomNumber), 0, 9)
     ).map((member) => JSON.parse(member));
@@ -134,9 +128,9 @@ export class GameRoomService {
   }
 
   async findAllGameKeys(): Promise<IORedis.KeyType[]> {
-    return await this.redis.keys(`${GamePrefix.gameRoomInfo}*`);
+    return await this.redis.keys(`${GameRoomPrefix.gameRoomInfo}*`);
   }
-  isMember(members: UserProfileInGame[], userId: number): boolean {
+  isMember(members: Member[], userId: number): boolean {
     for (const member of members) {
       if (member.userId === userId) return true;
     }
@@ -148,10 +142,7 @@ export class GameRoomService {
     return false;
   }
 
-  async leave(
-    gameRoomNumber: number,
-    profile: UserProfileInGame,
-  ): Promise<object> {
+  async leave(gameRoomNumber: number, profile: Member): Promise<object> {
     if (await this.isLastMember(gameRoomNumber)) {
       return await this.remove(gameRoomNumber);
     }
@@ -171,14 +162,14 @@ export class GameRoomService {
     return { gameRoomNumber, delete: true };
   }
   async getGameId(): Promise<number> {
-    return await this.redis.incr(GamePrefix.gameRoomNumber);
+    return await this.redis.incr(GameRoomPrefix.gameRoomNumber);
   }
 
   getKeyOfSavedGameInfo(gameRoomNumber: number): IORedis.KeyType {
-    return `${GamePrefix.gameRoomInfo}${gameRoomNumber}`;
+    return `${GameRoomPrefix.gameRoomInfo}${gameRoomNumber}`;
   }
 
   getKeyOfSavedUserInfo(gameRoomNumber: number): IORedis.KeyType {
-    return `${GamePrefix.gameRoomMembers}${gameRoomNumber}`;
+    return `${GameRoomPrefix.gameRoomMembers}${gameRoomNumber}`;
   }
 }

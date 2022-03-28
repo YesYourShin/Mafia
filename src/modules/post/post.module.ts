@@ -6,7 +6,7 @@ import { PostRepository } from './post.repository';
 import { ImageRepository } from './image.repository';
 import { ConfigService } from '@nestjs/config';
 import { MulterModule } from '@nestjs/platform-express';
-import { MulterS3Service } from 'src/shared/MulterS3Service ';
+import { MulterS3Service } from 'src/shared/multer-s3.service';
 import { CommentRepository } from '../comment/comment.repository';
 
 @Module({

@@ -31,7 +31,7 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { s3 } from 'src/shared/MulterS3Service ';
+import { s3 } from 'src/shared/multer-s3.service';
 import {
   CreatePostDto,
   FindAllResponseDto,

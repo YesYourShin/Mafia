@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ResponseDto } from 'src/common/dto';
 import { Profile } from 'src/entities';
 import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { ProfileRepository } from './profile.repository';

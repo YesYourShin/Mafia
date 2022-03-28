@@ -16,13 +16,14 @@ import {
 import helmet from 'helmet';
 import hpp from 'hpp';
 import Redis from 'ioredis';
+import { BaseWsExceptionFilter } from '@nestjs/websockets';
 import {
   ExcludeUndefinedInterceptor,
   TransformResponseInterceptor,
 } from './interceptors';
-import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
 import { ConfigService } from '@nestjs/config';
 import { SessionAdapter } from './shared/adapter/SessionAdapter';
+import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
 
 declare const module: any;
 
@@ -51,7 +52,10 @@ async function bootstrap() {
 
   //global setting
   app.setGlobalPrefix('/api');
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(
+    new HttpExceptionFilter(),
+    // , new BaseWsExceptionFilter()
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -127,7 +131,7 @@ async function bootstrap() {
   app.use(passport.session());
 
   // websocket adapter -> redis adapter
-  // const redisIoAdapter = new RedisIoAdapter(sessionMiddleware);
+  // const redisIoAdapter = new RedisIoAdapter(sessionMiddleware, app);
   // await redisIoAdapter.connectToRedis();
   // app.useWebSocketAdapter(redisIoAdapter);
   app.useWebSocketAdapter(new SessionAdapter(sessionMiddleware, app));
