@@ -18,17 +18,20 @@ import {
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import {
+  ApiBody,
+  ApiConsumes,
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { s3 } from 'src/shared/MulterS3Service ';
+import { s3 } from 'src/shared/multer-s3.service';
 import {
   CreatePostDto,
   FindAllResponseDto,
@@ -37,7 +40,7 @@ import {
 } from './dto';
 import { UserProfile } from '../user/dto';
 import { LoggedInGuard } from '../auth/guards';
-import { UserDecorator } from 'src/decorators';
+import { ApiFile, UserDecorator } from 'src/decorators';
 import { ExistedProfileGuard } from 'src/common/guards';
 import { CategoryRangeGuard, ExistPostGuard } from './guards';
 import { PostOwnerGuard } from './guards/post-owner.guard';
@@ -82,8 +85,10 @@ export class PostController {
     return await this.postService.findAll(+category, +page);
   }
 
+  @ApiFile('image')
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '이미지 저장' })
+  @ApiConsumes('multipart/form-data')
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('image'))
@@ -94,6 +99,9 @@ export class PostController {
   @ApiCreatedResponse({
     description: '게시물 등록 성공',
     type: FindOneResponseDto,
+  })
+  @ApiBody({
+    type: CreatePostDto,
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 등록' })
@@ -118,6 +126,9 @@ export class PostController {
     name: 'id',
     required: true,
     description: '게시물 아이디',
+  })
+  @ApiBody({
+    type: UpdatePostDto,
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '게시물 수정' })
@@ -154,6 +165,11 @@ export class PostController {
   }
 
   @ApiOperation({ summary: '게시물 이미지 삭제' })
+  @ApiQuery({
+    description: 'image 경로',
+    name: 'image',
+    example: 'original/abc.jpg',
+  })
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Delete('image')
   async removeImage(@Query('image') key: string) {

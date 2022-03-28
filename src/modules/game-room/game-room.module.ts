@@ -1,31 +1,10 @@
 import { Logger, Module } from '@nestjs/common';
 import { GameRoomService } from './game-room.service';
 import { GameRoomController } from './game-room.controller';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RedisModule } from '@svtslv/nestjs-ioredis';
-import { EventModule } from '../event/event.module';
-import { REDIS_GAME } from '../redis';
+import { GameEventModule } from '../gateway/game-room/game-event.module';
 
 @Module({
-  imports: [
-    RedisModule.forRootAsync(
-      {
-        inject: [ConfigService],
-        useFactory: async (configService: ConfigService) => ({
-          config: {
-            url: `redis://${configService.get(
-              'REDIS_HOST',
-            )}:${configService.get('REDIS_PORT')}/${configService.get(
-              'REDIS_GAME_DB',
-            )}`,
-          },
-        }),
-      },
-      REDIS_GAME,
-    ),
-    ConfigModule,
-    EventModule,
-  ],
+  imports: [GameEventModule],
   controllers: [GameRoomController],
   providers: [GameRoomService, Logger],
   exports: [GameRoomService],

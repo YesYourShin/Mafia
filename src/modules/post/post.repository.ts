@@ -1,5 +1,4 @@
-import { Post } from 'src/entities/Post';
-import { Like } from 'src/entities/Like';
+import { Post, Like } from 'src/entities';
 import { AbstractRepository, EntityRepository } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';

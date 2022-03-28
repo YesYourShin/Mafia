@@ -4,23 +4,21 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { UserProfile } from 'src/modules/user/dto';
-import { UserProfileInGame } from '../dto';
+import { RequestUser } from 'src/common/constants/request-user';
+import { Member } from '../dto';
 import { GameRoomService } from '../game-room.service';
 
 @Injectable()
 export class IsGameRoomMemberGuard implements CanActivate {
   constructor(private readonly gameRoomService: GameRoomService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: Request = context.switchToHttp().getRequest();
+    const request: RequestUser = context.switchToHttp().getRequest();
 
-    const { profile } = request.user as UserProfile;
-    const { userId } = profile;
-    const { gameNumber } = request.params;
+    const { userId } = request.user.profile;
+    const { gameRoomNumber } = request.params;
 
-    const members: UserProfileInGame[] = await this.gameRoomService.findMembers(
-      +gameNumber,
+    const members: Member[] = await this.gameRoomService.findMembers(
+      +gameRoomNumber,
     );
     const isMember = this.gameRoomService.isMember(members, userId);
     if (isMember) {

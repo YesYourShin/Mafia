@@ -1,15 +1,15 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
 import { GameRoomInfoWithMemberCount } from '.';
-import { GameRoomInfo, GameInfoWithGameMembers } from './game-info';
+import { GameRoomInfo, GameRoomInfoWithGameMembers } from './game-info';
 
 export class ResponseGameInfoWithGameMembersDto extends PickType(ResponseDto, [
   'success',
   'status',
   'data',
 ]) {
-  @ApiProperty({ type: () => GameInfoWithGameMembers })
-  data: GameInfoWithGameMembers;
+  @ApiProperty({ type: () => GameRoomInfoWithGameMembers })
+  data: GameRoomInfoWithGameMembers;
 }
 export class ResponseGameInfoWithMemberCountDto extends PickType(ResponseDto, [
   'success',

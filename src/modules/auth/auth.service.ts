@@ -24,6 +24,7 @@ export class AuthService {
       const user = await this.userRepository.firstOrCreate(joinRequestUser);
       done(null, user);
     } catch (error) {
+      console.error(error);
       done(error, null);
     }
   }

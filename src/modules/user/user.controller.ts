@@ -17,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiConflictResponse,
   ApiConsumes,
   ApiCookieAuth,
@@ -26,6 +27,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -33,7 +35,7 @@ import { ResponseDto } from 'src/common/dto';
 import { ApiFile } from 'src/decorators/api-file.decorator';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { User, Profile } from 'src/entities';
-import { s3 } from 'src/shared/MulterS3Service ';
+import { s3 } from 'src/shared/multer-s3.service';
 import { LoggedInGuard } from '../auth/guards';
 import {
   ResponseUserProfileDto,
@@ -163,6 +165,9 @@ export class UserController {
       ),
     },
   })
+  @ApiBody({
+    type: CreateProfileDto,
+  })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 생성' })
   @UseGuards(LoggedInGuard)
@@ -261,6 +266,9 @@ export class UserController {
       ),
     },
   })
+  @ApiBody({
+    type: UpdateProfileDto,
+  })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 수정' })
   @UseGuards(LoggedInGuard)
@@ -273,9 +281,15 @@ export class UserController {
     await this.userService.updateProfile(user.id, profile);
     return await this.userService.findOne(user.id);
   }
+
   @ApiResponse({
     status: HttpStatus.OK,
     description: '회원 탈퇴 성공',
+  })
+  @ApiQuery({
+    description: 'image 경로',
+    name: 'image',
+    example: 'original/profile/abc.jpg',
   })
   @ApiOperation({ summary: '회원 탈퇴' })
   @ApiCookieAuth('connect.sid')
@@ -287,7 +301,7 @@ export class UserController {
   //게시물 존재 및 게시물 권한 확인
   @ApiOperation({ summary: '게시물 이미지 삭제' })
   @Delete('profile/image')
-  async removeImage(@Query('key') key: string) {
+  async removeImage(@Query('image') key: string) {
     s3.deleteObject(
       {
         Bucket: this.configService.get('AWS_S3_BUCKET'),

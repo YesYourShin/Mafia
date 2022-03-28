@@ -1,4 +1,4 @@
-import { Image } from 'src/entities/Image';
+import { Image } from 'src/entities/image.entity';
 import { AbstractRepository, EntityRepository } from 'typeorm';
 
 @EntityRepository(Image)

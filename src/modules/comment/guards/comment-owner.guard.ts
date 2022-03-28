@@ -5,20 +5,19 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { UserProfile } from 'src/modules/user/dto';
+import { RequestUser } from 'src/common/constants/request-user';
 import { CommentRepository } from '../comment.repository';
 
 @Injectable()
 export class CommentOwnerGuard implements CanActivate {
   constructor(private readonly commentRepository: CommentRepository) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request: RequestUser = context.switchToHttp().getRequest();
     const { id } = request.params;
 
-    const comment = await this.commentRepository.findOne(id);
+    const comment = await this.commentRepository.findOne(+id);
 
-    const { profile } = request.user as UserProfile;
-    const { userId } = profile;
+    const { userId } = request.user.profile;
 
     if (!comment) {
       throw new NotFoundException('존재하지 않는 댓글입니다');
