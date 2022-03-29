@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RedisModule } from '@svtslv/nestjs-ioredis';
+import { RedisModule as RedisRegisterModule } from '@svtslv/nestjs-ioredis';
 import { REDIS_GAME } from '.';
 import { RedisGameService } from './redis-game.service';
 import { REDIS_CHAT } from './redis-option';
 
 @Module({
   imports: [
-    RedisModule.forRootAsync(
+    RedisRegisterModule.forRootAsync(
       {
         inject: [ConfigService],
         useFactory: async (configService: ConfigService) => ({
@@ -22,7 +22,7 @@ import { REDIS_CHAT } from './redis-option';
       },
       REDIS_GAME,
     ),
-    RedisModule.forRootAsync(
+    RedisRegisterModule.forRootAsync(
       {
         inject: [ConfigService],
         useFactory: async (configService: ConfigService) => ({
@@ -42,4 +42,4 @@ import { REDIS_CHAT } from './redis-option';
   providers: [RedisGameService],
   exports: [RedisGameService],
 })
-export class RedisModules {}
+export class RedisModule {}
