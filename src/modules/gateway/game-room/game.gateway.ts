@@ -11,8 +11,19 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-// 여기를 통해 socket Server를 세팅 / 옵션들
-// namespace - game
+// @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
+// @Injectable()
+// export class WsAuthenticatedGuard implements CanActivate {
+//   canActivate(context: ExecutionContext): boolean {
+//     const client = context.switchToWs().getClient(); //클라이언트
+//     const request = client.request; //클라이언트 요청
+//     const can = request.isAuthenticated(); //클라이언트
+//     if (!can) {
+//       throw new WsException('유효하지 않은 사용자');
+//     }
+//     return can;
+//   }
+// }
 @WebSocketGateway({
   // path: '/socket.io' <- defaut path,
   transports: ['websocket'],
@@ -26,13 +37,16 @@ export class GameGateway
   @WebSocketServer() public server: Server;
 
   roomName = 'room1'; //방 이름.
-  roomJob = []; //해당 방의 직업
-  roomClient = []; // room인원
-  gamePlayerNum = 0;
+  private roomJob = []; //해당 방의 직업
+  private roomClient = []; // room인원
+  private gamePlayerNum = 0;
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
-  gamestart(@MessageBody() data: number, @ConnectedSocket() socket: Socket) {
+  async gamestart(
+    @MessageBody() data: number,
+    @ConnectedSocket() socket: Socket,
+  ) {
     if (this.gamePlayerNum > 5) {
       setTimeout(() => {
         this.server
@@ -43,9 +57,10 @@ export class GameGateway
     }
   }
 
+  // 임의로 만든 것
   // 방 join
   @SubscribeMessage('gamejoin')
-  handleGamejoin(@ConnectedSocket() socket: Socket) {
+  async handleGamejoin(@ConnectedSocket() socket: Socket) {
     socket.join(this.roomName);
 
     socket.rooms.forEach((room) => {
@@ -99,21 +114,28 @@ export class GameGateway
           `최대 인원입니다. 현재 인원은 ${this.gamePlayerNum}명`,
         );
     } else {
-      for (let item = 0; item < this.gamePlayerNum + 1; item++) {
+      for (let item = 0; item < this.gamePlayerNum; item++) {
         const ran = Math.floor(Math.random() * grantJob.length); //직업
+        // const ran = Math.floor(Math.random() * 2); //직업
         const jobCountData = this.roomJob.filter(
           (item) => item === grantJob[ran],
         ).length; //현재 같은 직업 수
 
         if (jobCountData < jobData[ran]) {
+          this.logger.log(
+            ` 1: 현재 부여된 직업의 수: ${jobCountData}, 현재 걸린 직업: ${grantJob[ran]}`,
+          );
           this.roomJob.push(grantJob[ran]);
           const data = {
+            num: item + 1,
             user: Array.from(gamePlayers)[item],
             job: this.roomJob[item],
           };
           this.roomClient.push(data);
         } else {
-          if (jobCountData === jobData[0]) break;
+          this.logger.log(
+            ` 3: 현재 부여된 직업의 수: ${jobCountData}, 현재 걸린 직업: ${grantJob[ran]}`,
+          );
           item--;
         }
       }
@@ -128,6 +150,9 @@ export class GameGateway
       this.server.to(this.roomName).emit('grantJob', data);
     }
   }
+
+  @SubscribeMessage('finishVote')
+  async handleFinishVote(@MessageBody() voteNum: number) {}
 
   // socket이 연결됐을 때
   async handleConnection(@ConnectedSocket() socket: Socket) {
