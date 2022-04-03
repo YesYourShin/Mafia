@@ -1,18 +1,19 @@
 import { Connection } from 'typeorm';
 import { Factory, Seeder } from 'typeorm-seeding';
 import { ECategory, EGameRole } from '../../common/constants';
-import { Category, GameRole, ReportType } from '../../entities';
-
+import { Category } from '../../entities/category.entity';
+import { GameRole } from '../../entities/game-role.entity';
+import { ReportType } from '../../entities/report-type.entity';
 export class CreateInitialData implements Seeder {
   public async run(factory: Factory, connection: Connection): Promise<any> {
     const queryRunner = connection.createQueryRunner();
-    const queryBuilder = connection.createQueryBuilder();
-    queryRunner.connect();
+    const queryBuilder = connection.createQueryBuilder(queryRunner);
+    await queryRunner.connect();
 
     await queryRunner.startTransaction();
 
     try {
-      await queryBuilder
+      const gameRole = queryBuilder
         .insert()
         .into(GameRole)
         .values([
@@ -23,7 +24,7 @@ export class CreateInitialData implements Seeder {
         ])
         .execute();
 
-      await queryBuilder
+      const reportType = queryBuilder
         .insert()
         .into(ReportType)
         .values([
@@ -54,7 +55,7 @@ export class CreateInitialData implements Seeder {
         ])
         .execute();
 
-      await queryBuilder
+      const category = queryBuilder
         .insert()
         .into(Category)
         .values([
@@ -63,8 +64,12 @@ export class CreateInitialData implements Seeder {
           { id: 3, name: ECategory.INFORMATION },
         ])
         .execute();
+
+      await Promise.all([gameRole, reportType, category]);
+
       await queryRunner.commitTransaction();
     } catch (error) {
+      console.error(error);
       await queryRunner.rollbackTransaction();
     } finally {
       await queryRunner.release();
