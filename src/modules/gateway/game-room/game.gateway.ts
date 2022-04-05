@@ -42,7 +42,6 @@ export class GameGateway
   @WebSocketServer() public server: Server;
 
   roomName = 'room1'; //방 이름.
-  roomJob = []; //해당 방의 직업
   roomClient = []; // room인원
   private gamePlayerNum = 0;
 
@@ -101,6 +100,7 @@ export class GameGateway
     // 마피아, 의사,경찰, 시민
     const jobData = [cr, mafia, doctor, police];
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+    let roomJob = []; //해당 방의 직업
 
     this.logger.log(
       ` 현재 room : ${this.roomName} 인원수 ${this.gamePlayerNum}`,
@@ -109,31 +109,20 @@ export class GameGateway
     if (this.roomClient.length === 0) {
       for (let item = 0; item < this.gamePlayerNum; item++) {
         const ran = Math.floor(Math.random() * grantJob.length); //직업
-        const jobCountData = this.roomJob.filter(
+        const jobCountData = roomJob.filter(
           (item) => item === grantJob[ran],
         ).length; //현재 같은 직업 수
 
-        if (jobCountData < jobData[ran]) {
-          this.logger.log(
-            ` 1: 현재 부여된 직업의 수: ${jobCountData}, 현재 걸린 직업: ${grantJob[ran]}`,
-          );
-          this.roomJob.push(grantJob[ran]);
-          const data = {
-            num: item + 1,
-            user: Array.from(gamePlayers)[item],
-            job: this.roomJob[item],
-          };
-          this.roomClient.push(data);
-        } else {
-          this.logger.log(
-            ` 3: 현재 부여된 직업의 수: ${jobCountData}, 현재 걸린 직업: ${grantJob[ran]}`,
-          );
+        if (jobCountData > jobData[ran] - 1) {
           item--;
         }
+        roomJob.push(grantJob[ran]);
       }
 
-      // 피셔 예이츠 셔플 알고리즘
-      const a = this.roomClient;
+      // 수만큼 직업 배분
+      this.logger.log(roomJob);
+      // 직업 셔플
+      const a = roomJob;
       const strikeOut = [];
       while (a.length) {
         const lastidx = a.length - 1;
@@ -143,7 +132,20 @@ export class GameGateway
         a[roll] = temp;
         strikeOut.push(a.pop());
       }
-      this.roomClient = strikeOut;
+
+      roomJob = strikeOut;
+
+      // 셔플
+      this.logger.log(roomJob);
+
+      for (let i = 0; i < this.gamePlayerNum; i++) {
+        const data = {
+          num: i + 1,
+          user: Array.from(gamePlayers)[i],
+          job: roomJob[i],
+        };
+        this.roomClient.push(data);
+      }
     }
 
     const returndata = {
@@ -151,10 +153,18 @@ export class GameGateway
       jobs: this.roomClient,
     };
 
+    // 직업 배분 셔플 결과
     this.logger.log(returndata);
 
     this.server.to(this.roomName).emit('grantJob', returndata);
   }
+
+  // @SubscribeMessage('Shuffle')
+  // Shuffle(data: any[]) {
+  //   // 피셔 에이츠 셔플
+
+  //   return strikeOut;
+  // }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
