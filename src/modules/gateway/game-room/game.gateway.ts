@@ -113,10 +113,11 @@ export class GameGateway
           (item) => item === grantJob[ran],
         ).length; //현재 같은 직업 수
 
-        if (jobCountData > jobData[ran] - 1) {
+        if (jobCountData < jobData[ran]) {
+          roomJob.push(grantJob[ran]);
+        } else {
           item--;
         }
-        roomJob.push(grantJob[ran]);
       }
 
       // 수만큼 직업 배분
@@ -159,43 +160,62 @@ export class GameGateway
     this.server.to(this.roomName).emit('grantJob', returndata);
   }
 
-  // @SubscribeMessage('Shuffle')
-  // Shuffle(data: any[]) {
-  //   // 피셔 에이츠 셔플
-
-  //   return strikeOut;
-  // }
-
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
   //배열의 합..
-  redisVote = [];
 
   // 투표 합.
   @SubscribeMessage('finishVote')
   async handleFinishVote(
-    @MessageBody() voteNum: number,
+    @MessageBody() payload: { voteNum: number },
     @ConnectedSocket() socket: Socket,
   ) {
+    if (this.roomClient.length === 0) this.logger.log(`직업 분배부터 부탁함.`);
     const gamePlayers = await this.server.in(this.roomName).allSockets();
     this.gamePlayerNum = gamePlayers.size;
-    this.vote.push(voteNum);
+    let redisVote = [];
+
+    // 1. 플레이어 숫자 내일 경우 값 추가. (플레이어는 손으로 선택해서 주지만 일단.. 테스트할 때 조심하기 위해서)
+    if (
+      payload.voteNum <= this.gamePlayerNum &&
+      this.vote.length <= this.gamePlayerNum &&
+      typeof payload.voteNum === 'number'
+    )
+      this.vote.push(payload.voteNum); //undefined
     this.logger.log(
-      `socket : ${socket.id}, 투표 번호: ${voteNum}, voteleng : ${this.vote.length}, gameplayer: ${gamePlayers} `,
+      `플레이어 수 : ${this.gamePlayerNum}, user: ${socket.id}, 투표 번호: ${payload.voteNum}, 총 투표수 : ${this.vote.length}`,
     );
+
+    //roomClient - 숫자, user, 직업.
+
     if (this.vote.length === this.gamePlayerNum) {
-      this.logger.log(
-        ` vote : ${this.vote.length}, gameplayer: ${this.gamePlayerNum}`,
-      );
       this.vote.forEach((element) => {
-        this.logger.log(` ele ${element}`);
-        this.redisVote[element - 1] = element;
+        redisVote[element] = (redisVote[element] || 0) + 1;
       });
 
-      this.logger.log(`투표 합 시작`);
+      const aaaaaaaaa = [];
+      this.logger.log(`플레이어 수 `);
+      this.logger.log(this.roomClient);
+
+      // -> redisVote - 투표 합. 여기서 객체랑 배열을 결합시켜야 함.
+
+      Object.keys(redisVote).forEach((value) => {
+        this.logger.log(value);
+        const data = {
+          num: value,
+          user: this.roomClient[+value - 1].user,
+          voteSum: redisVote[value],
+        };
+
+        aaaaaaaaa.push(data);
+      });
+
+      redisVote = aaaaaaaaa.sort(function (a, b) {
+        return b.vote - a.vote;
+      });
 
       this.server.to(this.roomName).emit('finishVote', {
-        voteResult: this.redisVote,
+        voteResult: redisVote,
       });
     }
   }
@@ -204,6 +224,12 @@ export class GameGateway
   async handleDayNight(@MessageBody() data: string) {
     this.logger.log(` ${data}`);
   }
+
+  // 능력 사용 결과
+
+  // 죽은 사람 저장..?
+
+  //
 
   // -----------------------
   // 1. 하나의 on을 받고 그 안에서  낮, 밤상태를 구분해서 게임 처리?
