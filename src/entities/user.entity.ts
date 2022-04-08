@@ -21,10 +21,10 @@ import { Notification } from './notification.entity';
 import { Profile } from './profile.entity';
 import { Report } from './report.entity';
 
-@Index('user_idx_social_id_provider', ['socialId', 'provider'], {
+@Index('UX_USER_SOCIAL_ID_PROVIDER', ['socialId', 'provider'], {
   unique: true,
 })
-@Unique('user_uk_social_id_provider', ['socialId', 'provider'])
+@Unique('UK_USER_SOCIAL_ID_PROVIDER', ['socialId', 'provider'])
 @Entity('user')
 export class User {
   @ApiProperty({

@@ -18,7 +18,7 @@ export class ReportType {
     description: '신고 카테고리 고유 ID',
   })
   @IsInt()
-  @PrimaryColumn({ type: 'tinyint', name: 'id' })
+  @PrimaryColumn()
   id: number;
 
   @ApiProperty({

@@ -1,29 +1,74 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsDecimal, IsInt, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
+  OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ImagePost } from './image-post.entity';
+import { Profile } from './profile.entity';
 
 @Entity('image')
 export class Image {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @ApiProperty({
+    example: 1,
+    description: '아이디',
+  })
+  @IsInt()
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column()
-  originalName: string;
+  @ApiProperty({
+    example: 'cat.PNG',
+    description: '파일 원본 이름',
+  })
+  @IsString()
+  @Column({ type: 'varchar' })
+  originalname: string;
 
-  @Column()
+  @ApiProperty({
+    example: 'encoding',
+    description: '7bit',
+  })
+  @IsString()
+  @Column({ type: 'varchar' })
   encoding: string;
 
-  @Column()
-  mimeType: string;
+  @ApiProperty({
+    example: 'mime type / 파일 종류',
+    description: 'imag/png',
+  })
+  @IsString()
+  @Column({ type: 'varchar' })
+  mimetype: string;
 
+  @ApiProperty({
+    example: 36332,
+    description: '파일 크기',
+  })
+  @IsDecimal()
   @Column('decimal', { precision: 10, scale: 2 })
   size: number;
 
-  @Column()
+  @ApiProperty({
+    example: 'original/**/1649000570209_**.PNG',
+    description: 'S3 Object key',
+  })
+  @Index('UX_IMAGE_KEY', { unique: true })
+  @Column({ type: 'varchar', unique: true })
+  key: string;
+
+  @ApiProperty({
+    example: 'https://***.**.**.com/original/**/1649000570209_**.PNG',
+    description: '파일 경로',
+  })
+  @Index('UX_IMAGE_LOCATION', { unique: true })
+  @Column({ type: 'varchar', unique: true })
   location: string;
 
   @CreateDateColumn()
@@ -31,4 +76,10 @@ export class Image {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToOne(() => Profile, (profile) => profile.image)
+  profile: Profile;
+
+  @OneToMany(() => ImagePost, (imagePosts) => imagePosts.image)
+  imagePosts: ImagePost[];
 }

@@ -34,7 +34,7 @@ export class View {
     description: '게시물 아이디',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'post_id', nullable: true })
+  @Column({ type: 'int', name: 'post_id', nullable: true })
   postId: number | null;
 
   @ManyToOne(() => Post, (post) => post.views, {

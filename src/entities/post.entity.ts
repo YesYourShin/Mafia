@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -13,6 +14,7 @@ import {
 } from 'typeorm';
 import { Category } from './category.entity';
 import { Comment } from './comment.entity';
+import { ImagePost } from './image-post.entity';
 import { Like } from './like.entity';
 import { Profile } from './profile.entity';
 import { View } from './view.entity';
@@ -48,8 +50,8 @@ export class Post {
     description: '게시물 카테고리 ID',
   })
   @IsInt()
+  @Index('IDX_POST_CATEGORY_ID')
   @Column({
-    type: 'tinyint',
     name: 'category_id',
     nullable: true,
   })
@@ -67,7 +69,8 @@ export class Post {
     description: '유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Index('IDX_POST_USER_ID')
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
   @ManyToOne(() => Profile, (profile) => profile.posts, {
@@ -98,4 +101,7 @@ export class Post {
 
   @OneToMany(() => View, (views) => views.post)
   views: View[];
+
+  @OneToMany(() => ImagePost, (imagePost) => imagePost.post)
+  imagePosts: ImagePost;
 }

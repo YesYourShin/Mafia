@@ -19,7 +19,7 @@ export class Category {
     description: '게시물 카테고리 ID',
   })
   @IsInt()
-  @PrimaryColumn({ type: 'tinyint', name: 'id' })
+  @PrimaryColumn()
   id: number;
 
   @ApiProperty({

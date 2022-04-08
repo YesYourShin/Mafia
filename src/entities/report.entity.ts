@@ -29,7 +29,6 @@ export class Report {
   })
   @IsInt()
   @Column({
-    type: 'tinyint',
     name: 'report_type_id',
     nullable: true,
   })
@@ -51,7 +50,7 @@ export class Report {
     description: '신고 유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
   @ManyToOne(() => User, (user) => user.reports)

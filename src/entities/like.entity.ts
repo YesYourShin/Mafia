@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -28,7 +29,8 @@ export class Like {
     description: '게시물 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'post_id', nullable: true })
+  @Index('IDX_LIKE_POST_ID')
+  @Column({ type: 'int', name: 'post_id', nullable: true })
   postId: number;
 
   @ManyToOne(() => Post, (post) => post.likes)
@@ -40,7 +42,8 @@ export class Like {
     description: '유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Index('IDX_LIKE_USER_ID')
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
   @ManyToOne(() => User, (user) => user.likes)

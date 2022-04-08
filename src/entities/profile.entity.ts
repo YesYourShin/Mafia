@@ -12,11 +12,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Image } from '.';
 import { Comment } from './comment.entity';
 import { Post } from './post.entity';
 import { User } from './user.entity';
 
-@Index('user_idx_nickname', ['nickname'], { unique: true })
 @Entity('profile')
 export class Profile {
   @ApiProperty({
@@ -32,6 +32,7 @@ export class Profile {
     description: '닉네임',
   })
   @IsString()
+  @Index('UX_PROFILE_NICKNAME', { unique: true })
   @Column('varchar', {
     name: 'nickname',
     unique: true,
@@ -40,13 +41,19 @@ export class Profile {
   nickname: string;
 
   @ApiProperty({
-    example: 'https://aaa.com/cat.jpg',
-    description: '이미지 url',
-    required: false,
+    example: 1,
+    description: 'image id',
   })
-  @IsOptional()
-  @Column('varchar', { name: 'image', nullable: true })
-  image?: string | null;
+  @IsInt()
+  @Column({ type: 'int', name: 'image_id', nullable: true })
+  imageId: number;
+
+  @OneToOne(() => Image, (image) => image.profile, {
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'image_id', referencedColumnName: 'id' })
+  image: Image;
 
   @ApiProperty({
     example: '안녕하세요 OOO입니다.',
@@ -86,7 +93,7 @@ export class Profile {
     description: '유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
   @OneToOne(() => User, (user) => user.profile, {

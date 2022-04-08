@@ -36,7 +36,7 @@ export class Comment {
     description: '유저 아이디',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
   @ManyToOne(() => Profile, (profile) => profile.comments, {
@@ -51,7 +51,7 @@ export class Comment {
     description: '게시물 아이디',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'post_id', nullable: true })
+  @Column({ type: 'int', name: 'post_id', nullable: true })
   postId: number | null;
 
   @ManyToOne(() => Post, (post) => post.comments, {
@@ -67,7 +67,7 @@ export class Comment {
   })
   @IsInt()
   @IsOptional()
-  @Column({ type: 'bigint', name: 'parent_id', nullable: true })
+  @Column({ type: 'int', name: 'parent_id', nullable: true })
   parentId?: number | null;
 
   @ManyToOne(() => Comment, (comment) => comment.children, {

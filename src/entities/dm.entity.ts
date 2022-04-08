@@ -35,7 +35,7 @@ export class DM {
     description: '보내는 유저 아이디',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'sender_id', nullable: true })
+  @Column({ type: 'int', name: 'sender_id', nullable: true })
   senderId: number | null;
 
   @ManyToOne(() => User, (sender) => sender.senderDm, {
@@ -51,7 +51,7 @@ export class DM {
   })
   @IsInt()
   @Column({
-    type: 'bigint',
+    type: 'int',
     name: 'receiver_id',
     nullable: true,
   })

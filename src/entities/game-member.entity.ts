@@ -30,7 +30,7 @@ export class GameMember {
     description: '방 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'game_id', nullable: true })
+  @Column({ type: 'int', name: 'game_id', nullable: true })
   gameId: number | null;
 
   @ManyToOne(() => Game, (game) => game.members, {
@@ -45,7 +45,7 @@ export class GameMember {
     description: '게임 참여 유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number | null;
 
   @ManyToOne(() => User, (user) => user.gameMembers, {
@@ -60,7 +60,6 @@ export class GameMember {
     description: '게임 역할',
   })
   @Column({
-    type: 'tinyint',
     name: 'game_role_id',
     nullable: true,
   })

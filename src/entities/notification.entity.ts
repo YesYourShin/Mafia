@@ -43,7 +43,7 @@ export class Notification {
     description: '알림을 발송하는 유저',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
   @ManyToOne(() => User, (user) => user.sendNotifications)
@@ -55,7 +55,7 @@ export class Notification {
     description: '알림 받는 유저',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'target_id', nullable: true })
+  @Column({ type: 'int', name: 'target_id', nullable: true })
   targetId: number;
 
   @ManyToOne(() => User, (user) => user.receiveNotifications)

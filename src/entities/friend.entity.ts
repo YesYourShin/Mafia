@@ -27,7 +27,7 @@ export class Friend {
     description: '친구 신청 유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number | null;
 
   @ManyToOne(() => User, (user) => user.friend1, {
@@ -42,7 +42,7 @@ export class Friend {
     description: '받아준 친구 유저 ID',
   })
   @IsInt()
-  @Column({ type: 'bigint', name: 'friend_id', nullable: true })
+  @Column({ type: 'int', name: 'friend_id', nullable: true })
   friendId: number | null;
 
   @ManyToOne(() => User, (user) => user.friend2, {

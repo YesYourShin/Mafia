@@ -19,7 +19,7 @@ export class GameRole {
     description: '게임 역할 고유 ID',
   })
   @IsInt()
-  @PrimaryColumn({ type: 'tinyint', name: 'id' })
+  @PrimaryColumn()
   id: number;
 
   @ApiProperty({
