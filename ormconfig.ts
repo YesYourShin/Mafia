@@ -1,26 +1,25 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import path from 'path';
 import * as dotenv from 'dotenv';
 
-const path =
+const envPath =
   process.env.NODE_ENV === 'production'
     ? '.env.production'
     : process.env.NODE_ENV === 'testing'
     ? '.env.testing'
     : '.env.development';
 
-dotenv.config({ path });
+dotenv.config({ path: envPath });
 
-const ormconfig: TypeOrmModuleOptions = {
+export const ormconfig: TypeOrmModuleOptions = {
   type: 'mysql',
   host: process.env.DB_HOST,
   port: +process.env.DB_PORT,
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  entities: ['dist/**/*.entity.{ts,js}'],
-  //seeding
-  // entities['src/**/*.entity{.ts,.js}],
-  migrations: [__dirname + '/src/migrations/*.ts'],
+  entities: [path.join(__dirname, 'src/**/*.entity{.ts,.js}')],
+  migrations: [path.join(__dirname + 'src/database/migrations/*.ts')],
   cli: { migrationsDir: 'src/migrations' },
   autoLoadEntities: true,
   charset: 'utf8mb4',
@@ -28,5 +27,3 @@ const ormconfig: TypeOrmModuleOptions = {
   logging: true,
   keepConnectionAlive: true,
 };
-
-export = ormconfig;
