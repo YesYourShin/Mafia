@@ -11,13 +11,15 @@ import {
   HttpCode,
   UseInterceptors,
   UploadedFile,
-  LoggerService,
   Inject,
   Logger,
   HttpStatus,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import {
+  ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
   ApiCookieAuth,
@@ -31,7 +33,6 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { s3 } from 'src/shared/multer-s3.service';
 import {
   CreatePostDto,
   FindAllResponseDto,
@@ -45,13 +46,16 @@ import { ExistedProfileGuard } from 'src/common/guards';
 import { CategoryRangeGuard, ExistPostGuard } from './guards';
 import { PostOwnerGuard } from './guards/post-owner.guard';
 import { ResponseDto } from 'src/common/dto';
+import { ImageService } from '../image/image.service';
+import { CategoryEnum } from 'src/common/constants';
 
 @ApiTags('Posts')
 @Controller('posts')
 export class PostController {
   constructor(
     private readonly postService: PostService,
-    @Inject(Logger) private readonly logger: LoggerService,
+    private readonly imageService: ImageService,
+    @Inject(Logger) private readonly logger = new Logger('PostController'),
     private readonly configService: ConfigService,
   ) {}
 
@@ -67,10 +71,29 @@ export class PostController {
   @ApiOperation({ summary: '게시물 하나 상세 보기' })
   @UseGuards(ExistPostGuard)
   @Get(':postId')
-  async findOne(@Param('postId') id: string) {
-    return await this.postService.findOne(+id);
+  async findOne(
+    @Param('postId') id: string,
+    @UserDecorator() user?: UserProfile,
+  ) {
+    return await this.postService.findOne(+id, user?.id);
   }
 
+  @ApiQuery({
+    description: 'defalut 4 / 전체 게시판',
+    name: 'category',
+    example: 'api/posts?category=1',
+    schema: {
+      default: 4,
+    },
+  })
+  @ApiQuery({
+    description: 'default 1 / 1페이지',
+    name: 'page',
+    example: 'api/posts?page=1',
+    schema: {
+      default: 1,
+    },
+  })
   @ApiOkResponse({
     description: '게시물들 불러오기',
     type: FindAllResponseDto,
@@ -79,12 +102,31 @@ export class PostController {
   @UseGuards(CategoryRangeGuard)
   @Get()
   async findAll(
-    @Query('category') category: string,
-    @Query('page') page: string,
+    @Query('category', new DefaultValuePipe(CategoryEnum.GENERAL), ParseIntPipe)
+    category: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
-    return await this.postService.findAll(+category, +page);
+    return await this.postService.findAll(category, page);
   }
 
+  @ApiCreatedResponse({
+    description: '프로필 이미지 저장 성공',
+    schema: {
+      example: new ResponseDto(true, HttpStatus.CREATED, {
+        location: 'https://aaa.com/cat.jpg',
+      }),
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '잘못된 형식으로 이미지를 보냈을 때',
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.BAD_REQUEST,
+        '이미지만 업로드 가능합니다',
+      ),
+    },
+  })
   @ApiFile('image')
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '이미지 저장' })
@@ -92,8 +134,9 @@ export class PostController {
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('image'))
-  async uploadFile(@UploadedFile() file: Express.MulterS3.File) {
-    return await this.postService.uploadImage(file);
+  async uploadFile(@UploadedFile() image: Express.MulterS3.File) {
+    const imageId = await this.imageService.save(image);
+    return await this.imageService.findOne(imageId);
   }
 
   @ApiCreatedResponse({
@@ -111,7 +154,8 @@ export class PostController {
     @Body() createPostDto: CreatePostDto,
     @UserDecorator() user: UserProfile,
   ) {
-    return await this.postService.create(user.id, createPostDto);
+    const id = await this.postService.create(user.id, createPostDto);
+    return await this.postService.findOne(id);
   }
 
   @ApiCreatedResponse({
@@ -139,7 +183,8 @@ export class PostController {
     @Param('postId') id: string,
     @Body() updatePostDto: UpdatePostDto,
   ) {
-    return await this.postService.update(+id, updatePostDto);
+    await this.postService.update(+id, updatePostDto);
+    return await this.postService.findOne(+id);
   }
 
   @ApiOkResponse({
@@ -172,15 +217,8 @@ export class PostController {
   })
   @UseGuards(LoggedInGuard, ExistedProfileGuard)
   @Delete('image')
-  async removeImage(@Query('image') key: string) {
-    this.logger.log('key', key);
-    s3.deleteObject(
-      {
-        Bucket: this.configService.get('AWS_S3_BUCKET'),
-        Key: key,
-      },
-      function (err, data) {},
-    );
+  async removeImage(@Body('images') keys: string[]) {
+    return await this.postService.removeImage(keys);
   }
 
   @ApiOkResponse({

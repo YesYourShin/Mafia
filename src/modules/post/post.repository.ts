@@ -1,8 +1,13 @@
 import { Post, Like } from 'src/entities';
-import { AbstractRepository, EntityRepository } from 'typeorm';
+import {
+  AbstractRepository,
+  EntityRepository,
+  getConnection,
+  QueryRunner,
+} from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { ICategory } from 'src/common/constants';
+import { CategoryEnum } from 'src/common/constants';
 
 @EntityRepository(Post)
 export class PostRepository extends AbstractRepository<Post> {
@@ -12,22 +17,47 @@ export class PostRepository extends AbstractRepository<Post> {
       .where('id = :id', { id })
       .getOne();
   }
-  async findOne(id: number) {
-    return this.repository
+  async findOne(
+    id: number,
+    userId?: number,
+  ): Promise<{ entities: Post[]; raw: any[] }> {
+    const qb = this.repository
       .createQueryBuilder('post')
       .leftJoin('post.profile', 'postProfile')
+      .leftJoin('postProfile.image', 'postProfileImage')
       .leftJoin('post.comments', 'comment')
       .leftJoin('comment.profile', 'commentProfile')
-      .select(['post.id', 'post.title', 'post.content', 'post.updatedAt'])
+      .leftJoin('commentProfile.image', 'commentProfileImage')
+      .select([
+        'post.id',
+        'post.title',
+        'post.content',
+        'post.categoryId',
+        'post.updatedAt',
+      ])
       .addSelect(['postProfile.id', 'postProfile.nickname'])
+      .addSelect(['postProfileImage.id', 'postProfileImage.location'])
       .addSelect(['comment.id', 'comment.content', 'comment.updatedAt'])
       .addSelect(['commentProfile.id', 'commentProfile.nickname'])
+      .addSelect(['commentProfileImage.id', 'commentProfileImage.location'])
       .orderBy('comment.updatedAt')
       .loadRelationCountAndMap('post.likeCount', 'post.likes')
       .loadRelationCountAndMap('comment.replyCount', 'comment.children')
       .where('post.id = :id', { id })
-      .andWhere('comment.parentId IS NULL')
-      .getOne();
+      .andWhere('comment.parentId IS NULL');
+
+    if (userId) {
+      qb.addSelect((subQuery) => {
+        return subQuery
+          .select('True')
+          .from(Like, 'like')
+          .where('like.userId = :userId', { userId })
+          .where('like.postId = post.id')
+          .limit(1);
+      }, 'isLiked');
+    }
+
+    return await qb.getRawAndEntities();
   }
   async findAll(categoryId: number, skip: number) {
     console.log('skip', skip);
@@ -44,20 +74,18 @@ export class PostRepository extends AbstractRepository<Post> {
       .loadRelationCountAndMap('post.views', 'post.views');
 
     if (
-      categoryId === ICategory.ANNOUNCEMENT ||
-      categoryId === ICategory.FREEBOARD ||
-      categoryId === ICategory.INFORMATIN
+      categoryId === CategoryEnum.ANNOUNCEMENT ||
+      categoryId === CategoryEnum.FREEBOARD ||
+      categoryId === CategoryEnum.INFORMATIN
     ) {
       qb.where('post.categoryId = :categoryId', { categoryId });
-    } else if (categoryId === ICategory.GENERAL) {
+    } else {
       qb.where('post.categoryId IN (:...categoryId)', {
         categoryId: [2, 3],
       });
-    } else if (categoryId === ICategory.POPULAR) {
-      qb.where('post.categoryId IN (:...categoryId)', {
-        categoryId: [2, 3],
-      })
-        .leftJoin('post.likes', 'likes')
+    }
+    if (categoryId === CategoryEnum.POPULAR) {
+      qb.leftJoin('post.likes', 'likes')
         .groupBy('post.id')
         .having('COUNT(likes.id) > 5');
     }
@@ -69,20 +97,18 @@ export class PostRepository extends AbstractRepository<Post> {
       .createQueryBuilder('post')
       .select('COUNT(*) AS postCount');
     if (
-      categoryId === ICategory.ANNOUNCEMENT ||
-      categoryId === ICategory.FREEBOARD ||
-      categoryId === ICategory.INFORMATIN
+      categoryId === CategoryEnum.ANNOUNCEMENT ||
+      categoryId === CategoryEnum.FREEBOARD ||
+      categoryId === CategoryEnum.INFORMATIN
     ) {
       qb.where('post.categoryId = :categoryId', { categoryId });
-    } else if (categoryId === ICategory.GENERAL) {
+    } else {
       qb.where('post.categoryId IN (:...categoryId)', {
         categoryId: [2, 3],
       });
-    } else if (categoryId === ICategory.POPULAR) {
-      qb.where('post.categoryId IN (:...categoryId)', {
-        categoryId: [2, 3],
-      })
-        .leftJoin('post.likes', 'likes')
+    }
+    if (categoryId === CategoryEnum.POPULAR) {
+      qb.leftJoin('post.likes', 'likes')
         .groupBy('post.id')
         .having('COUNT(likes.id) > 5');
     }
@@ -103,11 +129,15 @@ export class PostRepository extends AbstractRepository<Post> {
       })
       .execute();
   }
-  async update(id: number, updatePostDto: UpdatePostDto) {
+  async update(
+    id: number,
+    updatePostDto: UpdatePostDto,
+    queryRunner?: QueryRunner,
+  ) {
     const { title, content, categoryId } = updatePostDto;
 
-    const qb = this.repository
-      .createQueryBuilder()
+    const qb = getConnection()
+      .createQueryBuilder(queryRunner)
       .update(Post)
       .set({
         title,
@@ -120,8 +150,9 @@ export class PostRepository extends AbstractRepository<Post> {
     return qb;
   }
   async isLiked(postId: number, userId: number) {
-    const qb = this.createQueryBuilder('like')
-      .select()
+    const qb = getConnection()
+      .createQueryBuilder()
+      .select('like.id')
       .from(Like, 'like')
       .where('like.postId = :postId', { postId })
       .andWhere('like.userId = :userId', { userId })
@@ -130,24 +161,25 @@ export class PostRepository extends AbstractRepository<Post> {
     return qb;
   }
   async like(postId: number, userId: number) {
-    const qb = this.createQueryBuilder('like')
+    const qb = getConnection()
+      .createQueryBuilder()
       .insert()
       .into(Like)
-      .values({ postId, userId })
-      .execute();
-    return qb;
+      .values({ postId, userId });
+
+    return await qb.execute();
   }
   async unlike(postId: number, userId: number) {
-    const qb = this.createQueryBuilder('like')
+    const qb = getConnection()
+      .createQueryBuilder()
       .delete()
       .from(Like)
       .where('postId = :postId', { postId })
-      .andWhere('userId = :userId', { userId })
-      .execute();
+      .andWhere('userId = :userId', { userId });
 
-    return qb;
+    return await qb.execute();
   }
-  async remove(id) {
+  async remove(id: number) {
     const qb = this.repository
       .createQueryBuilder()
       .delete()

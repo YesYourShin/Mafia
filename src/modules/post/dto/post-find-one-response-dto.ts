@@ -1,28 +1,37 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
+import { Post, Profile } from 'src/entities';
 
 class CommentDto {
   id: number;
   content: string;
   updatedAt: Date;
-  profile: {
-    id: number;
-    nickname: string;
-  };
+  profile: OwnerProfile;
   replyCount: number;
 }
-class FindOneDto {
-  id: number;
-  title: string;
-  content: string;
-  updatedAt: Date;
-  profile: {
-    id: number;
-    nickname: string;
-  };
-  comments: CommentDto[];
-  likeCount: number;
+
+class OwnerProfile extends PickType(Profile, ['id', 'nickname', 'image']) {}
+
+export class PostFindOneDto extends PickType(Post, [
+  'id',
+  'title',
+  'content',
+  'updatedAt',
+]) {
+  @ApiProperty({ type: () => OwnerProfile })
+  private readonly profile: OwnerProfile;
+  @ApiProperty({ type: () => CommentDto, isArray: true })
+  private readonly comments: CommentDto[];
+  @ApiProperty({ example: 10, name: 'likeCount' })
+  private readonly likeCount: number;
+  @ApiProperty({ example: true, name: 'isLiked' })
+  private isLiked?: boolean;
+
+  setIsLiked(isLiked: boolean) {
+    this.isLiked = isLiked;
+  }
 }
+
 export class FindOneResponseDto extends PickType(ResponseDto, [
   'success',
   'status',
@@ -84,5 +93,5 @@ export class FindOneResponseDto extends PickType(ResponseDto, [
       likeCount: 0,
     },
   })
-  data: FindOneDto;
+  data: PostFindOneDto;
 }
