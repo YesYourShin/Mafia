@@ -1,6 +1,6 @@
-import { ApiProperty, OmitType, PickType } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
-import { Profile } from 'src/entities';
+import { Image, Profile } from 'src/entities';
 
 export class ResponseProfileDto<ResponseProfile> extends PickType(ResponseDto, [
   'success',
@@ -10,4 +10,25 @@ export class ResponseProfileDto<ResponseProfile> extends PickType(ResponseDto, [
   @ApiProperty({ type: () => ProfileInfo })
   data: ResponseProfile;
 }
-export class ProfileInfo extends OmitType(Profile, ['deletedAt']) {}
+export class ImageDto extends PickType(Image, [
+  'id',
+  'key',
+  'location',
+  'createdAt',
+  'updatedAt',
+]) {}
+
+export class ProfileInfo extends PickType(Profile, [
+  'id',
+  'nickname',
+  'selfIntroduction',
+  'manner',
+  'level',
+  'exp',
+  'userId',
+  'createdAt',
+  'updatedAt',
+]) {
+  @ApiProperty({ type: () => ImageDto })
+  image?: ImageDto;
+}

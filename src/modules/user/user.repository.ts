@@ -14,7 +14,34 @@ export class UserRepository extends AbstractRepository<User> {
 
     const qb = this.repository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.profile', 'profile');
+      .leftJoin('user.profile', 'profile')
+      .leftJoin('profile.image', 'image')
+      .select([
+        'user.id',
+        'user.socialId',
+        'user.provider',
+        'user.role',
+        'user.createdAt',
+        'user.updatedAt',
+      ])
+      .addSelect([
+        'profile.id',
+        'profile.nickname',
+        'profile.selfIntroduction',
+        'profile.manner',
+        'profile.level',
+        'profile.exp',
+        'profile.userId',
+        'profile.createdAt',
+        'profile.updatedAt',
+      ])
+      .addSelect([
+        'image.id',
+        'image.key',
+        'image.location',
+        'image.createdAt',
+        'image.updatedAt',
+      ]);
 
     if (id) {
       qb.andWhere('user.id = :id', { id });

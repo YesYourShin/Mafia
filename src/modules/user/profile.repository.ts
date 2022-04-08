@@ -1,7 +1,12 @@
-import { Profile } from 'src/entities';
-import { AbstractRepository, EntityRepository } from 'typeorm';
+import {
+  AbstractRepository,
+  EntityRepository,
+  getConnection,
+  QueryRunner,
+} from 'typeorm';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { Profile } from 'src/entities';
 
 export interface ProfileFindOption {
   nickname: string;
@@ -10,35 +15,69 @@ export interface ProfileFindOption {
 @EntityRepository(Profile)
 export class ProfileRepository extends AbstractRepository<Profile> {
   async findProfile(id: number) {
-    return await this.createQueryBuilder('profile')
-      .where('profile.userId = :userId', { userId: id })
+    return await this.repository
+      .createQueryBuilder('profile')
+      .leftJoin('profile.image', 'image')
+      .select([
+        'profile.id',
+        'profile.nickname',
+        'profile.selfIntroduction',
+        'profile.manner',
+        'profile.level',
+        'profile.exp',
+        'profile.userId',
+        'profile.createdAt',
+        'profile.updatedAt',
+      ])
+      .addSelect([
+        'image.id',
+        'image.key',
+        'image.location',
+        'image.createdAt',
+        'image.updatedAt',
+      ])
+      .where('profile.userId = :id', { id })
       .getOne();
   }
 
-  async create(id: number, profile: CreateProfileDto) {
+  async create(
+    id: number,
+    profile: CreateProfileDto,
+    queryRunner?: QueryRunner,
+  ) {
     return await this.repository
-      .createQueryBuilder()
+      .createQueryBuilder('profile', queryRunner)
       .insert()
       .into(Profile)
       .values({
         nickname: profile.nickname,
-        image: profile?.image,
+        imageId: profile?.imageId,
         selfIntroduction: profile?.selfIntroduction,
         userId: id,
       })
       .execute();
   }
 
-  async update(id: number, profile: UpdateProfileDto) {
-    return await this.repository
-      .createQueryBuilder()
+  async update(
+    id: number,
+    updateProfileDto: UpdateProfileDto,
+    queryRunner?: QueryRunner,
+  ) {
+    const { nickname, imageId, selfIntroduction, image } = updateProfileDto;
+
+    if (image) {
+      return await getConnection()
+        .createQueryBuilder(queryRunner)
+        .update(Profile)
+        .set({ nickname, imageId, selfIntroduction })
+        .where('id = :id', { id })
+        .execute();
+    }
+    return await getConnection()
+      .createQueryBuilder(queryRunner)
       .update(Profile)
-      .set({
-        nickname: profile.nickname,
-        image: profile?.image,
-        selfIntroduction: profile?.selfIntroduction,
-      })
-      .where('userId = :id', { id })
+      .set({ nickname, selfIntroduction })
+      .where('id = :id', { id })
       .execute();
   }
 

@@ -11,5 +11,5 @@ export class UserProfile extends PickType(User, [
   'updatedAt',
 ]) {
   @ApiProperty({ type: () => ProfileInfo })
-  profile: ProfileInfo;
+  profile?: ProfileInfo;
 }

@@ -32,18 +32,22 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
+import { ExistedProfileGuard } from 'src/common/guards';
 import { ApiFile } from 'src/decorators/api-file.decorator';
 import { UserDecorator } from 'src/decorators/user.decorator';
-import { User, Profile } from 'src/entities';
-import { s3 } from 'src/shared/multer-s3.service';
+import { User } from 'src/entities';
 import { LoggedInGuard } from '../auth/guards';
+import { S3ImageObject } from '../image/dto/s3-image-object';
+import { ImageService } from '../image/image.service';
 import {
   ResponseUserProfileDto,
   UpdateProfileDto,
   ResponseProfileDto,
   CreateProfileDto,
   UserProfile,
+  ProfileInfo,
 } from './dto';
+import { MyProfileImageGuard } from './guards/my-profile-image.guard';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
@@ -51,6 +55,7 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(
     private readonly userService: UserService,
+    private readonly imageService: ImageService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -117,7 +122,7 @@ export class UserController {
   })
   @ApiOperation({ summary: '특정 유저 정보 불러오기' })
   @Get('profile/:id')
-  async getUserProfile(@Param('id') id: string): Promise<Profile> {
+  async getUserProfile(@Param('id') id: string): Promise<ProfileInfo> {
     return await this.userService.findProfile(+id);
   }
 
@@ -125,7 +130,7 @@ export class UserController {
     description: '프로필 이미지 저장 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.CREATED, {
-        url: 'https://aaa.com/cat.jpg',
+        location: 'https://aaa.com/cat.jpg',
       }),
     },
   })
@@ -147,7 +152,7 @@ export class UserController {
   @Post('profile/image')
   @UseInterceptors(FileInterceptor('image'))
   async uploadProfileImage(@UploadedFile() image: Express.MulterS3.File) {
-    console.log(image);
+    return new S3ImageObject(image);
   }
 
   @ApiOkResponse({
@@ -268,6 +273,8 @@ export class UserController {
   })
   @ApiBody({
     type: UpdateProfileDto,
+    description:
+      'image 안에 있으면 image가 업데이트 됨 / Ex) 이미 profile에 등록된 이미지가 있을 경우 변동이 없을 시 image 객체에 아무것도 넣지 않으면 됨',
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '프로필 수정' })
@@ -278,7 +285,7 @@ export class UserController {
     @UserDecorator() user: UserProfile,
     @Body() profile: UpdateProfileDto,
   ) {
-    await this.userService.updateProfile(user.id, profile);
+    await this.userService.updateProfile(user, profile);
     return await this.userService.findOne(user.id);
   }
 
@@ -298,16 +305,16 @@ export class UserController {
   async destroy(@UserDecorator() user: User) {
     return await this.userService.remove(user.id);
   }
-  //게시물 존재 및 게시물 권한 확인
-  @ApiOperation({ summary: '게시물 이미지 삭제' })
+
+  @ApiQuery({
+    name: 'key',
+    description: '이미지 key값 querystring으로 전달',
+    example: '/api/users/profile/image?key=**/cat.jpg',
+  })
+  @ApiOperation({ summary: '프로필 이미지 삭제' })
+  @UseGuards(LoggedInGuard, ExistedProfileGuard, MyProfileImageGuard)
   @Delete('profile/image')
-  async removeImage(@Query('image') key: string) {
-    s3.deleteObject(
-      {
-        Bucket: this.configService.get('AWS_S3_BUCKET'),
-        Key: key,
-      },
-      function (err, data) {},
-    );
+  async removeImage(@Query('key') key: string) {
+    return await this.userService.removeImage(key);
   }
 }
