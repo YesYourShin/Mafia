@@ -1,4 +1,4 @@
-import { Inject, Logger, UseGuards } from '@nestjs/common';
+import { forwardRef, Inject, Logger, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,9 +9,11 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import passport from 'passport';
 import { Server, Socket } from 'socket.io';
 import { Member } from 'src/modules/game-room/dto';
 import { UserProfile } from 'src/modules/user/dto';
+import { RedisIoAdapter } from 'src/shared/adapter/RedisIoAdapter';
 import { RoomLimitationGuard } from '../guards/room-limitation.guard';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
 import { GameRoomEvent } from './constants';
@@ -23,12 +25,14 @@ import { GameRoomEventService } from './game-room-event.service';
   transports: ['websocket'],
   cors: { origin: '*', credentials: true },
   namespace: '/room',
+  adapter: RedisIoAdapter,
 })
 export class GameRoomGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   constructor(
-    @Inject(Logger) private readonly logger: Logger,
+    @Inject(Logger) private readonly logger = new Logger('GameRoomGateway'),
+    @Inject(forwardRef(() => GameRoomEventService))
     private readonly gameRoomEventService: GameRoomEventService,
   ) {}
   @WebSocketServer() public server: Server;
@@ -51,6 +55,18 @@ export class GameRoomGateway
         gameRoomNumber,
         new Member(user.profile),
       );
+      const readyMember = await this.gameRoomEventService.getGameReadyMember(
+        gameRoomNumber,
+      );
+
+      for (const member of members) {
+        member.ready = false;
+        for (const memberId of readyMember) {
+          if (member.userId === memberId) {
+            member.ready = true;
+          }
+        }
+      }
 
       this.server
         .to(`${newNamespace.name}-${gameRoomNumber}`)
@@ -60,21 +76,29 @@ export class GameRoomGateway
     }
   }
   @SubscribeMessage(GameRoomEvent.READY)
-  async handleReady(
-    @MessageBody() data: { gameRoomNumber: number },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
+  async handleReady(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
+    const { gameRoomNumber } = socket.data;
     const newNamespace = socket.nsp;
+
+    await this.gameRoomEventService.gameReady(gameRoomNumber, user.id);
+
+    this.server
+      .to(`${newNamespace.name}-${gameRoomNumber}`)
+      .emit(GameRoomEvent.READY, user.id);
   }
 
   @SubscribeMessage(GameRoomEvent.UNREADY)
-  async handleUnready(
-    @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    const user = JSON.stringify(data.user);
+  async handleUnready(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { user } = socket.request;
+    const { gameRoomNumber } = socket.data;
     const newNamespace = socket.nsp;
+
+    await this.gameRoomEventService.gameUnReady(gameRoomNumber, user.id);
+
+    this.server
+      .to(`${newNamespace.name}-${gameRoomNumber}`)
+      .emit(GameRoomEvent.READY, user.id);
   }
 
   @SubscribeMessage(GameRoomEvent.START)
@@ -82,37 +106,18 @@ export class GameRoomGateway
     @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
+    const { user } = socket.request;
+    const { gameRoomNumber } = socket.data;
     const newNamespace = socket.nsp;
-    // const leader: Member = JSON.parse(
-    //   await this.redis.lindex(
-    //     `${GameRoomPrefix.gameRoomMembers}${data.gameRoomNumber}`,
-    //     0,
-    //   ),
-    // );
-    // if (data.user.id === leader.userId) {
-    //   const readyCount = await this.redis.scard(
-    //     `game:ready#${socket.nsp.name}`,
-    //   );
-    //   const memberCount = await this.redis.llen(
-    //     `${GameRoomPrefix.gameRoomMembers}${data.gameRoomNumber}`,
-    //   );
-    //   if (memberCount === readyCount + 1) {
-    //     newNamespace.emit(GameRoomEvent.START, {
-    //       start: true,
-    //       gameRoomNumber: data.gameRoomNumber,
-    //     });
-    //   } else {
-    //     newNamespace.emit(GameRoomEvent.START, {
-    //       start: false,
-    //       gameRoomNumber: data.gameRoomNumber,
-    //     });
-    //   }
-    // } else {
-    //   newNamespace.emit(GameRoomEvent.START, {
-    //     start: false,
-    //     gameRoomNumber: data.gameRoomNumber,
-    //   });
-    // }
+
+    const members =
+      await this.gameRoomEventService.findAllMemberByGameRoomNumber(
+        gameRoomNumber,
+      );
+
+    const ready = await this.gameRoomEventService.getGameReadyMember(
+      gameRoomNumber,
+    );
   }
 
   @SubscribeMessage(GameRoomEvent.MESSAGE)
@@ -140,12 +145,25 @@ export class GameRoomGateway
 
     console.log('gameRoomNumber', gameRoomNumber);
 
-    await this.gameRoomEventService.leave(gameRoomNumber, user.id);
+    try {
+      await this.gameRoomEventService.leave(gameRoomNumber, user.id);
+    } catch (error) {
+      this.logger.error(error);
+    }
 
     const members =
       await this.gameRoomEventService.findAllMemberByGameRoomNumber(
         gameRoomNumber,
       );
+    const readyMember = await this.gameRoomEventService.getGameReadyMember(
+      gameRoomNumber,
+    );
+
+    for (const member of members) {
+      for (const memberId of readyMember) {
+        member.ready = member.userId === memberId;
+      }
+    }
     newNamespace
       .to(`${newNamespace.name}-${gameRoomNumber}`)
       .emit(GameRoomEvent.ONLINELIST, members);

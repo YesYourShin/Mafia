@@ -15,7 +15,7 @@ export class RedisGameService {
 
   async hset(
     field: string,
-    value: CreateGameRoomDto | UpdateGameRoomDto | Member[],
+    value: CreateGameRoomDto | UpdateGameRoomDto | Member[] | number[],
   ): Promise<any> {
     return await this.redis.hset(GAME, { [`${field}`]: JSON.stringify(value) });
   }
@@ -34,7 +34,7 @@ export class RedisGameService {
   async hkeys() {
     return await this.redis.hkeys(GAME);
   }
-  async hdel(gameRoomNumber) {
+  async hdel(gameRoomNumber: number) {
     await this.redis.hdel(GAME, [
       `${GAME_ROOM_INFO}${gameRoomNumber}`,
       `${GAME_ROOM_MEMBERS}${gameRoomNumber}`,

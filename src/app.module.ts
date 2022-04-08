@@ -11,13 +11,13 @@ import { CommentModule } from './modules/comment/comment.module';
 import { GameRoomModule } from './modules/game-room/game-room.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { GameModule } from './modules/game/game.module';
-import * as ormconfig from '../ormconfig';
 import { RedisModule } from './modules/redis/redis.module';
 import { GameEventModule } from './modules/gateway/game-room/game-event.module';
 import { UserEventModule } from './modules/gateway/user/user-event.module';
 import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { HttpModule } from '@nestjs/axios';
+import { ormconfig } from '../ormconfig';
 
 @Module({
   imports: [

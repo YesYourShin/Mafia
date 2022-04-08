@@ -16,7 +16,6 @@ import {
 import helmet from 'helmet';
 import hpp from 'hpp';
 import Redis from 'ioredis';
-import { BaseWsExceptionFilter } from '@nestjs/websockets';
 import {
   ExcludeUndefinedInterceptor,
   TransformResponseInterceptor,
@@ -24,8 +23,6 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { SessionAdapter } from './shared/adapter/SessionAdapter';
 import { RedisIoAdapter } from './shared/adapter/RedisIoAdapter';
-
-declare const module: any;
 
 async function bootstrap() {
   //winston logger
@@ -52,10 +49,7 @@ async function bootstrap() {
 
   //global setting
   app.setGlobalPrefix('/api');
-  app.useGlobalFilters(
-    new HttpExceptionFilter(),
-    // , new BaseWsExceptionFilter()
-  );
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -131,18 +125,13 @@ async function bootstrap() {
   app.use(passport.session());
 
   // websocket adapter -> redis adapter
-  // const redisIoAdapter = new RedisIoAdapter(sessionMiddleware, app);
-  // await redisIoAdapter.connectToRedis();
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
   // app.useWebSocketAdapter(redisIoAdapter);
-  app.useWebSocketAdapter(new SessionAdapter(sessionMiddleware, app));
+  app.useWebSocketAdapter(new SessionAdapter(app, sessionMiddleware));
 
   await app.listen(PORT);
   console.log(`server listening on port ${PORT}`);
-
-  if (module.hot) {
-    module.hot.accept();
-    module.hot.dispose(() => app.close());
-  }
 }
 
 bootstrap();

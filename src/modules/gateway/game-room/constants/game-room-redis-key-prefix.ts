@@ -4,6 +4,15 @@ dayjs.locale('ko');
 
 const dayFormat = dayjs(Date.now()).format('YYYYMMDD');
 
+/**
+ * hashes
+ *
+ * key field value
+ * key: GAME
+ * field: 나머지
+ *
+ */
+
 export const GAME = 'GAME';
 export const GAME_ROOM_INFO = `INFO:${dayFormat}#`;
 export const GAME_ROOM_MEMBERS = `MEMBERS:${dayFormat}#`;

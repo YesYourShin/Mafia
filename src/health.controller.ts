@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   HealthCheckService,
   HttpHealthIndicator,
@@ -7,6 +8,7 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(
@@ -20,13 +22,18 @@ export class HealthController {
   @HealthCheck()
   check() {
     //nginx 설정 해야 함
+    const backendURL = `${this.configService.get('BACKEND_URL')}/health/ping`;
     return this.health.check([
-      () =>
-        this.http.pingCheck('mafia', 'http://localhost:3065/api/health/ping'),
+      () => this.http.pingCheck('mafia', backendURL),
       () => this.db.pingCheck('database'),
     ]);
   }
 
+  @ApiOkResponse({
+    schema: {
+      example: 'pong',
+    },
+  })
   @Get('ping')
   ping() {
     return 'pong';

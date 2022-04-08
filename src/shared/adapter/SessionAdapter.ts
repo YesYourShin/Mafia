@@ -5,7 +5,7 @@ import passport from 'passport';
 import { Server, ServerOptions, Socket } from 'socket.io';
 export class SessionAdapter extends IoAdapter {
   private session: express.RequestHandler;
-  constructor(session: any, app: INestApplicationContext) {
+  constructor(app: INestApplicationContext, session: express.RequestHandler) {
     super(app);
     this.session = session;
   }

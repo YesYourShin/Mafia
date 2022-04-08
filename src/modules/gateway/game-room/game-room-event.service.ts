@@ -11,8 +11,8 @@ import {
   GAME_ROOM_MEMBERS,
   GameRoomEvent,
   GameRoomInfoFindOptions,
-  GAME_SOCKET_NAMESPACE,
   GAME_ROOM_READY_MEMBERS,
+  GAME_SOCKET_NAMESPACE,
 } from './constants';
 import {
   CreateGameRoomDto,
@@ -25,14 +25,16 @@ import {
 import { removeNilFromObject } from 'src/common/constants';
 import { RedisGameService } from 'src/modules/redis/redis-game.service';
 import { GameRoomGateway } from './game-room.gateway';
+import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 
 @Injectable()
 export class GameRoomEventService {
   constructor(
-    @Inject(Logger) private readonly logger: Logger,
     private readonly redisGameService: RedisGameService,
     @Inject(forwardRef(() => GameRoomGateway))
     private readonly gameRoomGateway: GameRoomGateway,
+    @Inject(Logger)
+    private readonly logger = new Logger('GameRoomEventService'),
   ) {}
 
   async create(
@@ -63,9 +65,11 @@ export class GameRoomEventService {
     });
 
     this.gameRoomGateway.server
-      .to(`/game-${gameRoomNumber}`)
+      .to(`${GAME_SOCKET_NAMESPACE}-${gameRoomNumber}`)
       .emit(GameRoomEvent.UPDATE, gameRoomInfo);
   }
+
+  // API join 요청 인원수 제한만 확인 후 응답
   async join(gameRoomNumber: number) {
     const { limit } = await this.findGameRoomInfo({ gameRoomNumber });
     const members = await this.findAllMemberByGameRoomNumber(gameRoomNumber);
@@ -74,6 +78,7 @@ export class GameRoomEventService {
     return { gameRoomNumber, joinable: true };
   }
 
+  // Socket
   async joinGameRoom(
     gameRoomNumber: number,
     member: Member,
@@ -97,6 +102,7 @@ export class GameRoomEventService {
     }
   }
 
+  // 게임 방 번호로 모든 멤버 찾기
   async findAllMemberByGameRoomNumber(
     gameRoomNumber: number,
   ): Promise<Member[]> {
@@ -112,7 +118,7 @@ export class GameRoomEventService {
     const values = await this.redisGameService.hmget(fieldsOfGameRoomInfo);
 
     try {
-      const allSettled = await Promise.allSettled(
+      const result = await promiseAllSetteldResult(
         values.map(async (value) => {
           const room: GameRoomInfoWithMemberCount = JSON.parse(value);
           const members = await this.findAllMemberByGameRoomNumber(
@@ -122,23 +128,17 @@ export class GameRoomEventService {
           return room;
         }),
       );
-      const gameRoomInfos = (
-        allSettled.filter(
-          (result) => result.status === 'fulfilled',
-        ) as PromiseFulfilledResult<GameRoomInfoWithMemberCount>[]
-      ).map((r) => r.value);
+      const { value, reason } = result;
 
-      return gameRoomInfos;
+      if (reason) {
+        this.logger.error('Error when find game room info', reason);
+      }
+
+      return value;
     } catch (error) {
       console.error(error);
     }
   }
-  //   const fulfilled = (res.filter((r) => r.status === 'fulfilled') as PromiseFulfilledResult<any>[]).map(
-  //   (r) => r.value
-  // );
-  // (res.filter((r) => r.status === 'rejected') as PromiseRejectedResult[]).forEach((r) =>
-  //   console.warn(r.status, r.reason)
-  // );
 
   async mergeGameRoomInfoAndMembers(
     options: GameRoomInfoFindOptions,
@@ -153,6 +153,7 @@ export class GameRoomEventService {
     return gameRoomInfo;
   }
 
+  // 방 정보 찾기
   async findGameRoomInfo(
     options: GameRoomInfoFindOptions,
   ): Promise<GameRoomInfo> {
@@ -186,6 +187,7 @@ export class GameRoomEventService {
 
     const newMembers = members.filter((member) => member.userId !== userId);
     await this.saveMembers(`${GAME_ROOM_MEMBERS}${gameRoomNumber}`, newMembers);
+    await this.gameUnReady(gameRoomNumber, userId);
 
     return { gameRoomNumber, userId, leave: true };
   }
@@ -203,6 +205,7 @@ export class GameRoomEventService {
     return await this.redisGameService.hset(field, members);
   }
 
+  // 게임 정보 저장
   async saveGameRoomInfo(
     gameDto: CreateGameRoomDto | UpdateGameRoomDto,
   ): Promise<any> {
@@ -212,35 +215,37 @@ export class GameRoomEventService {
     );
   }
 
-  async setGameRoomNumber(gameDto: CreateGameRoomDto | UpdateGameRoomDto) {
+  // 방번호 생성 후 dto에 넣어줌
+  async setGameRoomNumber(gameDto: CreateGameRoomDto) {
     const gameRoomNumber = await this.getDailyGameRoomNumber();
     gameDto.gameRoomNumber = gameRoomNumber;
   }
 
-  async gameReady(gameRoomNumber: number, member: Member) {
-    const members =
-      (await this.redisGameService.hget(GAME_ROOM_READY_MEMBERS)) || [];
-    members.push(member);
-    await this.redisGameService.hset(
+  async gameReady(gameRoomNumber: number, memberId: number) {
+    const members = new Set(await this.getGameReadyMember(gameRoomNumber));
+    members.add(memberId);
+    await this.setGameReadyMember(gameRoomNumber, [...members]);
+  }
+
+  async gameUnReady(gameRoomNumber: number, memberId: number) {
+    const members = new Set(await this.getGameReadyMember(gameRoomNumber));
+    members.delete(memberId);
+    await this.setGameReadyMember(gameRoomNumber, [...members]);
+  }
+
+  async setGameReadyMember(gameRoomNumber: number, members: number[]) {
+    return await this.redisGameService.hset(
       `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
       members,
     );
-    this.gameRoomGateway.server
-      .to(`${GAME_SOCKET_NAMESPACE}-${gameRoomNumber}`)
-      .emit(GameRoomEvent.READY, members);
   }
 
-  async gameUnReady(gameRoomNumber: number, member: Member) {
-    const members: Member[] = await this.redisGameService.hget(
-      `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
+  async getGameReadyMember(gameRoomNumber: number): Promise<number[]> {
+    return (
+      (await this.redisGameService.hget(
+        `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
+      )) || []
     );
-    const newMembers = members.filter(
-      (awaiter) => awaiter.userId !== member.userId,
-    );
-
-    this.gameRoomGateway.server
-      .to(`${GAME_SOCKET_NAMESPACE}-${gameRoomNumber}`)
-      .emit(GameRoomEvent.UNREADY, newMembers);
   }
 
   async isReadyForTheGame(gameRoomNumber: number, member: Member) {
@@ -277,6 +282,7 @@ export class GameRoomEventService {
     }
   }
 
+  // 특정 맴버 id와 user id 매치
   matchASpecificMemberIdWitUserId(memberId: number, userId: number) {
     return memberId === userId;
   }

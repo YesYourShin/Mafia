@@ -1,10 +1,19 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { GameRoomEventService } from '../game-room/game-room-event.service';
 
 @Injectable()
 export class RoomLimitationGuard implements CanActivate {
-  constructor(private readonly gameRoomEventService: GameRoomEventService) {}
+  constructor(
+    @Inject(forwardRef(() => GameRoomEventService))
+    private readonly gameRoomEventService: GameRoomEventService,
+  ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { gameRoomNumber } = context.switchToWs().getData();
 

@@ -3,17 +3,11 @@ import {
   MulterModuleOptions,
   MulterOptionsFactory,
 } from '@nestjs/platform-express';
-import AWS from 'aws-sdk';
 import multerS3 from 'multer-s3';
 import path from 'path';
+import { s3 } from './s3';
 
-export const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_S3_REGION,
-});
-
-export class MulterS3Service implements MulterOptionsFactory {
+export class PostMulterS3Service implements MulterOptionsFactory {
   createMulterOptions(): MulterModuleOptions {
     return {
       storage: multerS3({
@@ -23,7 +17,7 @@ export class MulterS3Service implements MulterOptionsFactory {
         key: (req, file, cb) => {
           cb(
             null,
-            `original/${Date.now()}_${path.basename(file.originalname)}`,
+            `original/posts/${Date.now()}_${path.basename(file.originalname)}`,
           );
         },
       }),

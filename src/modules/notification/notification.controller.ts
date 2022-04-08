@@ -10,8 +10,9 @@ import {
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
-import { ApiCookieAuth } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Notification')
 @ApiCookieAuth('connect.sid')
 @Controller('notification')
 export class NotificationController {

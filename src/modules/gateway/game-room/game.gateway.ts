@@ -1,4 +1,4 @@
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, LoggerService } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -22,7 +22,9 @@ import { Server, Socket } from 'socket.io';
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  constructor(@Inject(Logger) private readonly logger: Logger) {}
+  constructor(
+    @Inject(Logger) private readonly logger = new Logger('GameGateway'),
+  ) {}
   @WebSocketServer() public server: Server;
 
   roomName = 'room1'; //방 이름.

@@ -12,7 +12,7 @@ import { tap } from 'rxjs/operators';
 
 @Injectable()
 export class LogoutInterceptor implements NestInterceptor {
-  constructor(@Inject(Logger) private readonly logger: Logger) {}
+  constructor() {}
 
   intercept(
     context: ExecutionContext,

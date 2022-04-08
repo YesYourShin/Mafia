@@ -1,15 +1,21 @@
-import { PickType } from '@nestjs/swagger';
-import { Profile } from 'src/entities';
-import { ProfileInfo } from 'src/modules/user/dto';
+import { ApiProperty, PickType } from '@nestjs/swagger';
+import { ImageDto, ProfileInfo } from 'src/modules/user/dto';
 
-export class Member extends PickType(Profile, [
+export class Member extends PickType(ProfileInfo, [
   'id',
   'nickname',
-  'image',
   'level',
   'userId',
 ]) {
-  // constructor로 한번에 setting code 짤 것
+  @ApiProperty({ type: () => ImageDto })
+  image?: ImageDto;
+
+  @ApiProperty({
+    name: 'ready',
+    example: true,
+  })
+  ready?: boolean;
+
   constructor({ id, nickname, image, level, userId }: ProfileInfo) {
     super();
     this.id = id;

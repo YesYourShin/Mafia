@@ -10,13 +10,11 @@ export class SessionSerializer extends PassportSerializer {
   }
 
   serializeUser(user: UserProfile, done: CallableFunction) {
-    console.log('serializeUser', user);
     done(null, user);
   }
 
   async deserializeUser(user: UserProfile, done: CallableFunction) {
     try {
-      console.log('deserializeUser', user);
       if (!user?.profile) {
         user = await this.userRepository.findOne({ id: user.id });
       }

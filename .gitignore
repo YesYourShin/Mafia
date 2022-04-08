@@ -38,6 +38,7 @@ lerna-debug.log*
 postgres
 
 # docker
+Dockerfile
 docker-compose.yml
 
 # todo list
@@ -52,3 +53,5 @@ todo.md
 
 # shell script
 push.sh
+
+ormconfig.ts

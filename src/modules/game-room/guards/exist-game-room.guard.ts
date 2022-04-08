@@ -12,10 +12,7 @@ import { GameRoomInfo } from '../dto';
 
 @Injectable()
 export class ExistGameRoomGuard implements CanActivate {
-  constructor(
-    @Inject(Logger) private readonly logger: Logger,
-    private readonly gameRoomEventService: GameRoomEventService,
-  ) {}
+  constructor(private readonly gameRoomEventService: GameRoomEventService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
     const { gameRoomNumber } = request.params;
