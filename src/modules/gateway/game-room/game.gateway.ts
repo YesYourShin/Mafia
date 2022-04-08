@@ -12,6 +12,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameRoomEventService } from './game-room-event.service';
+import { User } from '../../../entities/user.entity';
 
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
@@ -160,6 +161,9 @@ export class GameGateway
     this.server.to(this.roomName).emit('grantJob', returndata);
   }
 
+  // 죽은 사람
+  dead = [];
+
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
   //배열의 합..
@@ -195,7 +199,6 @@ export class GameGateway
 
       const aaaaaaaaa = [];
       this.logger.log(`플레이어 수 `);
-      this.logger.log(this.roomClient);
 
       // -> redisVote - 투표 합. 여기서 객체랑 배열을 결합시켜야 함.
 
@@ -214,8 +217,40 @@ export class GameGateway
         return b.vote - a.vote;
       });
 
+      this.logger.log(redisVote);
+
       this.server.to(this.roomName).emit('finishVote', {
         voteResult: redisVote,
+      });
+    }
+  }
+
+  punis = [];
+
+  @SubscribeMessage('startPunishmentVote')
+  handleStartPunishmentVote(
+    @MessageBody() payload: { Punishment: boolean; user: string },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    this.logger.log(` ${payload.Punishment}`);
+    if (
+      this.vote.length <= this.gamePlayerNum &&
+      typeof payload.Punishment === 'boolean'
+    )
+      this.punis.push(payload.Punishment);
+    if (this.punis.length === this.gamePlayerNum) {
+      const punisAgreement = this.punis.filter((item) => item === true).length; //찬성 수
+
+      this.logger.log(` 찬성 : ${punisAgreement}`);
+
+      const punisOpposition = this.gamePlayerNum - punisAgreement;
+
+      this.server.to(this.roomName).emit('startPunishmentVote', {
+        voteResult: {
+          user: payload.user,
+          Agreement: punisAgreement,
+          Opposition: punisOpposition,
+        },
       });
     }
   }
@@ -226,6 +261,10 @@ export class GameGateway
   }
 
   // 능력 사용 결과
+  @SubscribeMessage('useStat')
+  handleUseStat() {
+    this.logger.log(`능력사용`);
+  }
 
   // 죽은 사람 저장..?
 
