@@ -12,7 +12,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameRoomEventService } from './game-room-event.service';
-import { User } from '../../../entities/user.entity';
 
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
@@ -45,6 +44,7 @@ export class GameGateway
   roomName = 'room1'; //방 이름.
   roomClient = []; // room인원
   private gamePlayerNum = 0;
+  private gamePlayers;
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
@@ -90,9 +90,9 @@ export class GameGateway
     @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
   ) {
     // 해당 room에 소켓 정보들
-    const gamePlayers = await this.server.in(this.roomName).allSockets();
+    this.gamePlayers = await this.server.in(this.roomName).allSockets();
     //해당 room에 인원 수
-    this.gamePlayerNum = gamePlayers.size;
+    this.gamePlayerNum = this.gamePlayers.size;
     // room의 정해진 직업을 주면 대입
     const mafia = 1;
     const doctor = 1;
@@ -120,9 +120,6 @@ export class GameGateway
           item--;
         }
       }
-
-      // 수만큼 직업 배분
-      this.logger.log(roomJob);
       // 직업 셔플
       const a = roomJob;
       const strikeOut = [];
@@ -143,8 +140,9 @@ export class GameGateway
       for (let i = 0; i < this.gamePlayerNum; i++) {
         const data = {
           num: i + 1,
-          user: Array.from(gamePlayers)[i],
+          user: Array.from(this.gamePlayers)[i],
           job: roomJob[i],
+          dead: false,
         };
         this.roomClient.push(data);
       }
@@ -160,9 +158,6 @@ export class GameGateway
 
     this.server.to(this.roomName).emit('grantJob', returndata);
   }
-
-  // 죽은 사람
-  dead = [];
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
@@ -227,6 +222,7 @@ export class GameGateway
 
   punis = [];
 
+  // 찬반투표
   @SubscribeMessage('startPunishmentVote')
   handleStartPunishmentVote(
     @MessageBody() payload: { Punishment: boolean; user: string },
@@ -255,6 +251,23 @@ export class GameGateway
     }
   }
 
+  // 사형.death
+  @SubscribeMessage('death')
+  async handleDeath(
+    @MessageBody() payload: { agrement: boolean; user: string },
+  ) {
+    this.logger.log(` ${payload.agrement}`);
+    if (payload.agrement === true) {
+      this.roomClient.filter((client) => {
+        if (client.user == payload.user) {
+          client.dead = true;
+        }
+      });
+    }
+
+    this.logger.log(this.roomClient);
+  }
+
   @SubscribeMessage('dayNight')
   async handleDayNight(@MessageBody() data: string) {
     this.logger.log(` ${data}`);
@@ -265,10 +278,6 @@ export class GameGateway
   handleUseStat() {
     this.logger.log(`능력사용`);
   }
-
-  // 죽은 사람 저장..?
-
-  //
 
   // -----------------------
   // 1. 하나의 on을 받고 그 안에서  낮, 밤상태를 구분해서 게임 처리?
