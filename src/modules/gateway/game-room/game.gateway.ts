@@ -252,8 +252,7 @@ export class GameGateway
         }
       });
     }
-
-    this.logger.log(this.roomClient);
+gi
     this.server.to(this.roomName).emit('death2', this.roomClient);
   }
 
