@@ -13,7 +13,6 @@ import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameEventService } from './game-event.service';
 
-//에러 발생 안 했으면...
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
 // export class WsAuthenticatedGuard implements CanActivate {

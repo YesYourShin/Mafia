@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 
+// 직업 부여 분리
 @Injectable()
 export class GameEventService {
   constructor(@Inject(Logger) private readonly logger: Logger) {}
