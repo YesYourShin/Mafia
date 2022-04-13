@@ -259,14 +259,28 @@ export class GameGateway
     this.logger.log(` ${data}`);
   }
 
+  userState = [];
+
   // // 능력 사용 결과
-  // @SubscribeMessage('useStat')
-  // handleUseStat(@MessageBody() data{}) {
-  //   this.logger.log(`능력사용`);
-  //   // 마피아 + 의사의 지목이 같은 사람일 경우 살아있음.
-  //   // 아닐 경우 dead
-  //   // 밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
-  // }
+  @SubscribeMessage('useState')
+  handleUseStat(
+    @MessageBody() data: { user: string; job: string; useNum: number },
+  ) {
+    this.logger.log(`능력사용`);
+    const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+    if (data.job != grantJob[0]) {
+      const a = {
+        user: data.user,
+        job: data.job,
+        useNum: data.useNum,
+      };
+      this.userState.push(a);
+    }
+
+    // 마피아 + 의사의 지목이 같은 사람일 경우 살아있음.
+    // 아닐 경우 dead
+    // 밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
+  }
 
   // -----------------------
   // 1. 하나의 on을 받고 그 안에서  낮, 밤상태를 구분해서 게임 처리?
