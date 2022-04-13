@@ -9,7 +9,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-// import { GAME_INFO } from './constants';
 import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameEventService } from './game-event.service';
@@ -252,7 +251,6 @@ export class GameGateway
         }
       });
     }
-gi
     this.server.to(this.roomName).emit('death2', this.roomClient);
   }
 
