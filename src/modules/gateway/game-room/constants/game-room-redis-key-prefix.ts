@@ -1,20 +1,5 @@
-import dayjs from 'dayjs';
-import 'dayjs/locale/ko';
-dayjs.locale('ko');
-
-const dayFormat = dayjs(Date.now()).format('YYYYMMDD');
-
-/**
- * hashes
- *
- * key field value
- * key: GAME
- * field: 나머지
- *
- */
-
-export const GAME = 'GAME';
-export const GAME_ROOM_INFO = `INFO:${dayFormat}#`;
-export const GAME_ROOM_MEMBERS = `MEMBERS:${dayFormat}#`;
-export const GAME_ROOM_READY_MEMBERS = `READY_MEMBER:${dayFormat}#`;
-export const GAME_ROOM_NUMBER = `ROOM_NUMBER:${dayFormat}`;
+export const GAME_ROOM = 'game-room';
+export const INFO_FIELD = 'info';
+export const MEMBER_FIELD = 'member';
+export const READY_MEMBER_FIELD = 'ready-member';
+export const ROOM_NUMBER = 'daily-room-number';

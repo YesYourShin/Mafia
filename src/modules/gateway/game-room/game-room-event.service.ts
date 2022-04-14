@@ -4,49 +4,66 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import {
-  GAME_ROOM_INFO,
-  GAME_ROOM_NUMBER,
-  GAME_ROOM_MEMBERS,
   GameRoomEvent,
-  GameRoomInfoFindOptions,
-  GAME_ROOM_READY_MEMBERS,
+  GAME_ROOM,
   GAME_SOCKET_NAMESPACE,
+  INFO_FIELD,
+  MEMBER_FIELD,
+  READY_MEMBER_FIELD,
 } from './constants';
 import {
   CreateGameRoomDto,
   UpdateGameRoomDto,
   Member,
-  GameRoomInfo,
-  GameRoomInfoWithGameMembers,
-  GameRoomInfoWithMemberCount,
+  GameRoomWithMemberCount,
+  GameRoomWithMembers,
 } from 'src/modules/game-room/dto';
-import { removeNilFromObject } from 'src/common/constants';
-import { RedisGameService } from 'src/modules/redis/redis-game.service';
+import { RedisService } from 'src/modules/redis/redis.service';
 import { GameRoomGateway } from './game-room.gateway';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
+import { JanusService } from 'src/modules/janus/janus.service';
+import { ConfigService } from '@nestjs/config';
+import { GameRoom } from 'src/modules/game-room/dto/game-room';
+import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class GameRoomEventService {
   constructor(
-    private readonly redisGameService: RedisGameService,
+    private readonly redisService: RedisService,
     @Inject(forwardRef(() => GameRoomGateway))
     private readonly gameRoomGateway: GameRoomGateway,
     @Inject(Logger)
     private readonly logger = new Logger('GameRoomEventService'),
+    private readonly janusService: JanusService,
+    private readonly configService: ConfigService,
   ) {}
 
-  async create(
-    createGameRoomDto: CreateGameRoomDto,
-    member: Member,
-  ): Promise<GameRoomInfo> {
-    await this.setGameRoomNumber(createGameRoomDto);
-    await this.saveGameRoomInfo(createGameRoomDto);
+  async getJanusRoomList() {
+    return await this.janusService.getJanusRoomList();
+  }
+  async create(createGameRoomDto: CreateGameRoomDto): Promise<GameRoom> {
+    const { mode, description, publishers, pin } = createGameRoomDto;
+    const id = await this.getDailyGameRoomNumber();
 
-    return await this.findGameRoomInfo({
-      gameRoomNumber: createGameRoomDto.gameRoomNumber,
-    });
+    const janusRoom = await this.janusService.createJanusRoom(
+      createGameRoomDto,
+    );
+
+    const gameRoom = new GameRoom(
+      id,
+      mode,
+      janusRoom.response.room,
+      description,
+      publishers,
+      pin,
+    );
+
+    await this.saveGameRoomInfo(gameRoom);
+
+    return gameRoom;
   }
 
   async update(
@@ -54,44 +71,41 @@ export class GameRoomEventService {
     updateGameRoomDto: UpdateGameRoomDto,
     userId: number,
   ): Promise<void> {
-    const members = await this.findAllMemberByGameRoomNumber(gameRoomNumber);
-    if (!this.matchASpecificMemberIdWitUserId(members[0].userId, userId))
+    const { id, mode, description, pin, publishers, room } = updateGameRoomDto;
+    const members = await this.findMembersByRoomId(gameRoomNumber);
+
+    if (!this.matchSpecificMember(members[0].userId, userId))
       throw new ForbiddenException('방 수정할 수 있는 권한이 없습니다');
 
-    await this.saveGameRoomInfo(updateGameRoomDto);
+    const gameRoom = new GameRoom(id, mode, room, description, publishers, pin);
 
-    const gameRoomInfo = await this.findGameRoomInfo({
-      gameRoomNumber: updateGameRoomDto.gameRoomNumber,
-    });
+    await this.saveGameRoomInfo(gameRoom);
 
     this.gameRoomGateway.server
       .to(`${GAME_SOCKET_NAMESPACE}-${gameRoomNumber}`)
-      .emit(GameRoomEvent.UPDATE, gameRoomInfo);
+      .emit(GameRoomEvent.UPDATE, gameRoom);
   }
 
   // API join 요청 인원수 제한만 확인 후 응답
-  async join(gameRoomNumber: number) {
-    const { limit } = await this.findGameRoomInfo({ gameRoomNumber });
-    const members = await this.findAllMemberByGameRoomNumber(gameRoomNumber);
-    if (limit <= members.length)
+  async joinable(roomId: number): Promise<object> {
+    const { publishers } = await this.findOneOfRoomInfo(roomId);
+    const members = await this.findMembersByRoomId(roomId);
+    if (publishers <= members.length)
       throw new ForbiddenException('방이 꽉 찼습니다');
-    return { gameRoomNumber, joinable: true };
+    return { roomId, joinable: true };
   }
 
   // Socket
-  async joinGameRoom(
-    gameRoomNumber: number,
-    member: Member,
-  ): Promise<Member[]> {
-    const members = await this.findAllMemberByGameRoomNumber(gameRoomNumber);
+  async join(roomId: number, member: Member): Promise<Member[]> {
+    const members = await this.findMembersByRoomId(roomId);
     this.addMember(members, member);
-    await this.saveMembers(`${GAME_ROOM_MEMBERS}${gameRoomNumber}`, members);
+    await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, members);
 
     return members;
   }
 
-  async findMember(gameRoomNumber: number, userId: number): Promise<Member> {
-    const members = await this.findAllMemberByGameRoomNumber(gameRoomNumber);
+  async findMember(roomId: number, userId: number): Promise<Member> {
+    const members = await this.findMembersByRoomId(roomId);
     return this.getMemberInGameRoomMember(members, userId);
   }
 
@@ -103,166 +117,146 @@ export class GameRoomEventService {
   }
 
   // 게임 방 번호로 모든 멤버 찾기
-  async findAllMemberByGameRoomNumber(
-    gameRoomNumber: number,
-  ): Promise<Member[]> {
-    return (
-      (await this.redisGameService.hget(
-        `${GAME_ROOM_MEMBERS}${gameRoomNumber}`,
-      )) || []
-    );
+  async findMembersByRoomId(roomId: number): Promise<Member[]> {
+    const members =
+      (await this.redisService.hget(this.makeRoomKey(roomId), MEMBER_FIELD)) ||
+      [];
+
+    return members;
   }
 
-  async findAllOfGameRoomInfo(): Promise<GameRoomInfoWithMemberCount[]> {
-    const fieldsOfGameRoomInfo: string[] = await this.getFieldsOfGameRoomInfo();
-    const values = await this.redisGameService.hmget(fieldsOfGameRoomInfo);
+  async findGameRoomWithMemberCount(): Promise<GameRoomWithMemberCount[]> {
+    const roomKeys: string[] = await this.getRoomKeys();
 
-    try {
-      const result = await promiseAllSetteldResult(
-        values.map(async (value) => {
-          const room: GameRoomInfoWithMemberCount = JSON.parse(value);
-          const members = await this.findAllMemberByGameRoomNumber(
-            room.gameRoomNumber,
-          );
-          room.memberCount = members.length;
-          return room;
-        }),
-      );
-      const { value, reason } = result;
+    const result = await promiseAllSetteldResult(
+      roomKeys.map(async (key) => {
+        const room: GameRoom = await this.redisService.hget(key, INFO_FIELD);
+        const members = await this.findMembersByRoomId(room.id);
+        const gameRoom = new GameRoomWithMemberCount(room, members.length);
+        return gameRoom;
+      }),
+    );
+    const { value, reason } = result;
 
-      if (reason) {
-        this.logger.error('Error when find game room info', reason);
-      }
-
-      return value;
-    } catch (error) {
-      console.error(error);
+    if (reason) {
+      this.logger.error('Error when find game room info', reason);
     }
+
+    return value;
   }
 
   async mergeGameRoomInfoAndMembers(
-    options: GameRoomInfoFindOptions,
-  ): Promise<GameRoomInfoWithGameMembers> {
-    const gameRoomInfo: GameRoomInfoWithGameMembers =
-      await this.findGameRoomInfo(options);
+    roomId: number,
+  ): Promise<GameRoomWithMembers> {
+    const roomInfo = await this.findOneOfRoomInfo(roomId);
+    if (!roomInfo) {
+      throw new NotFoundException('존재하지 않는 게임 방입니다');
+    }
+    const members = await this.findMembersByRoomId(roomId);
 
-    gameRoomInfo.members = await this.findAllMemberByGameRoomNumber(
-      gameRoomInfo.gameRoomNumber,
-    );
-
-    return gameRoomInfo;
+    return new GameRoomWithMembers(roomInfo, members);
   }
 
   // 방 정보 찾기
-  async findGameRoomInfo(
-    options: GameRoomInfoFindOptions,
-  ): Promise<GameRoomInfo> {
-    if (Object.keys(removeNilFromObject(options)).length === 0) return null;
-
-    const { gameRoomNumber, field } = options;
-
-    if (gameRoomNumber) {
-      return await this.redisGameService.hget(
-        `${GAME_ROOM_INFO}${gameRoomNumber}`,
-      );
-    }
-
-    if (field) {
-      return await this.redisGameService.hget(field);
-    }
+  async findOneOfRoomInfo(roomId: number): Promise<GameRoom> {
+    return await this.redisService.hget(this.makeRoomKey(roomId), INFO_FIELD);
   }
 
-  async getFieldsOfGameRoomInfo(): Promise<string[]> {
-    const fields = await this.redisGameService.hkeys();
-    return this.filterOutGameRoomInfoField(fields);
+  async getRoomKeys(): Promise<string[]> {
+    return await this.redisService.keys(`${GAME_ROOM}*`);
   }
 
-  async leave(gameRoomNumber: number, userId: number) {
-    const members = await this.findAllMemberByGameRoomNumber(gameRoomNumber);
+  async leave(roomId: number, userId: number): Promise<object> {
+    const members = await this.findMembersByRoomId(roomId);
     if (
       this.isLastMember(members) &&
-      this.matchASpecificMemberIdWitUserId(members[0].userId, userId)
+      this.matchSpecificMember(members[0].userId, userId)
     )
-      return await this.remove(gameRoomNumber);
+      return await this.remove(roomId);
 
     const newMembers = members.filter((member) => member.userId !== userId);
-    await this.saveMembers(`${GAME_ROOM_MEMBERS}${gameRoomNumber}`, newMembers);
-    await this.gameUnReady(gameRoomNumber, userId);
+    await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, newMembers);
+    await this.gameUnReady(roomId, userId);
 
-    return { gameRoomNumber, userId, leave: true };
+    return { roomId, userId, leave: true };
   }
 
-  async remove(gameRoomNumber: number) {
-    await this.redisGameService.hdel(gameRoomNumber);
-    return { gameRoomNumber, delete: true };
+  async remove(roomId: number): Promise<object> {
+    await this.redisService.del(this.makeRoomKey(roomId));
+    try {
+      await this.janusService.destroyJanusRoom(roomId);
+    } catch (error) {
+      this.logger.error('Error when destroy janus room', error);
+    }
+    return { roomId, delete: true };
   }
 
   async getDailyGameRoomNumber(): Promise<number> {
-    return await this.redisGameService.hincrby(GAME_ROOM_NUMBER, 1);
+    return await this.redisService.incr();
+    // return await this.redisService.bitpos(ROOM_NUMBER, 1);
   }
 
-  async saveMembers(field: string, members: Member[]): Promise<any> {
-    return await this.redisGameService.hset(field, members);
+  async saveMembers(
+    key: string,
+    field: string,
+    members: Member[],
+  ): Promise<any> {
+    return await this.redisService.hset(key, field, members);
   }
 
   // 게임 정보 저장
-  async saveGameRoomInfo(
-    gameDto: CreateGameRoomDto | UpdateGameRoomDto,
-  ): Promise<any> {
-    return await this.redisGameService.hset(
-      `${GAME_ROOM_INFO}${gameDto.gameRoomNumber}`,
-      gameDto,
+  async saveGameRoomInfo(gameRoom: GameRoom): Promise<any> {
+    return await this.redisService.hset(
+      this.makeRoomKey(gameRoom.id),
+      INFO_FIELD,
+      instanceToPlain(gameRoom),
     );
   }
 
-  // 방번호 생성 후 dto에 넣어줌
-  async setGameRoomNumber(gameDto: CreateGameRoomDto) {
-    const gameRoomNumber = await this.getDailyGameRoomNumber();
-    gameDto.gameRoomNumber = gameRoomNumber;
-  }
-
-  async gameReady(gameRoomNumber: number, memberId: number) {
+  async gameReady(gameRoomNumber: number, memberId: number): Promise<void> {
     const members = new Set(await this.getGameReadyMember(gameRoomNumber));
     members.add(memberId);
     await this.setGameReadyMember(gameRoomNumber, [...members]);
   }
 
-  async gameUnReady(gameRoomNumber: number, memberId: number) {
+  async gameUnReady(gameRoomNumber: number, memberId: number): Promise<void> {
     const members = new Set(await this.getGameReadyMember(gameRoomNumber));
     members.delete(memberId);
     await this.setGameReadyMember(gameRoomNumber, [...members]);
   }
 
-  async setGameReadyMember(gameRoomNumber: number, members: number[]) {
-    return await this.redisGameService.hset(
-      `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
+  async setGameReadyMember(roomId: number, members: number[]): Promise<any> {
+    return await this.redisService.hset(
+      this.makeRoomKey(roomId),
+      READY_MEMBER_FIELD,
       members,
     );
   }
 
-  async getGameReadyMember(gameRoomNumber: number): Promise<number[]> {
-    return (
-      (await this.redisGameService.hget(
-        `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
-      )) || []
+  async getGameReadyMember(roomId: number): Promise<number[]> {
+    const readyMember =
+      (await this.redisService.hget(
+        this.makeRoomKey(roomId),
+        READY_MEMBER_FIELD,
+      )) || [];
+    return readyMember;
+  }
+
+  //Todo 미구현
+  async isReadyForTheGame(roomId: number, member: Member) {
+    const members: Member[] = await this.redisService.hget(
+      this.makeRoomKey(roomId),
+      READY_MEMBER_FIELD,
     );
   }
 
-  async isReadyForTheGame(gameRoomNumber: number, member: Member) {
-    const members: Member[] = await this.redisGameService.hget(
-      `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
+  //Todo 미구현
+  async startGame(roomId: number, member: Member) {
+    const members: Member[] = await this.redisService.hget(
+      this.makeRoomKey(roomId),
+      READY_MEMBER_FIELD,
     );
-    const a = this.getMemberInGameRoomMember(members, member.userId);
-    if (!a) {
-      throw new ForbiddenException('방 멤버가 아닙니다');
-    }
-  }
-
-  async startGame(gameRoomNumber: number, member: Member) {
-    const members: Member[] = await this.redisGameService.hget(
-      `${GAME_ROOM_READY_MEMBERS}${gameRoomNumber}`,
-    );
-    if (!this.matchASpecificMemberIdWitUserId(members[0].userId, member.userId))
+    if (!this.matchSpecificMember(members[0].userId, member.userId))
       throw new ForbiddenException('게임을 시작할 수 있는 권한이 없습니다');
   }
 
@@ -272,10 +266,7 @@ export class GameRoomEventService {
 
   getMemberInGameRoomMember(members: Member[], userId: number): Member {
     for (const member of members) {
-      const isMember = this.matchASpecificMemberIdWitUserId(
-        member.userId,
-        userId,
-      );
+      const isMember = this.matchSpecificMember(member.userId, userId);
       if (isMember) {
         return member;
       }
@@ -283,11 +274,18 @@ export class GameRoomEventService {
   }
 
   // 특정 맴버 id와 user id 매치
-  matchASpecificMemberIdWitUserId(memberId: number, userId: number) {
+  matchSpecificMember(memberId: number, userId: number): boolean {
     return memberId === userId;
   }
 
-  filterOutGameRoomInfoField(fields: string[]): string[] {
-    return fields.filter((field) => field.match(/INFO.+/));
+  makeRoomKey(roomId: number): string {
+    return `${GAME_ROOM}:${roomId}`;
+  }
+  async getJanusRoomListParticipants(roomId: number): Promise<any> {
+    return await this.janusService.getJanusRoomListParticipants(roomId);
+  }
+
+  async removeJanusRoom(roomId: number): Promise<any> {
+    return await this.janusService.destroyJanusRoom(roomId);
   }
 }

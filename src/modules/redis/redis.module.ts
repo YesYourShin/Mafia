@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule as RedisRegisterModule } from '@svtslv/nestjs-ioredis';
 import { REDIS_GAME } from '.';
-import { RedisGameService } from './redis-game.service';
+import { RedisService } from './redis.service';
 import { REDIS_CHAT } from './redis-option';
 
 @Module({
@@ -39,7 +39,7 @@ import { REDIS_CHAT } from './redis-option';
     ),
     ConfigModule,
   ],
-  providers: [RedisGameService],
-  exports: [RedisGameService],
+  providers: [RedisService],
+  exports: [RedisService],
 })
 export class RedisModule {}

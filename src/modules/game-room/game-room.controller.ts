@@ -27,14 +27,11 @@ import {
 import { LoggedInGuard } from '../auth/guards/logged-in.guard';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { UserProfile } from '../user/dto';
-import { Member } from 'src/modules/game-room/dto';
 import {
-  GameRoomInfo,
-  GameRoomInfoWithGameMembers,
-  GameRoomInfoWithMemberCount,
-  ResponseCurrentGamesInfo,
-  ResponseGameInfoWithGameMembersDto,
-  ResponseGameInfoWithMemberCountDto,
+  GameRoom,
+  GameRoomWithMembers,
+  ResponseGameRoomFindAllDto,
+  ResponseGameRoomFindOneDto,
   UpdateGameRoomDto,
 } from './dto';
 import { ResponseDto } from 'src/common/dto';
@@ -46,9 +43,11 @@ import {
 import { concatMap, from, interval, map, Observable } from 'rxjs';
 import { IsGameRoomMemberGuard } from './guards/is-game-room-member.guard';
 import { GameRoomEventService } from '../gateway/game-room/game-room-event.service';
+import { GameRoomWithMemberCount } from './dto/game-room-with-member-count';
+import { ExistedProfileGuard } from 'src/common/guards';
 
 @ApiCookieAuth('connect.sid')
-@UseGuards(LoggedInGuard)
+@UseGuards(LoggedInGuard, ExistedProfileGuard)
 @ApiTags('Rooms')
 @Controller('games/rooms')
 export class GameRoomController {
@@ -56,14 +55,14 @@ export class GameRoomController {
 
   @ApiResponse({
     description: '5초마다 게임 방 정보 최신화해서 보내 줌',
-    type: ResponseCurrentGamesInfo,
+    type: ResponseGameRoomFindAllDto,
   })
   @Sse('sse')
   sse(): Observable<MessageEvent> {
     return interval(5000)
       .pipe(
         concatMap(() =>
-          from(this.gameRoomEventService.findAllOfGameRoomInfo()),
+          from(this.gameRoomEventService.findGameRoomWithMemberCount()),
         ),
       )
       .pipe(map((response) => ({ data: response })));
@@ -71,36 +70,34 @@ export class GameRoomController {
 
   @ApiOkResponse({
     description: '전체 게임 방 불러오기 성공',
-    type: ResponseGameInfoWithMemberCountDto,
+    type: ResponseGameRoomFindAllDto,
   })
   @ApiOperation({ summary: '전체 게임 방 불러오기' })
   @Get()
-  async findAll(): Promise<GameRoomInfoWithMemberCount[]> {
-    return await this.gameRoomEventService.findAllOfGameRoomInfo();
+  async findAll(): Promise<GameRoomWithMemberCount[]> {
+    return await this.gameRoomEventService.findGameRoomWithMemberCount();
   }
 
   @ApiOkResponse({
     description: '게임 방 정보와 멤버 정보 불러오기 성공',
-    type: ResponseGameInfoWithGameMembersDto,
+    type: ResponseGameRoomFindOneDto,
   })
   @ApiParam({
-    name: 'gameRoomNumber',
+    name: 'roomId',
     description: '게임 방 번호',
     example: 1,
   })
   @ApiOperation({ summary: '특정 게임 방 정보 불러오기 ' })
-  @Get(':gameRoomNumber')
+  @Get(':roomId')
   async findUsersInGameRoomWithRoomInfo(
-    @Param('gameRoomNumber') gameRoomNumber: string,
-  ): Promise<GameRoomInfoWithGameMembers> {
-    return await this.gameRoomEventService.mergeGameRoomInfoAndMembers({
-      gameRoomNumber: +gameRoomNumber,
-    });
+    @Param('roomId') roomId: string,
+  ): Promise<GameRoomWithMembers> {
+    return await this.gameRoomEventService.mergeGameRoomInfoAndMembers(+roomId);
   }
 
   @ApiCreatedResponse({
     description: '게임 방 생성 성공',
-    type: ResponseGameInfoWithGameMembersDto,
+    type: GameRoom,
   })
   @ApiBadRequestResponse({
     description: '최대 인원 수 설정 실패',
@@ -120,22 +117,29 @@ export class GameRoomController {
   @UseGuards(ValidateLimitGuard)
   @Post()
   async create(
-    @Body() createGameDto: CreateGameRoomDto,
-    @UserDecorator() user: UserProfile,
-  ): Promise<GameRoomInfo> {
-    console.log(user);
-    return await this.gameRoomEventService.create(
-      createGameDto,
-      new Member(user.profile),
-    );
+    @Body() createGameRoomDto: CreateGameRoomDto,
+  ): Promise<GameRoom> {
+    return await this.gameRoomEventService.create(createGameRoomDto);
   }
 
-  @ApiCreatedResponse({
-    description: '게임 방 참가 성공',
-    type: ResponseGameInfoWithGameMembersDto,
+  @Post('list')
+  async getRoomList() {
+    return await this.gameRoomEventService.getJanusRoomList();
+  }
+
+  @Post('list-participants/:room')
+  async getListParticipants(@Param('room') room: string) {
+    return await this.gameRoomEventService.getJanusRoomListParticipants(+room);
+  }
+
+  @ApiOkResponse({
+    description: '게임 방 참가 가능',
+    schema: {
+      example: new ResponseDto(true, 200, { roomId: 1, joinable: true }),
+    },
   })
   @ApiForbiddenResponse({
-    description: '게임 방 참가 실패',
+    description: '게임 방 참가 권한 불가',
     schema: {
       example: new ResponseDto(
         false,
@@ -145,23 +149,24 @@ export class GameRoomController {
     },
   })
   @ApiParam({
-    name: 'gameRoomNumber',
+    name: 'roomId',
     description: '게임 방 번호',
     example: 1,
   })
   @ApiOperation({ summary: '게임 방 참가' })
   @UseGuards(ExistGameRoomGuard, IsGameRoomMemberGuard)
-  @Post(':gameRoomNumber')
-  async join(
-    @Param('gameRoomNumber') gameRoomNumber: string,
-    @UserDecorator() user: UserProfile,
-  ): Promise<object> {
-    return await this.gameRoomEventService.join(+gameRoomNumber);
+  @Get(':roomId/joinable-room')
+  async joinable(@Param('roomId') roomId: string): Promise<object> {
+    return await this.gameRoomEventService.joinable(+roomId);
+    // return await this.gameRoomEventService.join(
+    //   +roomId,
+    //   new Member(user.profile),
+    // );
   }
 
   @ApiCreatedResponse({
-    description: '게임 방 생성 성공',
-    type: ResponseGameInfoWithGameMembersDto,
+    description: '게임 방 정보 업데이트 성공 후 Socket Event Update Emit',
+    // type: ResponseGameRoomWithMembersDto,
   })
   @ApiBadRequestResponse({
     description: '최대 인원 수 설정 실패',
@@ -177,16 +182,16 @@ export class GameRoomController {
     description: '방 생성 시 필요한 정보',
     type: CreateGameRoomDto,
   })
-  @ApiOperation({ summary: '게임 방 생성' })
+  @ApiOperation({ summary: '게임 방 정보 업데이트' })
   @UseGuards(ValidateLimitGuard)
-  @Patch(':gameRoomNumber')
+  @Patch(':roomId')
   async update(
     @Body() updateGameDto: UpdateGameRoomDto,
     @UserDecorator() user: UserProfile,
-    @Param('gameRoomNumber') gameRoomNumber: string,
+    @Param('roomId') roomId: string,
   ): Promise<void> {
     return await this.gameRoomEventService.update(
-      +gameRoomNumber,
+      +roomId,
       updateGameDto,
       user.id,
     );
@@ -195,13 +200,13 @@ export class GameRoomController {
     description: '게임 방 나가기 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        gameRoomNumber: 1,
+        roomId: 1,
         exit: true,
       }),
     },
   })
   @ApiParam({
-    name: 'gameRoomNumber',
+    name: 'roomId',
     description: '게임 방 번호',
     example: 1,
   })
@@ -209,34 +214,37 @@ export class GameRoomController {
     summary: '게임 방 나가기 (나가는 사람이 마지막 사람이면 자동 방 파괴',
   })
   @UseGuards(ExistGameRoomGuard, GameMemberGuard)
-  @Delete(':gameRoomNumber/users/me')
+  @Delete(':roomId/users/me')
   async leaveGameRoom(
-    @Param('gameRoomNumber') gameRoomNumber: string,
+    @Param('roomId') roomId: string,
     @UserDecorator() user: UserProfile,
   ): Promise<object> {
-    return this.gameRoomEventService.leave(+gameRoomNumber, user.id);
+    return this.gameRoomEventService.leave(+roomId, user.id);
   }
 
   @ApiOkResponse({
     description: '게임 방 삭제 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        gameRoomNumber: 1,
+        roomId: 1,
         delete: true,
       }),
     },
   })
   @ApiParam({
-    name: 'gameRoomNumber',
+    name: 'roomId',
     description: '게임 방 번호',
     example: 1,
   })
   @ApiOperation({ summary: '게임 방 삭제 (게임 끝났을 경우 이 경로)' })
   @UseGuards(ExistGameRoomGuard, GameMemberGuard)
-  @Delete(':gameRoomNumber')
-  async removeGame(
-    @Param('gameRoomNumber') gameRoomNumber: string,
-  ): Promise<object> {
-    return await this.gameRoomEventService.remove(+gameRoomNumber);
+  @Delete(':roomId')
+  async removeGame(@Param('roomId') roomId: string): Promise<object> {
+    return await this.gameRoomEventService.remove(+roomId);
+  }
+
+  @Delete('janus/:roomId')
+  async removeJanusRoom(@Param('roomId') roomId: string) {
+    return await this.gameRoomEventService.removeJanusRoom(+roomId);
   }
 }

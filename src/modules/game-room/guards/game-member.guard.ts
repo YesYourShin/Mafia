@@ -15,12 +15,10 @@ export class GameMemberGuard implements CanActivate {
     const request: RequestUser = context.switchToHttp().getRequest();
 
     const { userId } = request.user.profile;
-    const { gameRoomNumber } = request.params;
+    const { roomId } = request.params;
 
     const members: Member[] =
-      await this.gameRoomEventService.findAllMemberByGameRoomNumber(
-        +gameRoomNumber,
-      );
+      await this.gameRoomEventService.findMembersByRoomId(+roomId);
     const isMember = this.gameRoomEventService.getMemberInGameRoomMember(
       members,
       userId,

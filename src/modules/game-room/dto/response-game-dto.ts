@@ -1,35 +1,40 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
-import { GameRoomInfoWithMemberCount } from '.';
-import { GameRoomInfo, GameRoomInfoWithGameMembers } from './game-info';
+import { GameRoomWithMemberCount } from './game-room-with-member-count';
+import { GameRoomWithMembers } from './game-room-with-members';
 
-export class ResponseGameInfoWithGameMembersDto extends PickType(ResponseDto, [
+export class ResponseGameRoomFindAllDto extends PickType(ResponseDto, [
   'success',
   'status',
   'data',
 ]) {
-  @ApiProperty({ type: () => GameRoomInfoWithGameMembers })
-  data: GameRoomInfoWithGameMembers;
+  @ApiProperty({ type: () => GameRoomWithMemberCount, isArray: true })
+  data: GameRoomWithMemberCount;
 }
-export class ResponseGameInfoWithMemberCountDto extends PickType(ResponseDto, [
+
+export class ResponseGameRoomFindOneDto extends PickType(ResponseDto, [
   'success',
   'status',
   'data',
 ]) {
-  @ApiProperty({ type: () => GameRoomInfoWithMemberCount, isArray: true })
-  data: GameRoomInfoWithMemberCount[];
+  @ApiProperty({ type: () => GameRoomWithMembers, isArray: true })
+  data: GameRoomWithMembers;
 }
 
-export class ResponseCurrentGamesInfo {
-  @ApiProperty({ type: () => GameRoomInfoWithMemberCount, isArray: true })
-  data: GameRoomInfoWithMemberCount[];
-}
-
-export class ResponseGamesInfoDto extends PickType(ResponseDto, [
+export class ResponseGameRoomDto extends PickType(ResponseDto, [
   'success',
   'status',
   'data',
 ]) {
-  @ApiProperty({ type: () => GameRoomInfo, isArray: true })
-  data: GameRoomInfo[];
+  @ApiProperty({ type: () => GameRoomWithMembers, isArray: true })
+  data: GameRoomWithMembers;
+}
+
+export class ResponseEntityDto extends PickType(ResponseDto, [
+  'success',
+  'status',
+  'data',
+]) {
+  @ApiProperty({ type: () => GameRoomWithMembers, isArray: true })
+  data: GameRoomWithMembers;
 }

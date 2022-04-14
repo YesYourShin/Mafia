@@ -9,7 +9,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import passport from 'passport';
 import { Server, Socket } from 'socket.io';
 import { Member } from 'src/modules/game-room/dto';
 import { UserProfile } from 'src/modules/user/dto';
@@ -40,23 +39,23 @@ export class GameRoomGateway
   @UseGuards(RoomLimitationGuard)
   @SubscribeMessage(GameRoomEvent.JOIN)
   async handleJoin(
-    @MessageBody() data: { gameRoomNumber: number },
+    @MessageBody() data: { roomId: number },
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
     const { user } = socket.request;
     const newNamespace = socket.nsp;
-    const { gameRoomNumber } = data;
-    socket.data.gameRoomNumber = gameRoomNumber;
+    const { roomId } = data;
+    socket.data.roomId = roomId;
 
     try {
-      await socket.join(`${newNamespace.name}-${gameRoomNumber}`);
+      await socket.join(`${newNamespace.name}-${roomId}`);
 
-      const members = await this.gameRoomEventService.joinGameRoom(
-        gameRoomNumber,
+      const members = await this.gameRoomEventService.join(
+        roomId,
         new Member(user.profile),
       );
       const readyMember = await this.gameRoomEventService.getGameReadyMember(
-        gameRoomNumber,
+        roomId,
       );
 
       for (const member of members) {
@@ -69,7 +68,7 @@ export class GameRoomGateway
       }
 
       this.server
-        .to(`${newNamespace.name}-${gameRoomNumber}`)
+        .to(`${newNamespace.name}-${roomId}`)
         .emit(GameRoomEvent.ONLINELIST, members);
     } catch (error) {
       console.error(error);
@@ -78,46 +77,41 @@ export class GameRoomGateway
   @SubscribeMessage(GameRoomEvent.READY)
   async handleReady(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
-    const { gameRoomNumber } = socket.data;
+    const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    await this.gameRoomEventService.gameReady(gameRoomNumber, user.id);
+    await this.gameRoomEventService.gameReady(roomId, user.id);
 
     this.server
-      .to(`${newNamespace.name}-${gameRoomNumber}`)
+      .to(`${newNamespace.name}-${roomId}`)
       .emit(GameRoomEvent.READY, user.id);
   }
 
   @SubscribeMessage(GameRoomEvent.UNREADY)
   async handleUnready(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
-    const { gameRoomNumber } = socket.data;
+    const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    await this.gameRoomEventService.gameUnReady(gameRoomNumber, user.id);
+    await this.gameRoomEventService.gameUnReady(roomId, user.id);
 
     this.server
-      .to(`${newNamespace.name}-${gameRoomNumber}`)
+      .to(`${newNamespace.name}-${roomId}`)
       .emit(GameRoomEvent.READY, user.id);
   }
 
   @SubscribeMessage(GameRoomEvent.START)
   async handleStart(
-    @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
+    @MessageBody() data: { user: UserProfile; roomId: number },
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
     const { user } = socket.request;
-    const { gameRoomNumber } = socket.data;
+    const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    const members =
-      await this.gameRoomEventService.findAllMemberByGameRoomNumber(
-        gameRoomNumber,
-      );
+    const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
 
-    const ready = await this.gameRoomEventService.getGameReadyMember(
-      gameRoomNumber,
-    );
+    const ready = await this.gameRoomEventService.getGameReadyMember(roomId);
   }
 
   @SubscribeMessage(GameRoomEvent.MESSAGE)
@@ -140,23 +134,20 @@ export class GameRoomGateway
 
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
-    const { gameRoomNumber } = socket.data;
+    const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    console.log('gameRoomNumber', gameRoomNumber);
+    console.log('roomId', roomId);
 
     try {
-      await this.gameRoomEventService.leave(gameRoomNumber, user.id);
+      await this.gameRoomEventService.leave(roomId, user.id);
     } catch (error) {
       this.logger.error(error);
     }
 
-    const members =
-      await this.gameRoomEventService.findAllMemberByGameRoomNumber(
-        gameRoomNumber,
-      );
+    const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
     const readyMember = await this.gameRoomEventService.getGameReadyMember(
-      gameRoomNumber,
+      roomId,
     );
 
     for (const member of members) {
@@ -165,7 +156,7 @@ export class GameRoomGateway
       }
     }
     newNamespace
-      .to(`${newNamespace.name}-${gameRoomNumber}`)
+      .to(`${newNamespace.name}-${roomId}`)
       .emit(GameRoomEvent.ONLINELIST, members);
   }
 

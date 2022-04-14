@@ -1,4 +1,11 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateGameRoomDto } from './create-game-room.dto';
+import { PickType } from '@nestjs/swagger';
+import { GameRoom } from './game-room';
 
-export class UpdateGameRoomDto extends PartialType(CreateGameRoomDto) {}
+export class UpdateGameRoomDto extends PickType(GameRoom, [
+  'id',
+  'mode',
+  'pin',
+  'description',
+  'publishers',
+  'room',
+] as const) {}

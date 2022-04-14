@@ -1,7 +1,13 @@
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { JanusRequestEvent } from '../constants/janus-request-event';
 
-export class CreateJanusRoomDto {
+export class KickJanusRoomDto {
   @IsString()
   request: JanusRequestEvent;
 
@@ -25,4 +31,7 @@ export class CreateJanusRoomDto {
 
   @IsString()
   description: string;
+
+  @IsNumber()
+  id: number;
 }
