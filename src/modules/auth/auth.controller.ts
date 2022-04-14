@@ -14,10 +14,10 @@ import {
   ApiCookieAuth,
   ApiResponse,
 } from '@nestjs/swagger';
-import s from 'connect-redis';
 import { ResponseDto } from 'src/common/dto';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { LogoutInterceptor } from 'src/interceptors';
+import { ClearCookieInterceptor } from 'src/interceptors/clear-cookie.interceptor';
 import { UserProfile } from '../user/dto';
 import { AuthService } from './auth.service';
 import {
@@ -43,28 +43,16 @@ export class AuthController {
   @Get('google/login')
   googleAuth() {}
 
-  @ApiOperation({ summary: 'Google 로그인 callback url' })
-  @ApiResponse({
-    status: 301,
-    description: '로그인 성공 후 쿠키 전송',
-  })
   @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, GoogleOauthGuard)
   @Get('google/redirect')
-  googleAuthRedirect() {
-    return;
-  }
+  googleAuthRedirect() {}
 
   @ApiOperation({ summary: 'Naver 로그인 프런트가 들어올 url' })
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/login')
   naverAuth() {}
 
-  @ApiResponse({
-    status: 301,
-    description: '로그인 성공 후 쿠키 전송',
-  })
-  @ApiOperation({ summary: 'Naver 로그인 callback url' })
   @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, NaverOauthGuard)
   @Get('naver/redirect')
@@ -75,11 +63,6 @@ export class AuthController {
   @Get('kakao/login')
   kakaoAuth() {}
 
-  @ApiResponse({
-    status: 301,
-    description: '로그인 성공 후 쿠키 전송',
-  })
-  @ApiOperation({ summary: 'Kakao 로그인 callback url' })
   @Redirect(FRONT_URL, HttpStatus.MOVED_PERMANENTLY)
   @UseGuards(NotLoggedInGuard, KakaoOauthGuard)
   @Get('kakao/redirect')
@@ -97,7 +80,7 @@ export class AuthController {
   })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '로그아웃' })
-  @UseInterceptors(LogoutInterceptor)
+  @UseInterceptors(LogoutInterceptor, ClearCookieInterceptor)
   @UseGuards(LoggedInGuard)
   @HttpCode(200)
   @Post('logout')
