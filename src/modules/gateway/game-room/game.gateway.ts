@@ -11,8 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
-import { GameRoomEventService } from './game-room-event.service';
-import { User } from '../../../entities/user.entity';
+import { GameEventService } from './game-event.service';
 
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
@@ -38,13 +37,14 @@ export class GameGateway
 {
   constructor(
     @Inject(Logger) private readonly logger: Logger,
-    private readonly gameRoomEventService: GameRoomEventService,
+    private readonly gameEventService: GameEventService,
   ) {}
   @WebSocketServer() public server: Server;
 
   roomName = 'room1'; //방 이름.
   roomClient = []; // room인원
   private gamePlayerNum = 0;
+  private gamePlayers;
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
@@ -56,7 +56,7 @@ export class GameGateway
       setTimeout(() => {
         this.server
           .to(this.roomName)
-          .emit('gameMessage', { status: 'ok', time: `${data}` });
+          .emit('gameMessage2', { status: 'ok', time: `${data}` });
         this.logger.log(`socketid: ${socket.id} , 발생 `);
       }, 1000 * data);
     }
@@ -81,7 +81,7 @@ export class GameGateway
       user: `${socket.id}`,
     };
 
-    this.server.in(this.roomName).emit('gamejoin', data);
+    this.server.in(this.roomName).emit('gamejoin2', data);
   }
 
   // 직업 배분
@@ -90,9 +90,9 @@ export class GameGateway
     @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
   ) {
     // 해당 room에 소켓 정보들
-    const gamePlayers = await this.server.in(this.roomName).allSockets();
+    this.gamePlayers = await this.server.in(this.roomName).allSockets();
     //해당 room에 인원 수
-    this.gamePlayerNum = gamePlayers.size;
+    this.gamePlayerNum = this.gamePlayers.size;
     // room의 정해진 직업을 주면 대입
     const mafia = 1;
     const doctor = 1;
@@ -100,7 +100,6 @@ export class GameGateway
     const cr: number = this.gamePlayerNum - (mafia + doctor + police);
     // 마피아, 의사,경찰, 시민
     const jobData = [cr, mafia, doctor, police];
-    const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
     let roomJob = []; //해당 방의 직업
 
     this.logger.log(
@@ -108,61 +107,33 @@ export class GameGateway
     );
 
     if (this.roomClient.length === 0) {
-      for (let item = 0; item < this.gamePlayerNum; item++) {
-        const ran = Math.floor(Math.random() * grantJob.length); //직업
-        const jobCountData = roomJob.filter(
-          (item) => item === grantJob[ran],
-        ).length; //현재 같은 직업 수
+      roomJob = this.gameEventService.GrantJob({
+        playerNum: this.gamePlayerNum,
+        jobData: jobData,
+      });
 
-        if (jobCountData < jobData[ran]) {
-          roomJob.push(grantJob[ran]);
-        } else {
-          item--;
-        }
-      }
-
-      // 수만큼 직업 배분
-      this.logger.log(roomJob);
-      // 직업 셔플
-      const a = roomJob;
-      const strikeOut = [];
-      while (a.length) {
-        const lastidx = a.length - 1;
-        const roll = Math.floor(Math.random() * a.length);
-        const temp = a[lastidx];
-        a[lastidx] = a[roll];
-        a[roll] = temp;
-        strikeOut.push(a.pop());
-      }
-
-      roomJob = strikeOut;
-
-      // 셔플
-      this.logger.log(roomJob);
+      // roomJob = this.gameEventService.shuffle(roomJob);
 
       for (let i = 0; i < this.gamePlayerNum; i++) {
         const data = {
           num: i + 1,
-          user: Array.from(gamePlayers)[i],
+          user: Array.from(this.gamePlayers)[i],
           job: roomJob[i],
+          die: false,
         };
         this.roomClient.push(data);
       }
     }
-
-    const returndata = {
-      room: this.roomName,
-      jobs: this.roomClient,
-    };
+    // const returndata = {
+    //   room: this.roomName,
+    //   jobs: this.roomClient,
+    // };
 
     // 직업 배분 셔플 결과
-    this.logger.log(returndata);
+    this.logger.log(this.roomClient);
 
-    this.server.to(this.roomName).emit('grantJob', returndata);
+    this.server.to(this.roomName).emit('grantJob2', this.roomClient);
   }
-
-  // 죽은 사람
-  dead = [];
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
@@ -174,6 +145,11 @@ export class GameGateway
     @MessageBody() payload: { voteNum: number },
     @ConnectedSocket() socket: Socket,
   ) {
+    /* 낮일 시, 투표고 / 밤일 시, 능력사용?
+      낮 - 한 유저 당 선택한 USER의 NUM
+
+      밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
+     */
     if (this.roomClient.length === 0) this.logger.log(`직업 분배부터 부탁함.`);
     const gamePlayers = await this.server.in(this.roomName).allSockets();
     this.gamePlayerNum = gamePlayers.size;
@@ -219,7 +195,7 @@ export class GameGateway
 
       this.logger.log(redisVote);
 
-      this.server.to(this.roomName).emit('finishVote', {
+      this.server.to(this.roomName).emit('finishVote2', {
         voteResult: redisVote,
       });
     }
@@ -227,6 +203,7 @@ export class GameGateway
 
   punis = [];
 
+  // 찬반투표
   @SubscribeMessage('startPunishmentVote')
   handleStartPunishmentVote(
     @MessageBody() payload: { Punishment: boolean; user: string },
@@ -245,7 +222,7 @@ export class GameGateway
 
       const punisOpposition = this.gamePlayerNum - punisAgreement;
 
-      this.server.to(this.roomName).emit('startPunishmentVote', {
+      this.server.to(this.roomName).emit('startPunishmentVote2', {
         voteResult: {
           user: payload.user,
           Agreement: punisAgreement,
@@ -255,20 +232,51 @@ export class GameGateway
     }
   }
 
+  // 사형.death
+  @SubscribeMessage('death')
+  async handleDeath(
+    @MessageBody() payload: { agrement: boolean; user: string },
+  ) {
+    this.logger.log(` ${payload.agrement}`);
+    if (payload.agrement === true) {
+      this.roomClient.filter((client) => {
+        if (client.user == payload.user) {
+          client.dead = true;
+        }
+      });
+    }
+    this.server.to(this.roomName).emit('death2', this.roomClient);
+  }
+
   @SubscribeMessage('dayNight')
   async handleDayNight(@MessageBody() data: string) {
     this.logger.log(` ${data}`);
   }
 
-  // 능력 사용 결과
-  @SubscribeMessage('useStat')
-  handleUseStat() {
+  userState = [];
+
+  // // 능력 사용 결과
+  @SubscribeMessage('useState')
+  handleUseStat(
+    @MessageBody() data: { user: string; job: string; useNum: number },
+  ) {
+    const a = 1;
     this.logger.log(`능력사용`);
+    const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+
+    if (data.job != grantJob[0]) {
+      const a = {
+        user: data.user,
+        job: data.job,
+        useNum: data.useNum,
+      };
+      this.userState.push(a);
+    }
+
+    // 마피아 + 의사의 지목이 같은 사람일 경우 살아있음.
+    // 아닐 경우 dead
+    // 밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
   }
-
-  // 죽은 사람 저장..?
-
-  //
 
   // -----------------------
   // 1. 하나의 on을 받고 그 안에서  낮, 밤상태를 구분해서 게임 처리?
@@ -282,6 +290,7 @@ export class GameGateway
   }
   // socket이 연결 끊겼을 때
   async handleDisconnect(@ConnectedSocket() socket: Socket) {
+    socket.leave(this.roomName);
     this.logger.log(`socket disconnected: ${socket.id}`);
   }
 
