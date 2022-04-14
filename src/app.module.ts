@@ -18,6 +18,7 @@ import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { HttpModule } from '@nestjs/axios';
 import { ormconfig } from '../ormconfig';
+import { SocketApiDocumentController } from './socket-api-document.controller';
 
 @Module({
   imports: [
@@ -44,7 +45,13 @@ import { ormconfig } from '../ormconfig';
     TerminusModule,
     HttpModule,
   ],
-  controllers: [AppController, HealthController],
+  controllers: [
+    AppController,
+    HealthController,
+    process.env.NODE_ENV === 'development'
+      ? SocketApiDocumentController
+      : undefined,
+  ],
   providers: [AppService],
 })
 export class AppModule implements NestModule {
