@@ -36,6 +36,8 @@ import { ExistedProfileGuard } from 'src/common/guards';
 import { ApiFile } from 'src/decorators/api-file.decorator';
 import { UserDecorator } from 'src/decorators/user.decorator';
 import { User } from 'src/entities';
+import { LogoutInterceptor } from 'src/interceptors';
+import { ClearCookieInterceptor } from 'src/interceptors/clear-cookie.interceptor';
 import { LoggedInGuard } from '../auth/guards';
 import { S3ImageObject } from '../image/dto/s3-image-object';
 import { ImageService } from '../image/image.service';
@@ -300,6 +302,7 @@ export class UserController {
   })
   @ApiOperation({ summary: '회원 탈퇴' })
   @ApiCookieAuth('connect.sid')
+  @UseInterceptors(LogoutInterceptor, ClearCookieInterceptor)
   @UseGuards(LoggedInGuard)
   @Delete()
   async destroy(@UserDecorator() user: User) {

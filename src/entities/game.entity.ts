@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import {
   Check,
   Column,
@@ -25,12 +25,13 @@ export class Game {
   id: number;
 
   @ApiProperty({
-    example: 1,
-    description: '게임 모드 classic - 0',
+    example: 'classic',
+    description: '게임 모드 classic',
   })
-  @IsInt()
+  @IsEnum(GameMode)
   @Column({
-    type: 'tinyint',
+    type: 'enum',
+    enum: GameMode,
     default: GameMode.CLASSIC,
   })
   mode: GameMode;
@@ -48,6 +49,7 @@ export class Game {
     description: '방 비밀번호',
     required: false,
   })
+  @IsOptional()
   @IsString()
   @Column({ type: 'varchar', name: 'password', length: 20, nullable: true })
   password?: string;

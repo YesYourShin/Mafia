@@ -1,7 +1,6 @@
-import { isArray } from 'lodash';
 import { removeNilFromObject } from 'src/common/constants';
 import { ImagePost } from 'src/entities/image-post.entity';
-import { AbstractRepository, EntityRepository } from 'typeorm';
+import { AbstractRepository, EntityRepository, InsertResult } from 'typeorm';
 import { ImagePostRemoveOptions } from './constants/image-post-remove-options';
 
 @EntityRepository(ImagePost)
@@ -15,8 +14,15 @@ export class ImagePostRepository extends AbstractRepository<ImagePost> {
       .getMany();
   }
 
-  async save(postId: number, imageId: number | number[]) {
-    if (isArray(imageId)) {
+  save<T extends number, U extends number | number[]>(
+    postId: T,
+    imageId: U,
+  ): U extends number | number[] ? Promise<InsertResult> : never;
+  async save(
+    postId: number,
+    imageId: number | number[],
+  ): Promise<InsertResult> {
+    if (Array.isArray(imageId)) {
       return await this.repository
         .createQueryBuilder()
         .insert()

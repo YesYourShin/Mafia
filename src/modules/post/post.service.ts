@@ -78,8 +78,8 @@ export class PostService {
       const tPage = i + temp * 10;
       if (tPage > totalPages) break;
       links[i] = `${this.configService.get(
-        'BACKEND_URL',
-      )}/posts?category=${categoryId}&page=${tPage}`;
+        'FRONT_URL',
+      )}/community/post?category=${categoryId}&page=${tPage}`;
     }
 
     const data = new Pagination(

@@ -1,5 +1,9 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import {
+  ClassSerializerInterceptor,
+  Logger,
+  ValidationPipe,
+} from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import RedisStore from 'connect-redis';
@@ -56,6 +60,7 @@ async function bootstrap() {
     }),
   );
   app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
     new TransformResponseInterceptor(),
     new ExcludeUndefinedInterceptor(),
   );
@@ -106,7 +111,7 @@ async function bootstrap() {
     store: new redisStore({
       client: redisClient,
       logErrors: true,
-      prefix: 'SESSION:',
+      prefix: 'session:',
     }),
     resave: false,
     saveUninitialized: false,

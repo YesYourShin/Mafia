@@ -1,4 +1,3 @@
-import { isArray } from 'lodash';
 import { Image } from 'src/entities';
 import { AbstractRepository, EntityRepository, QueryRunner } from 'typeorm';
 import { ImageRemoveOptions } from './constants/image-remove-options';
@@ -33,25 +32,27 @@ export class ImageRepository extends AbstractRepository<Image> {
       .where('imagePosts.postId = :postId', { postId })
       .getMany();
   }
-  async findByLocation(location: string | string[]) {
+  findByLocation<T extends string | string[]>(location: T): Promise<Image[]>;
+  async findByLocation(location: string | string[]): Promise<Image[]> {
     const qb = this.repository
       .createQueryBuilder('image')
       .leftJoin('image.imagePosts', 'imagePosts')
       .select(['image.id', 'image.key', 'image.location']);
 
-    isArray(location)
+    Array.isArray(location)
       ? qb.where('image.location IN (:...location)', { location })
       : qb.where('image.location = :location', { location });
 
     return await qb.getMany();
   }
+  findByKey<T extends string | string[]>(key: T): Promise<Image[]>;
   async findByKey(key: string | string[]) {
     const qb = this.repository
       .createQueryBuilder('image')
       .leftJoin('image.imagePosts', 'imagePosts')
       .select(['image.id', 'image.key']);
 
-    isArray(key)
+    Array.isArray(key)
       ? qb.where('image.key IN (:...key)', { key })
       : qb.where('image.key = :key', { key });
 
@@ -86,15 +87,15 @@ export class ImageRepository extends AbstractRepository<Image> {
       .from(Image);
 
     if (id) {
-      isArray(id)
+      Array.isArray(id)
         ? qb.where('image.id IN (:...id)', { id })
         : qb.where('image.id = :id', { id });
     } else if (key) {
-      isArray(key)
+      Array.isArray(key)
         ? qb.where('image.key IN (:...key)', { key })
         : qb.where('image.key = :key', { key });
     } else if (location) {
-      isArray(location)
+      Array.isArray(location)
         ? qb.where('image.location IN (:...location)', { location })
         : qb.where('image.location = :location', { location });
     }
