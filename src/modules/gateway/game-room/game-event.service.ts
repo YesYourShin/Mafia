@@ -8,7 +8,7 @@ export class GameEventService {
   GrantJob(data: { playerNum: number; jobData: number[] }) {
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
-    const Job = []; //해당 방의 직업
+    let Job = []; //해당 방의 직업
 
     for (let item = 0; item < data.playerNum; item++) {
       const ran = Math.floor(Math.random() * grantJob.length); //직업
@@ -20,6 +20,8 @@ export class GameEventService {
         item--;
       }
     }
+
+    Job = this.shuffle(Job);
 
     return Job;
   }

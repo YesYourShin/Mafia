@@ -112,13 +112,7 @@ export class GameGateway
         jobData: jobData,
       });
 
-      // 셔플
-      this.logger.log('셔플전' + roomJob);
-
-      roomJob = this.gameEventService.shuffle(roomJob);
-
-      // 셔플
-      this.logger.log('셔플전' + roomJob);
+      // roomJob = this.gameEventService.shuffle(roomJob);
 
       for (let i = 0; i < this.gamePlayerNum; i++) {
         const data = {
@@ -130,15 +124,15 @@ export class GameGateway
         this.roomClient.push(data);
       }
     }
-    const returndata = {
-      room: this.roomName,
-      jobs: this.roomClient,
-    };
+    // const returndata = {
+    //   room: this.roomName,
+    //   jobs: this.roomClient,
+    // };
 
     // 직업 배분 셔플 결과
-    this.logger.log(returndata);
+    this.logger.log(this.roomClient);
 
-    this.server.to(this.roomName).emit('grantJob2', returndata);
+    this.server.to(this.roomName).emit('grantJob2', this.roomClient);
   }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
@@ -266,8 +260,10 @@ export class GameGateway
   handleUseStat(
     @MessageBody() data: { user: string; job: string; useNum: number },
   ) {
+    const a = 1;
     this.logger.log(`능력사용`);
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+
     if (data.job != grantJob[0]) {
       const a = {
         user: data.user,
