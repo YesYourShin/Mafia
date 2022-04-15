@@ -1,5 +1,4 @@
 export const GameRoomEvent = {
-  CREATE: 'game:create',
   UPDATE: 'game:update',
   JOIN: 'game:join',
   MESSAGE: 'game:message',
