@@ -277,6 +277,21 @@ export class GameGateway
     else this.server.to(socket.id).emit('usePolice2', clientJob);
   }
 
+  @SubscribeMessage('myFaceLandmarks')
+  handleLandmarks(@MessageBody() data: { landmarks: string; number: string }) {
+    if (!data.landmarks) {
+      this.server.emit('othersFaceLandmarks', {
+        landmarks: null,
+        number: data.number,
+      });
+    } else {
+      this.server.emit('othersFaceLandmarks', {
+        landmarks: data.landmarks,
+        number: data.number,
+      });
+    }
+  }
+
   // 마피아 능력
   // userState = [];
 
