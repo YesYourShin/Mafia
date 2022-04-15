@@ -15,9 +15,7 @@ export class SessionSerializer extends PassportSerializer {
 
   async deserializeUser(user: UserProfile, done: CallableFunction) {
     try {
-      if (!user?.profile) {
-        user = await this.userRepository.findOne({ id: user.id });
-      }
+      user = await this.userRepository.findOne({ id: user.id });
       done(null, user);
     } catch (error) {
       done(error);
