@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AWSError, S3 } from 'aws-sdk';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { s3 } from 'src/shared/s3';
-import { Connection, QueryRunner } from 'typeorm';
+import { QueryRunner } from 'typeorm';
 import { ImageRemoveOptions } from './constants/image-remove-options';
 import { ResponseImage } from './constants/response-image';
 import { S3ImageObject } from './dto/s3-image-object';
@@ -17,7 +17,6 @@ export class ImageService {
     private readonly imagePostRepository: ImagePostRepository,
     private readonly configService: ConfigService,
     @Inject(Logger) private readonly logger = new Logger('ImageService'),
-    private connection: Connection,
   ) {}
 
   async findByPostId(postId: number) {
@@ -38,8 +37,12 @@ export class ImageService {
     return newImage.identifiers[0].id;
   }
 
-  async saveImagePost(postId: number, imageId: number | number[]) {
-    return await this.imagePostRepository.save(postId, imageId);
+  async saveImagePost(
+    postId: number,
+    imageId: number | number[],
+    queryRunner?: QueryRunner,
+  ) {
+    return await this.imagePostRepository.save(postId, imageId, queryRunner);
   }
 
   async remove(options: ImageRemoveOptions, queryRunner?: QueryRunner) {
@@ -50,17 +53,13 @@ export class ImageService {
     for (const key of keys) {
       deleteImages.push(this.deleteS3Object(key));
     }
-    try {
-      const { value, reason } = await promiseAllSetteldResult(deleteImages);
+    const { value, reason } = await promiseAllSetteldResult(deleteImages);
 
-      if (reason) {
-        this.logger.error('error when delete s3 objects', reason);
-      }
-
-      return value;
-    } catch (error) {
-      this.logger.error(error);
+    if (reason && reason.length) {
+      this.logger.error('error when delete s3 objects', reason);
     }
+
+    return value;
   }
   deleteS3Object(key: string): Promise<S3.Types.DeleteObjectOutput> {
     return new Promise((resolve, reject) => {

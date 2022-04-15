@@ -184,7 +184,7 @@ export class UserController {
     @UserDecorator() user: UserProfile,
     @Body() profile: CreateProfileDto,
   ) {
-    await this.userService.createProfile(user.id, profile);
+    await this.userService.createProfile(user, profile);
     return await this.userService.findOne(user.id);
   }
 

@@ -1,6 +1,12 @@
 import { removeNilFromObject } from 'src/common/constants';
 import { ImagePost } from 'src/entities/image-post.entity';
-import { AbstractRepository, EntityRepository, InsertResult } from 'typeorm';
+import {
+  AbstractRepository,
+  EntityRepository,
+  getConnection,
+  InsertResult,
+  QueryRunner,
+} from 'typeorm';
 import { ImagePostRemoveOptions } from './constants/image-post-remove-options';
 
 @EntityRepository(ImagePost)
@@ -17,14 +23,16 @@ export class ImagePostRepository extends AbstractRepository<ImagePost> {
   save<T extends number, U extends number | number[]>(
     postId: T,
     imageId: U,
+    queryRunner?: QueryRunner,
   ): U extends number | number[] ? Promise<InsertResult> : never;
   async save(
     postId: number,
     imageId: number | number[],
+    queryRunner?: QueryRunner,
   ): Promise<InsertResult> {
     if (Array.isArray(imageId)) {
-      return await this.repository
-        .createQueryBuilder()
+      return await getConnection()
+        .createQueryBuilder(queryRunner)
         .insert()
         .into(ImagePost)
         .values(imageId.map((id) => ({ postId, imageId: id })))

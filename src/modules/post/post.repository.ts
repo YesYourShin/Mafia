@@ -64,7 +64,13 @@ export class PostRepository extends AbstractRepository<Post> {
     const qb = this.repository
       .createQueryBuilder('post')
       .leftJoin('post.profile', 'profile')
-      .select(['post.id', 'post.title', 'post.updatedAt', 'post.categoryId'])
+      .select([
+        'post.id',
+        'post.title',
+        'post.content',
+        'post.updatedAt',
+        'post.categoryId',
+      ])
       .addSelect(['profile.id', 'profile.nickname'])
       .orderBy('post.id', 'DESC')
       .take(10)

@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { Connection } from 'typeorm';
 import { ImageService } from '../image/image.service';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
+import { InjectConnection } from '@nestjs/typeorm';
 
 @Injectable()
 export class PostService {
@@ -19,8 +20,8 @@ export class PostService {
     private readonly postRepository: PostRepository,
     @Inject(Logger) private readonly logger = new Logger('PostService'),
     private readonly configService: ConfigService,
-    private readonly connection: Connection,
     private readonly imageService: ImageService,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async create(userId: number, createPostDto: CreatePostDto) {
@@ -32,12 +33,12 @@ export class PostService {
       const postId = result.identifiers[0].id;
 
       const { images } = createPostDto;
-      if (images) {
+      if (images && images.length) {
         const { value, reason } = await promiseAllSetteldResult(
           images.map((image) => this.imageService.saveImagePost(postId, image)),
         );
 
-        if (reason[0]) {
+        if (reason.length) {
           this.logger.error(
             'Rejected result when save image id and post id in post service',
             reason,
@@ -45,13 +46,13 @@ export class PostService {
         }
       }
 
-      queryRunner.commitTransaction();
+      await queryRunner.commitTransaction();
       return postId;
     } catch (error) {
-      queryRunner.rollbackTransaction();
+      await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException('Server error when create post');
     } finally {
-      queryRunner.release();
+      await queryRunner.release();
     }
   }
 
@@ -103,7 +104,7 @@ export class PostService {
     await queryRunner.startTransaction();
 
     try {
-      if (removeImages) {
+      if (removeImages && removeImages.length) {
         //image location으로 image 검색
         const existImages = await this.imageService.findByLocation(
           removeImages,
@@ -120,21 +121,24 @@ export class PostService {
           id: arrayOfId,
         });
       }
-      if (updateImages) {
+      if (updateImages && updateImages.length) {
         // update images 다대다 테이블에 저장
-        await this.imageService.saveImagePost(id, updateImages);
+        await this.imageService.saveImagePost(id, updateImages, queryRunner);
       }
       await this.postRepository.update(id, updatePostDto, queryRunner);
+
+      if (keys && keys.length) {
+        await this.imageService.deleteS3Objects(keys);
+      }
       await queryRunner.commitTransaction();
-      await this.imageService.deleteS3Objects(keys);
     } catch (error) {
-      queryRunner.rollbackTransaction();
+      await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException(
         'Server error when update post',
         error,
       );
     } finally {
-      queryRunner.release();
+      await queryRunner.release();
     }
   }
   getIdAndKeyOutOfImages(images: { id: number; key: string }[]) {
@@ -194,7 +198,7 @@ export class PostService {
       await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException('server error when remove post');
     } finally {
-      queryRunner.release();
+      await queryRunner.release();
     }
   }
 
@@ -207,7 +211,7 @@ export class PostService {
         removeImages,
       ]);
 
-      if (reason) {
+      if (reason && reason.length) {
         this.logger.error('Error when remove image', reason);
       }
 

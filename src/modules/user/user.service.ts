@@ -6,9 +6,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/typeorm';
+import { removeNilFromObject } from 'src/common/constants';
 import { Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
-import { Connection } from 'typeorm';
+import { Connection, getConnection } from 'typeorm';
 import { ImageService } from '../image/image.service';
 import {
   CreateProfileDto,
@@ -25,8 +27,8 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly imageService: ImageService,
     private readonly profileRepository: ProfileRepository,
-    private readonly connection: Connection,
     @Inject(Logger) private readonly logger = new Logger('UserService'),
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async findOne(id: number) {
@@ -43,9 +45,8 @@ export class UserService {
     }
     return exProfile;
   }
-  async createProfile(id: number, profile: CreateProfileDto) {
-    const exProfile: Profile = await this.profileRepository.findProfile(id);
-    if (exProfile) {
+  async createProfile(user: UserProfile, profile: CreateProfileDto) {
+    if (user?.profile) {
       throw new ForbiddenException('등록된 프로필이 존재합니다');
     }
 
@@ -61,7 +62,7 @@ export class UserService {
         );
         profile.setImageId(imageId);
       }
-      await this.profileRepository.create(id, profile, queryRunner);
+      await this.profileRepository.create(user.id, profile, queryRunner);
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -147,7 +148,11 @@ export class UserService {
     }
   }
 
-  existImage(profile: ProfileInfo | CreateProfileDto | UpdateProfileDto) {
-    return profile?.image ? true : false;
+  existImage(
+    profile: ProfileInfo | CreateProfileDto | UpdateProfileDto,
+  ): boolean {
+    return profile?.image && Object.keys(removeNilFromObject(profile?.image))
+      ? true
+      : false;
   }
 }
