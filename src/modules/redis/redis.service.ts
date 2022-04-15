@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRedis, Redis } from '@svtslv/nestjs-ioredis';
 import { KeyType, ValueType } from 'ioredis';
 import { ROOM_NUMBER } from '../gateway/game-room/constants';
-import { HsetValueType } from './constants/HsetValueType';
 import { REDIS_GAME } from './redis-option';
 
 @Injectable()

@@ -44,6 +44,7 @@ export class GameRoomEventService {
   async getJanusRoomList() {
     return await this.janusService.getJanusRoomList();
   }
+  // 방 생성
   async create(createGameRoomDto: CreateGameRoomDto): Promise<GameRoom> {
     const { mode, description, publishers, pin } = createGameRoomDto;
     const id = await this.getDailyGameRoomNumber();
@@ -73,7 +74,7 @@ export class GameRoomEventService {
 
     return gameRoom;
   }
-
+  // 방 업데이트
   async update(
     gameRoomNumber: number,
     updateGameRoomDto: UpdateGameRoomDto,
@@ -112,11 +113,13 @@ export class GameRoomEventService {
     return members;
   }
 
-  async findMember(roomId: number, userId: number): Promise<Member> {
+  // roomId를 이용하여 방안에 있는 특정 멤버 찾기
+  async findMember(roomId: number, memberId: number): Promise<Member> {
     const members = await this.findMembersByRoomId(roomId);
-    return this.getMemberInGameRoomMember(members, userId);
+    return this.getMemberInGameRoomMember(members, memberId);
   }
 
+  // 멤버 중복 체크 후 존재하지 않는 멤버라면 추가
   addMember(members: Member[], member: Member) {
     const exMember = this.getMemberInGameRoomMember(members, member.userId);
     if (!exMember) {
@@ -174,21 +177,22 @@ export class GameRoomEventService {
     return await this.redisService.keys(`${GAME_ROOM}*`);
   }
 
-  async leave(roomId: number, userId: number): Promise<Member[] | object> {
+  // 방 나가기
+  async leave(roomId: number, memberId: number): Promise<Member[] | object> {
     const members = await this.findMembersByRoomId(roomId);
     if (
       this.isLastMember(members) &&
-      this.matchSpecificMember(members[0].userId, userId)
+      this.matchSpecificMember(members[0].userId, memberId)
     ) {
       return await this.remove(roomId);
     }
 
-    const newMembers = members.filter((member) => member.userId !== userId);
+    const newMembers = members.filter((member) => member.userId !== memberId);
     await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, newMembers);
 
     return newMembers;
   }
-
+  // 방 삭제
   async remove(roomId: number): Promise<object> {
     await this.redisService.del(this.makeRoomKey(roomId));
     try {
@@ -262,6 +266,7 @@ export class GameRoomEventService {
     return members.length === 1;
   }
 
+  // 멤버 배열에서 특정 멤버 찾기
   getMemberInGameRoomMember(members: Member[], userId: number): Member {
     for (const member of members) {
       const isMember = this.matchSpecificMember(member.userId, userId);
