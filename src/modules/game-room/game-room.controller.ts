@@ -155,7 +155,7 @@ export class GameRoomController {
     description: '게임 방 번호',
     example: 1,
   })
-  @ApiOperation({ summary: '게임 방 참가' })
+  @ApiOperation({ summary: '게임 방 참가 가능 여부' })
   @UseGuards(ExistGameRoomGuard, IsGameRoomMemberGuard)
   @Get(':roomId/joinable-room')
   async joinable(@Param('roomId') roomId: string): Promise<object> {
@@ -192,31 +192,6 @@ export class GameRoomController {
       updateGameDto,
       user.id,
     );
-  }
-  @ApiOkResponse({
-    description: '게임 방 나가기 성공',
-    schema: {
-      example: new ResponseDto(true, HttpStatus.OK, {
-        roomId: 1,
-        exit: true,
-      }),
-    },
-  })
-  @ApiParam({
-    name: 'roomId',
-    description: '게임 방 번호',
-    example: 1,
-  })
-  @ApiOperation({
-    summary: '게임 방 나가기 (나가는 사람이 마지막 사람이면 자동 방 파괴',
-  })
-  @UseGuards(ExistGameRoomGuard, GameMemberGuard)
-  @Delete(':roomId/users/me')
-  async leaveGameRoom(
-    @Param('roomId') roomId: string,
-    @UserDecorator() user: UserProfile,
-  ): Promise<object> {
-    return this.gameRoomEventService.leave(+roomId, user.id);
   }
 
   @ApiOkResponse({

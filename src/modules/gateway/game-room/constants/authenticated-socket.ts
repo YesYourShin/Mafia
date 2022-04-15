@@ -8,5 +8,5 @@ interface AuthenticatedIncomingMessage extends IncomingMessage {
 
 export interface AuthenticatedSocket extends Socket {
   request: AuthenticatedIncomingMessage;
-  data: any;
+  data: { roomId?: number };
 }

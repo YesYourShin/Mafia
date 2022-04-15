@@ -62,6 +62,7 @@ export class Member {
   }
 
   @ApiProperty({
+    description: '준비 상태',
     name: 'ready',
     example: true,
     required: false,

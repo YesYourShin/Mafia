@@ -12,7 +12,6 @@ import {
   GAME_SOCKET_NAMESPACE,
   INFO_FIELD,
   MEMBER_FIELD,
-  READY_MEMBER_FIELD,
 } from './constants';
 import {
   UpdateGameRoomDto,
@@ -28,6 +27,7 @@ import { JanusService } from 'src/modules/janus/janus.service';
 import { ConfigService } from '@nestjs/config';
 import { GameRoom } from 'src/modules/game-room/dto/game-room';
 import { instanceToPlain } from 'class-transformer';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class GameRoomEventService {
@@ -174,19 +174,19 @@ export class GameRoomEventService {
     return await this.redisService.keys(`${GAME_ROOM}*`);
   }
 
-  async leave(roomId: number, userId: number): Promise<object> {
+  async leave(roomId: number, userId: number): Promise<Member[] | object> {
     const members = await this.findMembersByRoomId(roomId);
     if (
       this.isLastMember(members) &&
       this.matchSpecificMember(members[0].userId, userId)
-    )
+    ) {
       return await this.remove(roomId);
+    }
 
     const newMembers = members.filter((member) => member.userId !== userId);
     await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, newMembers);
-    await this.gameUnReady(roomId, userId);
 
-    return { roomId, userId, leave: true };
+    return newMembers;
   }
 
   async remove(roomId: number): Promise<object> {
@@ -221,51 +221,41 @@ export class GameRoomEventService {
     );
   }
 
-  async gameReady(gameRoomNumber: number, memberId: number): Promise<void> {
-    const members = new Set(await this.getGameReadyMember(gameRoomNumber));
-    members.add(memberId);
-    await this.setGameReadyMember(gameRoomNumber, [...members]);
+  async setReady(roomId: number, memberId: number): Promise<Member[]> {
+    const members = await this.findMembersByRoomId(roomId);
+    for (const member of members) {
+      if (member.userId === memberId) {
+        member.ready = true;
+      }
+    }
+    await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, members);
+    return members;
   }
 
-  async gameUnReady(gameRoomNumber: number, memberId: number): Promise<void> {
-    const members = new Set(await this.getGameReadyMember(gameRoomNumber));
-    members.delete(memberId);
-    await this.setGameReadyMember(gameRoomNumber, [...members]);
-  }
-
-  async setGameReadyMember(roomId: number, members: number[]): Promise<any> {
-    return await this.redisService.hset(
-      this.makeRoomKey(roomId),
-      READY_MEMBER_FIELD,
-      members,
-    );
-  }
-
-  async getGameReadyMember(roomId: number): Promise<number[]> {
-    const readyMember =
-      (await this.redisService.hget(
-        this.makeRoomKey(roomId),
-        READY_MEMBER_FIELD,
-      )) || [];
-    return readyMember;
+  async setUnReady(roomId: number, memberId: number): Promise<Member[]> {
+    const members = await this.findMembersByRoomId(roomId);
+    for (const member of members) {
+      if (member.userId === memberId) {
+        member.ready = false;
+      }
+    }
+    await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, members);
+    return members;
   }
 
   //Todo 미구현
-  async isReadyForTheGame(roomId: number, member: Member) {
-    const members: Member[] = await this.redisService.hget(
-      this.makeRoomKey(roomId),
-      READY_MEMBER_FIELD,
-    );
-  }
-
-  //Todo 미구현
-  async startGame(roomId: number, member: Member) {
-    const members: Member[] = await this.redisService.hget(
-      this.makeRoomKey(roomId),
-      READY_MEMBER_FIELD,
-    );
-    if (!this.matchSpecificMember(members[0].userId, member.userId))
+  async startGame(roomId: number, memberId: number) {
+    const members = await this.findMembersByRoomId(roomId);
+    if (!this.matchSpecificMember(members[0].userId, memberId)) {
       throw new ForbiddenException('게임을 시작할 수 있는 권한이 없습니다');
+    }
+    for (const member of members) {
+      if (!member.ready) {
+        throw new WsException(
+          '모든 유저가 준비를 해야 게임을 시작할 수 있습니다',
+        );
+      }
+    }
   }
 
   isLastMember(members: Member[]): boolean {

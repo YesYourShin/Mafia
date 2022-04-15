@@ -11,7 +11,6 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Member } from 'src/modules/game-room/dto';
-import { UserProfile } from 'src/modules/user/dto';
 import { RedisIoAdapter } from 'src/shared/adapter/RedisIoAdapter';
 import { RoomLimitationGuard } from '../guards/room-limitation.guard';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
@@ -45,33 +44,19 @@ export class GameRoomGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
     const { roomId } = data;
-    socket.data.roomId = roomId;
+    socket.data['roomId'] = roomId;
 
     try {
       await socket.join(`${newNamespace.name}-${roomId}`);
 
-      const members = await this.gameRoomEventService.join(
-        roomId,
-        new Member(user.profile),
-      );
-      const readyMember = await this.gameRoomEventService.getGameReadyMember(
-        roomId,
-      );
+      const member = new Member(user.profile);
+      await this.gameRoomEventService.join(roomId, member);
 
-      for (const member of members) {
-        member.ready = false;
-        for (const memberId of readyMember) {
-          if (member.userId === memberId) {
-            member.ready = true;
-          }
-        }
-      }
-
-      this.server
+      newNamespace
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameRoomEvent.ONLINELIST, members);
+        .emit(GameRoomEvent.JOIN, { member });
     } catch (error) {
-      console.error(error);
+      this.logger.error('socket join event error', error);
     }
   }
   @SubscribeMessage(GameRoomEvent.READY)
@@ -80,11 +65,13 @@ export class GameRoomGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    await this.gameRoomEventService.gameReady(roomId, user.id);
+    const members = await this.gameRoomEventService.setReady(roomId, user.id);
 
     this.server
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.READY, user.id);
+      .emit(GameRoomEvent.MEMBER_LIST, {
+        members,
+      });
   }
 
   @SubscribeMessage(GameRoomEvent.UNREADY)
@@ -93,33 +80,47 @@ export class GameRoomGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    await this.gameRoomEventService.gameUnReady(roomId, user.id);
+    const members = await this.gameRoomEventService.setUnReady(roomId, user.id);
 
     this.server
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.READY, user.id);
+      .emit(GameRoomEvent.MEMBER_LIST, {
+        members,
+      });
   }
 
   @SubscribeMessage(GameRoomEvent.START)
-  async handleStart(
-    @MessageBody() data: { user: UserProfile; roomId: number },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
+  async handleStart(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
-
-    const ready = await this.gameRoomEventService.getGameReadyMember(roomId);
+    try {
+      await this.gameRoomEventService.startGame(roomId, user.id);
+      this.server
+        .to(`${newNamespace.name}-${roomId}`)
+        .emit(GameRoomEvent.START, { roomId, start: true });
+    } catch (error) {
+      this.logger.error('start game error:', error);
+    }
   }
 
   @SubscribeMessage(GameRoomEvent.MESSAGE)
   async handleMessage(
-    @MessageBody() data: { message: object },
+    @MessageBody() data: { message: string },
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
-    socket.nsp.emit(GameRoomEvent.MESSAGE, data.message);
+    const { user } = socket.request;
+    const { roomId } = socket.data;
+    const { message } = data;
+    const newNamespace = socket.nsp;
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameRoomEvent.MESSAGE, {
+        roomId,
+        member: { id: user.id, name: user.profile.nickname },
+        message,
+      });
   }
 
   async handleConnection(@ConnectedSocket() socket: Socket) {}
@@ -129,8 +130,6 @@ export class GameRoomGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    console.log('roomId', roomId);
-
     try {
       await this.gameRoomEventService.leave(roomId, user.id);
     } catch (error) {
@@ -138,18 +137,10 @@ export class GameRoomGateway
     }
 
     const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
-    const readyMember = await this.gameRoomEventService.getGameReadyMember(
-      roomId,
-    );
 
-    for (const member of members) {
-      for (const memberId of readyMember) {
-        member.ready = member.userId === memberId;
-      }
-    }
     newNamespace
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.ONLINELIST, members);
+      .emit(GameRoomEvent.MEMBER_LIST, { members });
   }
 
   afterInit(server: any) {}
