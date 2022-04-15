@@ -122,11 +122,13 @@ export class GameRoomController {
     return await this.gameRoomEventService.create(createGameRoomDto);
   }
 
+  @ApiOperation({ summary: 'janus 요청 신경 x' })
   @Post('list')
   async getRoomList() {
     return await this.gameRoomEventService.getJanusRoomList();
   }
 
+  @ApiOperation({ summary: 'janus 요청 신경 x' })
   @Post('list-participants/:room')
   async getListParticipants(@Param('room') room: string) {
     return await this.gameRoomEventService.getJanusRoomListParticipants(+room);
@@ -158,15 +160,10 @@ export class GameRoomController {
   @Get(':roomId/joinable-room')
   async joinable(@Param('roomId') roomId: string): Promise<object> {
     return await this.gameRoomEventService.joinable(+roomId);
-    // return await this.gameRoomEventService.join(
-    //   +roomId,
-    //   new Member(user.profile),
-    // );
   }
 
   @ApiCreatedResponse({
     description: '게임 방 정보 업데이트 성공 후 Socket Event Update Emit',
-    // type: ResponseGameRoomWithMembersDto,
   })
   @ApiBadRequestResponse({
     description: '최대 인원 수 설정 실패',
@@ -243,6 +240,7 @@ export class GameRoomController {
     return await this.gameRoomEventService.remove(+roomId);
   }
 
+  @ApiOperation({ summary: 'janus 요청 신경 x' })
   @Delete('janus/:roomId')
   async removeJanusRoom(@Param('roomId') roomId: string) {
     return await this.gameRoomEventService.removeJanusRoom(+roomId);

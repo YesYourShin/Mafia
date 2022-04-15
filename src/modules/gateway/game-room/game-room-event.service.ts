@@ -15,11 +15,11 @@ import {
   READY_MEMBER_FIELD,
 } from './constants';
 import {
-  CreateGameRoomDto,
   UpdateGameRoomDto,
   Member,
   GameRoomWithMemberCount,
   GameRoomWithMembers,
+  CreateGameRoomDto,
 } from 'src/modules/game-room/dto';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { GameRoomGateway } from './game-room.gateway';
@@ -52,14 +52,22 @@ export class GameRoomEventService {
       createGameRoomDto,
     );
 
-    const gameRoom = new GameRoom(
-      id,
-      mode,
-      janusRoom.response.room,
-      description,
-      publishers,
-      pin,
-    );
+    const gameRoom = pin
+      ? new GameRoom(
+          id,
+          mode,
+          janusRoom.response.room,
+          description,
+          publishers,
+          pin,
+        )
+      : new GameRoom(
+          id,
+          mode,
+          janusRoom.response.room,
+          description,
+          publishers,
+        );
 
     await this.saveGameRoomInfo(gameRoom);
 

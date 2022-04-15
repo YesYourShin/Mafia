@@ -16,14 +16,16 @@ export class GameRoom {
     room: number,
     description: string,
     publishers: number,
-    pin: string | null,
+    pin?: string | null,
   ) {
     this._id = id;
     this._mode = mode;
     this._room = room;
     this._description = description;
     this._publishers = publishers;
-    this._pin = pin;
+    if (pin) {
+      this._pin = pin;
+    }
   }
 
   @ApiProperty({

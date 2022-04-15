@@ -1,4 +1,5 @@
-import { PickType } from '@nestjs/swagger';
+import { ApiOperation, ApiProperty, PickType } from '@nestjs/swagger';
+import { ResponseDto } from 'src/common/dto';
 import { Image } from 'src/entities';
 
 export class S3ImageObject extends PickType(Image, [
@@ -25,4 +26,13 @@ export class S3ImageObject extends PickType(Image, [
     this.key = key;
     this.location = location;
   }
+}
+
+export class ResponseS3ImageObject extends PickType(ResponseDto, [
+  'success',
+  'status',
+  'data',
+]) {
+  @ApiProperty({ type: () => S3ImageObject })
+  data: S3ImageObject;
 }

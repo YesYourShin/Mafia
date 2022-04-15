@@ -19,17 +19,13 @@ export class PostFindOneDto extends PickType(Post, [
   'updatedAt',
 ]) {
   @ApiProperty({ type: () => OwnerProfile })
-  private readonly profile: OwnerProfile;
+  profile: OwnerProfile;
   @ApiProperty({ type: () => CommentDto, isArray: true })
-  private readonly comments: CommentDto[];
+  comments: CommentDto[];
   @ApiProperty({ example: 10, name: 'likeCount' })
-  private readonly likeCount: number;
+  likeCount: number;
   @ApiProperty({ example: true, name: 'isLiked' })
-  private isLiked?: boolean;
-
-  setIsLiked(isLiked: boolean) {
-    this.isLiked = isLiked;
-  }
+  isLiked?: boolean;
 }
 
 export class FindOneResponseDto extends PickType(ResponseDto, [

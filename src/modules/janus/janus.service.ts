@@ -56,17 +56,17 @@ export class JanusService {
     return response.data;
   }
   async requestJanus(janusRequest: JanusRequest): Promise<AxiosResponse<any>> {
-    return firstValueFrom(
-      this.httpService.post(
-        this.configService.get('JANUS_URL'),
-        instanceToPlain(
-          new JanusRequestDto(
-            this.makeRandomNumber(12),
-            this.configService.get('JANUS_ADMIN_SECRET'),
-            janusRequest,
-          ),
-        ),
+    const request = instanceToPlain(
+      new JanusRequestDto(
+        this.makeRandomNumber(12),
+        this.configService.get('JANUS_ADMIN_SECRET'),
+        janusRequest,
       ),
+      { excludeExtraneousValues: true },
+    );
+    console.log(request);
+    return firstValueFrom(
+      this.httpService.post(this.configService.get('JANUS_URL'), request),
     );
   }
 

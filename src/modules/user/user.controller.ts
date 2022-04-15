@@ -39,7 +39,10 @@ import { User } from 'src/entities';
 import { LogoutInterceptor } from 'src/interceptors';
 import { ClearCookieInterceptor } from 'src/interceptors/clear-cookie.interceptor';
 import { LoggedInGuard } from '../auth/guards';
-import { S3ImageObject } from '../image/dto/s3-image-object';
+import {
+  ResponseS3ImageObject,
+  S3ImageObject,
+} from '../image/dto/s3-image-object';
 import { ImageService } from '../image/image.service';
 import {
   ResponseUserProfileDto,
@@ -130,11 +133,7 @@ export class UserController {
 
   @ApiCreatedResponse({
     description: '프로필 이미지 저장 성공',
-    schema: {
-      example: new ResponseDto(true, HttpStatus.CREATED, {
-        location: 'https://aaa.com/cat.jpg',
-      }),
-    },
+    type: ResponseS3ImageObject,
   })
   @ApiBadRequestResponse({
     description: '잘못된 형식으로 이미지를 보냈을 때',

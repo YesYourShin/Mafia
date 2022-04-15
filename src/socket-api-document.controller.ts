@@ -45,7 +45,7 @@ export class SocketApiDocumentController {
   @ApiOperation({
     summary: '게임 방 채팅 이벤트',
   })
-  @Get('meesage')
+  @Get('message')
   message() {}
 
   @ApiOkResponse({

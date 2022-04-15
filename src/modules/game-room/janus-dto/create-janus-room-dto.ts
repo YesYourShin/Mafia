@@ -15,7 +15,7 @@ export class CreateJanusRoomDto {
   @IsOptional()
   @IsString()
   @Exclude()
-  private readonly _pin?: string | null;
+  private readonly _pin?: string;
 
   @IsString()
   @Exclude()
@@ -29,7 +29,9 @@ export class CreateJanusRoomDto {
     this._request = JanusRequestEvent.CREATE;
     this._description = createGameDto.description;
     this._publishers = createGameDto.publishers;
-    this._pin = createGameDto?.pin;
+    if (createGameDto?.pin) {
+      this._pin = createGameDto.pin;
+    }
     this._admin_key = admin_key;
   }
 
@@ -50,7 +52,7 @@ export class CreateJanusRoomDto {
 
   @Expose()
   get pin(): string | null {
-    return this._pin;
+    return this?._pin;
   }
 
   @Expose()

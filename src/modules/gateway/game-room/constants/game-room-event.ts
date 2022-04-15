@@ -1,14 +1,10 @@
-const Prefix = 'GAME:';
-
 export const GameRoomEvent = {
-  CREATE: `${Prefix}CREATE`,
-  UPDATE: `${Prefix}UPDATE`,
-  JOIN: `${Prefix}JOIN`,
-  LEAVE: `${Prefix}LEAVE`,
-  MESSAGE: `${Prefix}MESSAGE`,
-  SERVER_MESSAGE: `${Prefix}MESSAGE`,
-  ONLINELIST: `${Prefix}ONLINELIST`,
-  START: `${Prefix}START`,
-  READY: `${Prefix}READY`,
-  UNREADY: `${Prefix}UNREADY`,
+  CREATE: 'game:create',
+  UPDATE: 'game:update',
+  JOIN: 'game:join',
+  MESSAGE: 'game:message',
+  ONLINELIST: 'game:onlinelist',
+  START: 'game:start',
+  READY: 'game:ready',
+  UNREADY: 'game:unready',
 };

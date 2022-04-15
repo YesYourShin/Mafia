@@ -17,12 +17,9 @@ export class PostRepository extends AbstractRepository<Post> {
       .where('id = :id', { id })
       .getOne();
   }
-  async findOne(
-    id: number,
-    userId?: number,
-  ): Promise<{ entities: Post[]; raw: any[] }> {
-    const qb = this.repository
-      .createQueryBuilder('post')
+  async findOne(id: number, userId?: number) {
+    const qb = getConnection()
+      .createQueryBuilder(Post, 'post')
       .leftJoin('post.profile', 'postProfile')
       .leftJoin('postProfile.image', 'postProfileImage')
       .leftJoin('post.comments', 'comment')
@@ -121,10 +118,14 @@ export class PostRepository extends AbstractRepository<Post> {
 
     return await qb.getCount();
   }
-  async create(userId: number, createPostDto: CreatePostDto) {
+  async create(
+    userId: number,
+    createPostDto: CreatePostDto,
+    queryRunner?: QueryRunner,
+  ) {
     const { title, content, categoryId } = createPostDto;
-    return await this.repository
-      .createQueryBuilder()
+    return await getConnection()
+      .createQueryBuilder(queryRunner)
       .insert()
       .into(Post)
       .values({

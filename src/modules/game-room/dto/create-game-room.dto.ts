@@ -40,7 +40,7 @@ export class CreateGameRoomDto {
   })
   @IsOptional()
   @IsString()
-  pin: string | null;
+  pin?: string;
 
   constructor() {}
 
@@ -48,13 +48,15 @@ export class CreateGameRoomDto {
     mode: GameMode,
     description: string,
     publishers: number,
-    pin: string | null,
+    pin?: string,
   ): CreateGameRoomDto {
     const createGameRoomDto = new CreateGameRoomDto();
     createGameRoomDto.mode = mode;
     createGameRoomDto.description = description;
     createGameRoomDto.publishers = publishers;
-    createGameRoomDto.pin = pin;
+    if (pin) {
+      createGameRoomDto.pin = pin;
+    }
     return createGameRoomDto;
   }
 }

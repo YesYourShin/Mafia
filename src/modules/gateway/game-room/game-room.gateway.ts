@@ -122,14 +122,6 @@ export class GameRoomGateway
     socket.nsp.emit(GameRoomEvent.MESSAGE, data.message);
   }
 
-  @SubscribeMessage(GameRoomEvent.SERVER_MESSAGE)
-  async handleServerMessage(
-    @MessageBody() data: { message: object },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    socket.nsp.emit(GameRoomEvent.SERVER_MESSAGE, data.message);
-  }
-
   async handleConnection(@ConnectedSocket() socket: Socket) {}
 
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {

@@ -9,15 +9,17 @@ export class GameRoomWithMemberCount {
   @Exclude() private readonly _room: number;
   @Exclude() private readonly _description: string;
   @Exclude() private readonly _publishers: number;
+  @Exclude() private readonly _isPrivate: boolean;
   @Exclude() private readonly _memberCount: number;
 
   constructor(gameRoom: GameRoom, memberCount: number) {
-    const { id, description, mode, publishers, room } = gameRoom;
+    const { id, description, mode, pin, publishers, room } = gameRoom;
     this._id = id;
     this._mode = mode;
     this._room = room;
     this._description = description;
     this._publishers = publishers;
+    this._isPrivate = pin ? true : false;
     this._memberCount = memberCount;
   }
 
@@ -66,6 +68,14 @@ export class GameRoomWithMemberCount {
     return this._publishers;
   }
 
+  @ApiProperty({
+    description: '비밀번호가 있는 가',
+    example: false,
+  })
+  @Expose()
+  get isPrivate(): boolean {
+    return this._isPrivate;
+  }
   @ApiProperty({
     description: '유저 현재 인원 수',
     example: 1,

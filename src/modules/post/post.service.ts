@@ -25,40 +25,34 @@ export class PostService {
   ) {}
 
   async create(userId: number, createPostDto: CreatePostDto) {
-    const queryRunner = this.connection.createQueryRunner();
-    await queryRunner.startTransaction();
+    // const queryRunner = this.connection.createQueryRunner();
+    // await queryRunner.startTransaction();
 
-    try {
-      const result = await this.postRepository.create(userId, createPostDto);
-      const postId = result.identifiers[0].id;
+    // try {
+    const result = await this.postRepository.create(userId, createPostDto);
+    const postId = result.identifiers[0].id;
 
-      const { images } = createPostDto;
-      if (images && images.length) {
-        const { value, reason } = await promiseAllSetteldResult(
-          images.map((image) => this.imageService.saveImagePost(postId, image)),
-        );
-
-        if (reason.length) {
-          this.logger.error(
-            'Rejected result when save image id and post id in post service',
-            reason,
-          );
-        }
+    const { images } = createPostDto;
+    if (images && images.length) {
+      for (const image of images) {
+        await this.imageService.saveImagePost(postId, image);
       }
-
-      await queryRunner.commitTransaction();
-      return postId;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw new InternalServerErrorException('Server error when create post');
-    } finally {
-      await queryRunner.release();
     }
+    return postId;
+
+    //   await queryRunner.commitTransaction();
+    //   return postId;
+    // } catch (error) {
+    //   await queryRunner.rollbackTransaction();
+    //   throw new InternalServerErrorException('Server error when create post');
+    // } finally {
+    //   await queryRunner.release();
+    // }
   }
 
   async findOne(id: number, userId?: number): Promise<PostFindOneDto> {
     const { entities, raw } = await this.postRepository.findOne(id, userId);
-    const post: any = entities[0];
+    const post: PostFindOneDto = entities[0] as any;
     post.isLiked = raw[0].isLiked ? true : false;
     return post;
   }
