@@ -45,6 +45,9 @@ export class GameGateway
   roomClient = []; // room인원
   private gamePlayerNum = 0;
   private gamePlayers;
+  mafia = 1;
+  doctor = 1;
+  police = 1;
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
@@ -94,19 +97,20 @@ export class GameGateway
     //해당 room에 인원 수
     this.gamePlayerNum = this.gamePlayers.size;
     // room의 정해진 직업을 주면 대입
-    const mafia = 1;
-    const doctor = 1;
-    const police = 1;
-    const cr: number = this.gamePlayerNum - (mafia + doctor + police);
+
+    const cr = this.gamePlayerNum - (this.mafia + this.doctor + this.police);
     // 마피아, 의사,경찰, 시민
-    const jobData = [cr, mafia, doctor, police];
+    const jobData = [cr, this.mafia, this.doctor, this.police];
+    this.logger.log(`grantjob ` + jobData);
     let roomJob = []; //해당 방의 직업
+    const roomC = [];
 
     this.logger.log(
       ` 현재 room : ${this.roomName} 인원수 ${this.gamePlayerNum}`,
     );
 
-    if (this.roomClient.length === 0) {
+    if (roomC.length === 0) {
+      // 직업 분배 + 셔플
       roomJob = this.gameEventService.GrantJob({
         playerNum: this.gamePlayerNum,
         jobData: jobData,
@@ -121,18 +125,24 @@ export class GameGateway
           job: roomJob[i],
           die: false,
         };
-        this.roomClient.push(data);
+        roomC.push(data);
       }
     }
-    // const returndata = {
-    //   room: this.roomName,
-    //   jobs: this.roomClient,
-    // };
+
+    this.logger.log(this.roomClient);
+    this.logger.log(roomC);
+    this.roomClient = roomC;
+
+    const returndata = {
+      room: this.roomName,
+      jobs: this.roomClient,
+    };
 
     // 직업 배분 셔플 결과
-    this.logger.log(this.roomClient);
+    this.logger.log('returndata');
+    this.logger.log(returndata);
 
-    this.server.to(this.roomName).emit('grantJob2', this.roomClient);
+    this.server.to(this.roomName).emit('grantJob2', returndata);
   }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
@@ -174,9 +184,6 @@ export class GameGateway
       });
 
       const aaaaaaaaa = [];
-      this.logger.log(`플레이어 수 `);
-
-      // -> redisVote - 투표 합. 여기서 객체랑 배열을 결합시켜야 함.
 
       Object.keys(redisVote).forEach((value) => {
         this.logger.log(value);
@@ -253,30 +260,55 @@ export class GameGateway
     this.logger.log(` ${data}`);
   }
 
-  userState = [];
-
-  // // 능력 사용 결과
-  @SubscribeMessage('useState')
-  handleUseStat(
-    @MessageBody() data: { user: string; job: string; useNum: number },
+  // 능력사용 부분
+  // 경찰 능력
+  @SubscribeMessage('usePolice')
+  handleUsePolice(
+    @MessageBody() payload: { num: number },
+    @ConnectedSocket() socket: Socket,
   ) {
-    const a = 1;
-    this.logger.log(`능력사용`);
-    const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+    const clientJob = this.gameEventService.usePoliceState(
+      payload.num,
+      this.roomClient,
+      socket.id,
+    );
 
-    if (data.job != grantJob[0]) {
-      const a = {
-        user: data.user,
-        job: data.job,
-        useNum: data.useNum,
-      };
-      this.userState.push(a);
-    }
-
-    // 마피아 + 의사의 지목이 같은 사람일 경우 살아있음.
-    // 아닐 경우 dead
-    // 밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
+    if (clientJob == null) this.logger.log(`현재 user가 경찰이 아닙니다.`);
+    else this.server.to(socket.id).emit('usePolice2', clientJob);
   }
+
+  // 마피아 능력
+  // userState = [];
+
+  // // // 능력 사용 결과
+  // @SubscribeMessage('useState')
+  // handleUseStat(
+  //   @MessageBody()
+  //   data: {
+  //     user: string;
+  //     job: string;
+  //     useNum: number;
+  //     citizen: number;
+  //   },
+  // ) {
+  //   let limit = this.cr;
+  //   this.logger.log(`능력사용`);
+  //   const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+
+  //   if (data.job != grantJob[0] && limit > 0) {
+  //     const a = {
+  //       user: data.user,
+  //       job: data.job,
+  //       useNum: data.useNum,
+  //     };
+  //     this.userState.push(a);
+  //     limit -= 1;
+  //   }
+
+  //   // 마피아 + 의사의 지목이 같은 사람일 경우 살아있음.
+  //   // 아닐 경우 dead
+  //   // 밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
+  // }
 
   // -----------------------
   // 1. 하나의 on을 받고 그 안에서  낮, 밤상태를 구분해서 게임 처리?
