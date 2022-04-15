@@ -6,6 +6,7 @@ export class GameEventService {
   constructor(@Inject(Logger) private readonly logger: Logger) {}
 
   GrantJob(data: { playerNum: number; jobData: number[] }) {
+    this.logger.log(`grantjob ` + data.jobData);
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
     let Job = []; //해당 방의 직업
@@ -20,6 +21,7 @@ export class GameEventService {
         item--;
       }
     }
+    this.logger.log(`grantjob` + Job);
 
     Job = this.shuffle(Job);
 
@@ -38,6 +40,29 @@ export class GameEventService {
       strikeOut.push(job.pop());
     }
 
+    this.logger.log(`grantjob` + strikeOut);
+
     return strikeOut;
+  }
+
+  usePoliceState(num: number, client: any[], user: string) {
+    let u, job;
+    client.filter((profession) => {
+      if (user === profession.user) u = profession.job;
+    });
+    this.logger.log(`user : ${u}`);
+
+    if (u !== 'POLICE') {
+      return null;
+    }
+
+    client.filter((profession) => {
+      if (num === profession.num) {
+        this.logger.log(profession.job);
+        job = profession.job;
+      }
+    });
+
+    return job;
   }
 }
