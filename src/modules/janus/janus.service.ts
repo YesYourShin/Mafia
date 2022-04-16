@@ -2,7 +2,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
-import { instanceToPlain } from 'class-transformer';
 import { firstValueFrom } from 'rxjs';
 import { JanusRequestEvent } from '../game-room/constants/janus-request-event';
 import { CreateGameRoomDto } from '../game-room/dto';
@@ -56,14 +55,12 @@ export class JanusService {
     return response.data;
   }
   async requestJanus(janusRequest: JanusRequest): Promise<AxiosResponse<any>> {
-    const request = instanceToPlain(
-      new JanusRequestDto(
-        this.makeRandomNumber(12),
-        this.configService.get('JANUS_ADMIN_SECRET'),
-        janusRequest,
-      ),
+    const request = new JanusRequestDto(
+      this.makeRandomNumber(12),
+      this.configService.get('JANUS_ADMIN_SECRET'),
+      janusRequest,
     );
-    console.log(request);
+    console.log('request', request);
     return firstValueFrom(
       this.httpService.post(this.configService.get('JANUS_URL'), request),
     );

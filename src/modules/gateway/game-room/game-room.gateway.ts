@@ -9,7 +9,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { instanceToInstance } from 'class-transformer';
 import { Server, Socket } from 'socket.io';
 import { Member } from 'src/modules/game-room/dto';
 import { RedisIoAdapter } from 'src/shared/adapter/RedisIoAdapter';
@@ -55,7 +54,7 @@ export class GameRoomGateway
 
       newNamespace
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameRoomEvent.JOIN, { member: instanceToInstance(member) });
+        .emit(GameRoomEvent.JOIN, { member });
     } catch (error) {
       this.logger.error('socket join event error', error);
     }

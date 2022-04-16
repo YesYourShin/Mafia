@@ -1,62 +1,84 @@
-import { Exclude, Expose } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { JanusRequestEvent } from '../constants/janus-request-event';
 import { CreateGameRoomDto } from '../dto';
 
 export class CreateJanusRoomDto {
   @IsEnum(JanusRequestEvent)
-  @Exclude()
-  private readonly _request: JanusRequestEvent;
+  request: JanusRequestEvent;
 
   @IsInt()
-  @Exclude()
-  private readonly _publishers: number;
+  publishers: number;
 
   @IsOptional()
   @IsString()
-  @Exclude()
-  private readonly _pin?: string;
+  pin?: string;
 
   @IsString()
-  @Exclude()
-  private readonly _description?: string;
+  description?: string;
 
   @IsString()
-  @Exclude()
-  private readonly _admin_key: string;
+  admin_key: string;
 
   constructor(createGameDto: CreateGameRoomDto, admin_key: string) {
-    this._request = JanusRequestEvent.CREATE;
-    this._description = createGameDto.description;
-    this._publishers = createGameDto.publishers;
+    this.request = JanusRequestEvent.CREATE;
+    this.description = createGameDto.description;
+    this.publishers = createGameDto.publishers;
     if (createGameDto?.pin) {
-      this._pin = createGameDto.pin;
+      this.pin = createGameDto.pin;
     }
-    this._admin_key = admin_key;
-  }
-
-  @Expose()
-  get request(): JanusRequestEvent {
-    return this._request;
-  }
-
-  @Expose()
-  get description(): string {
-    return this._description;
-  }
-
-  @Expose()
-  get publishers(): number {
-    return this._publishers;
-  }
-
-  @Expose()
-  get pin(): string | null {
-    return this?._pin;
-  }
-
-  @Expose()
-  get admin_key(): string {
-    return this._admin_key;
+    this.admin_key = admin_key;
   }
 }
+
+// export class CreateJanusRoomDto {
+//   @IsEnum(JanusRequestEvent)
+//   @Exclude()
+//   private readonly _request: JanusRequestEvent;
+
+//   @IsInt()
+//   @Exclude()
+//   private readonly _publishers: number;
+
+//   @IsOptional()
+//   @IsString()
+//   @Exclude()
+//   private readonly _pin?: string;
+
+//   @IsString()
+//   @Exclude()
+//   private readonly _description?: string;
+
+//   @IsString()
+//   @Exclude()
+//   private readonly _admin_key: string;
+
+//   constructor(createGameDto: CreateGameRoomDto, admin_key: string) {
+//     this._request = JanusRequestEvent.CREATE;
+//     this._description = createGameDto.description;
+//     this._publishers = createGameDto.publishers;
+//     if (createGameDto?.pin) {
+//       this._pin = createGameDto.pin;
+//     }
+//     this._admin_key = admin_key;
+//   }
+
+//   get request(): JanusRequestEvent {
+//     return this._request;
+//   }
+
+//   get description(): string {
+//     return this._description;
+//   }
+
+//   get publishers(): number {
+//     return this._publishers;
+//   }
+
+//   get pin(): string | null {
+//     return this?._pin;
+//   }
+
+//   get admin_key(): string {
+//     return this._admin_key;
+//   }
+// }

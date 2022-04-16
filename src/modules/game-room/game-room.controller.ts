@@ -170,6 +170,47 @@ export class GameRoomController {
     return await this.gameRoomEventService.joinable(+roomId);
   }
 
+  @ApiOkResponse({
+    description: '게임 방 참가 가능',
+    schema: {
+      example: new ResponseDto(true, 200, { roomId: 1, joinable: true }),
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '게임 방 참가 권한 불가',
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '게임 참여할 권한이 없습니다',
+      ),
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '게임 방 참가 권한 불가',
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '비밀번호가 틀렸습니다',
+      ),
+    },
+  })
+  @ApiParam({
+    name: 'roomId',
+    description: '게임 방 번호',
+    example: 1,
+  })
+  @ApiOperation({ summary: '게임 방 비밀번호 확인' })
+  @UseGuards(ExistGameRoomGuard, IsGameRoomMemberGuard)
+  @Post('/check-password/:roomId')
+  async checkPassword(
+    @Param('roomId') roomId: number,
+    @Body() body: { pin: string },
+  ) {
+    return await this.gameRoomEventService.checkPassword(roomId, body.pin);
+  }
+
   @ApiCreatedResponse({
     description: '게임 방 정보 업데이트 성공 후 Socket Event Update Emit',
   })

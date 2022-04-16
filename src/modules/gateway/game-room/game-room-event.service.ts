@@ -26,7 +26,6 @@ import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { JanusService } from 'src/modules/janus/janus.service';
 import { ConfigService } from '@nestjs/config';
 import { GameRoom } from 'src/modules/game-room/dto/game-room';
-import { instanceToPlain } from 'class-transformer';
 import { WsException } from '@nestjs/websockets';
 
 @Injectable()
@@ -40,6 +39,14 @@ export class GameRoomEventService {
     private readonly janusService: JanusService,
     private readonly configService: ConfigService,
   ) {}
+
+  async checkPassword(roomId: number, pin: string) {
+    const gameRoom = await this.findOneOfRoomInfo(roomId);
+    console.log(gameRoom.pin, pin);
+    if (gameRoom.pin !== pin)
+      throw new ForbiddenException('비밀번호가 틀렸습니다');
+    return { roomId, joinable: true };
+  }
 
   async getJanusRoomList() {
     return await this.janusService.getJanusRoomList();
@@ -149,9 +156,9 @@ export class GameRoomEventService {
     );
     const { value, reason } = result;
 
-    if (reason?.length) {
-      this.logger.error('Error when find game room info', reason);
-    }
+    // if (reason?.length) {
+    //   this.logger.error('Error when find game room info', reason);
+    // }
 
     return value;
   }
@@ -213,7 +220,7 @@ export class GameRoomEventService {
     field: string,
     members: Member[],
   ): Promise<any> {
-    return await this.redisService.hset(key, field, instanceToPlain(members));
+    return await this.redisService.hset(key, field, members);
   }
 
   // 게임 정보 저장
@@ -221,7 +228,7 @@ export class GameRoomEventService {
     return await this.redisService.hset(
       this.makeRoomKey(gameRoom.id),
       INFO_FIELD,
-      instanceToPlain(gameRoom),
+      gameRoom,
     );
   }
 
