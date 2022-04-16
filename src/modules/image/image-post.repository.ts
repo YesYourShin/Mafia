@@ -50,7 +50,7 @@ export class ImagePostRepository extends AbstractRepository<ImagePost> {
   }
 
   async remove(options: ImagePostRemoveOptions = {}) {
-    if (Object.keys(removeNilFromObject(options)).length === 0) return null;
+    if (!Object.keys(removeNilFromObject(options)).length) return null;
 
     const qb = this.repository.createQueryBuilder().delete().from(ImagePost);
 

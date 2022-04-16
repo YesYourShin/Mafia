@@ -43,11 +43,12 @@ import { UserProfile } from '../user/dto';
 import { LoggedInGuard } from '../auth/guards';
 import { ApiFile, UserDecorator } from 'src/decorators';
 import { ExistedProfileGuard } from 'src/common/guards';
-import { CategoryRangeGuard, ExistPostGuard } from './guards';
+import { ExistPostGuard } from './guards';
 import { PostOwnerGuard } from './guards/post-owner.guard';
 import { ResponseDto } from 'src/common/dto';
 import { ImageService } from '../image/image.service';
-import { CategoryEnum } from 'src/common/constants';
+import { EnumCategoryName } from 'src/common/constants';
+import { CategoryValidationPipe } from './pipe/category-validation.pipe';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -79,7 +80,7 @@ export class PostController {
   }
 
   @ApiQuery({
-    description: 'defalut 4 / 전체 게시판',
+    description: 'default 전체 게시판',
     name: 'category',
     example: 'api/posts?category=1',
     schema: {
@@ -99,11 +100,10 @@ export class PostController {
     type: FindAllResponseDto,
   })
   @ApiOperation({ summary: '게시물들 불러오기' })
-  @UseGuards(CategoryRangeGuard)
   @Get()
   async findAll(
-    @Query('category', new DefaultValuePipe(CategoryEnum.GENERAL), ParseIntPipe)
-    category: number,
+    @Query('category', new CategoryValidationPipe())
+    category: EnumCategoryName,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
     return await this.postService.findAll(category, page);

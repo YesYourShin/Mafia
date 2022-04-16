@@ -127,8 +127,8 @@ export class UserController {
   })
   @ApiOperation({ summary: '특정 유저 정보 불러오기' })
   @Get('profile/:id')
-  async getUserProfile(@Param('id') id: string): Promise<ProfileInfo> {
-    return await this.userService.findProfile(+id);
+  async getUserProfile(@Param('id') id: number): Promise<ProfileInfo> {
+    return await this.userService.findProfile(id);
   }
 
   @ApiCreatedResponse({

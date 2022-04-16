@@ -1,6 +1,6 @@
-export enum EGameRole {
-  CITIZEN = 'CITIZEN',
-  MAFIA = 'MAFIA',
-  DOCTOR = 'DOCTOR',
-  POLICE = 'POLICE',
+export enum EnumGameRole {
+  CITIZEN = 'citizen',
+  MAFIA = 'mafia',
+  DOCTOR = 'doctor',
+  POLICE = 'police',
 }

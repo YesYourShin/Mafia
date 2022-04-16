@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Post } from './post.entity';
-import { ECategory } from '../common/constants';
+import { EnumCategory } from '../common/constants';
 
 @Entity('category')
 export class Category {
@@ -26,22 +26,31 @@ export class Category {
     example: 1,
     description: '게시물 카테고리 이름',
   })
-  @Column({ type: 'varchar', length: 15, unique: true })
-  name: ECategory;
+  @Column({
+    type: 'enum',
+    enum: [
+      EnumCategory.ANNOUNCEMENT,
+      EnumCategory.FREEBOARD,
+      EnumCategory.INFORMATION,
+    ],
+    unique: true,
+  })
+  name: EnumCategory;
 
   @OneToMany(() => Post, (posts) => posts.category)
   posts: Post[];
 
   @IsDate()
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   createdAt: Date;
 
   @IsDate()
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   updatedAt: Date;
-
-  @IsDate()
-  @IsOptional()
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 }

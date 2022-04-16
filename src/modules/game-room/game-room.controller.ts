@@ -30,6 +30,7 @@ import { UserProfile } from '../user/dto';
 import {
   GameRoom,
   GameRoomWithMembers,
+  Member,
   ResponseGameRoomFindAllDto,
   ResponseGameRoomFindOneDto,
   UpdateGameRoomDto,
@@ -118,8 +119,9 @@ export class GameRoomController {
   @Post()
   async create(
     @Body() createGameRoomDto: CreateGameRoomDto,
+    @UserDecorator() user: UserProfile,
   ): Promise<GameRoom> {
-    return await this.gameRoomEventService.create(createGameRoomDto);
+    return await this.gameRoomEventService.create(createGameRoomDto, user);
   }
 
   @ApiOperation({ summary: 'janus 요청 신경 x' })
@@ -192,6 +194,31 @@ export class GameRoomController {
       updateGameDto,
       user.id,
     );
+  }
+  @ApiOkResponse({
+    description: '게임 방 나가기 성공',
+    schema: {
+      example: new ResponseDto(true, HttpStatus.OK, {
+        roomId: 1,
+        exit: true,
+      }),
+    },
+  })
+  @ApiParam({
+    name: 'roomId',
+    description: '게임 방 번호',
+    example: 1,
+  })
+  @ApiOperation({
+    summary: '게임 방 나가기 (나가는 사람이 마지막 사람이면 자동 방 파괴',
+  })
+  @UseGuards(ExistGameRoomGuard, GameMemberGuard)
+  @Delete(':roomId/users/me')
+  async leaveGameRoom(
+    @Param('roomId') roomId: string,
+    @UserDecorator() user: UserProfile,
+  ): Promise<object> {
+    return await this.gameRoomEventService.leave(+roomId, user.id);
   }
 
   @ApiOkResponse({

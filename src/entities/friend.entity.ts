@@ -53,15 +53,16 @@ export class Friend {
   friend: User;
 
   @IsDate()
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   createdAt: Date;
 
   @IsDate()
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   updatedAt: Date;
-
-  @IsDate()
-  @IsOptional()
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 }

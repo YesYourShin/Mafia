@@ -13,6 +13,7 @@ import { Connection } from 'typeorm';
 import { ImageService } from '../image/image.service';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { InjectConnection } from '@nestjs/typeorm';
+import { EnumCategoryName } from 'src/common/constants';
 
 @Injectable()
 export class PostService {
@@ -25,29 +26,26 @@ export class PostService {
   ) {}
 
   async create(userId: number, createPostDto: CreatePostDto) {
-    // const queryRunner = this.connection.createQueryRunner();
-    // await queryRunner.startTransaction();
+    const queryRunner = this.connection.createQueryRunner();
+    await queryRunner.startTransaction();
 
-    // try {
-    const result = await this.postRepository.create(userId, createPostDto);
-    const postId = result.identifiers[0].id;
+    try {
+      const result = await this.postRepository.create(userId, createPostDto);
+      const postId = result.identifiers[0].id;
 
-    const { images } = createPostDto;
-    if (images && images.length) {
-      for (const image of images) {
-        await this.imageService.saveImagePost(postId, image);
+      const { images } = createPostDto;
+      if (images?.length) {
+        await this.imageService.saveImagePost(postId, images, queryRunner);
       }
-    }
-    return postId;
 
-    //   await queryRunner.commitTransaction();
-    //   return postId;
-    // } catch (error) {
-    //   await queryRunner.rollbackTransaction();
-    //   throw new InternalServerErrorException('Server error when create post');
-    // } finally {
-    //   await queryRunner.release();
-    // }
+      await queryRunner.commitTransaction();
+      return postId;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new InternalServerErrorException('Server error when create post');
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async findOne(id: number, userId?: number): Promise<PostFindOneDto> {
@@ -56,25 +54,26 @@ export class PostService {
     post.isLiked = raw[0].isLiked ? true : false;
     return post;
   }
-  async findAll(categoryId: number, page: number) {
+  async findAll(categoryName: EnumCategoryName, page: number) {
+    const takeItem = 10;
     const items = await this.postRepository.findAll(
-      categoryId,
-      (page - 1) * 10,
+      categoryName,
+      (page - 1) * takeItem,
     );
-    const totalItems = await this.postRepository.findPagesCountByCategoryId(
-      categoryId,
+    const totalItems = await this.postRepository.findPagesCountByCategoryName(
+      categoryName,
     );
-    const totalPages = Math.ceil(totalItems / 10);
+    const totalPages = Math.ceil(totalItems / takeItem);
     const itemCount = items.length;
-    const temp = Math.floor(page / 10);
+    const temp = Math.floor(page / takeItem);
     const links = {};
 
     for (let i = 1; i <= 10; i++) {
-      const tPage = i + temp * 10;
+      const tPage = i + temp * takeItem;
       if (tPage > totalPages) break;
       links[i] = `${this.configService.get(
         'FRONT_URL',
-      )}/community/post?category=${categoryId}&page=${tPage}`;
+      )}/community/post?category=${categoryName}&page=${tPage}`;
     }
 
     const data = new Pagination(
@@ -98,7 +97,7 @@ export class PostService {
     await queryRunner.startTransaction();
 
     try {
-      if (removeImages && removeImages.length) {
+      if (removeImages?.length) {
         //image location으로 image 검색
         const existImages = await this.imageService.findByLocation(
           removeImages,
@@ -108,20 +107,19 @@ export class PostService {
         const { arrayOfId, arrayOfKey } =
           this.getIdAndKeyOutOfImages(existImages);
         keys = arrayOfKey;
-        console.log(keys);
 
         //image id 배열로 image 삭제
         await this.imageService.remove({
           id: arrayOfId,
         });
       }
-      if (updateImages && updateImages.length) {
+      if (updateImages?.length) {
         // update images 다대다 테이블에 저장
         await this.imageService.saveImagePost(id, updateImages, queryRunner);
       }
       await this.postRepository.update(id, updatePostDto, queryRunner);
 
-      if (keys && keys.length) {
+      if (keys?.length) {
         await this.imageService.deleteS3Objects(keys);
       }
       await queryRunner.commitTransaction();
@@ -205,7 +203,7 @@ export class PostService {
         removeImages,
       ]);
 
-      if (reason && reason.length) {
+      if (reason?.length) {
         this.logger.error('Error when remove image', reason);
       }
 

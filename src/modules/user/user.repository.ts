@@ -8,7 +8,7 @@ import { UserProfile } from './dto';
 @EntityRepository(User)
 export class UserRepository extends AbstractRepository<User> {
   async findOne(options: UserFindOneOptions = {}): Promise<UserProfile> {
-    if (Object.keys(removeNilFromObject(options)).length === 0) return null;
+    if (!Object.keys(removeNilFromObject(options)).length) return null;
 
     const { id, socialId, provider } = options;
 

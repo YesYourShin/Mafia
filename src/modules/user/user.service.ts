@@ -10,7 +10,7 @@ import { InjectConnection } from '@nestjs/typeorm';
 import { removeNilFromObject } from 'src/common/constants';
 import { Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
-import { Connection, getConnection } from 'typeorm';
+import { Connection } from 'typeorm';
 import { ImageService } from '../image/image.service';
 import {
   CreateProfileDto,
@@ -55,7 +55,7 @@ export class UserService {
     await queryRunner.startTransaction();
 
     try {
-      if (this.existImage(profile)) {
+      if (profile?.image) {
         const imageId = await this.imageService.save(
           profile.image,
           queryRunner,
@@ -86,8 +86,8 @@ export class UserService {
     await queryRunner.startTransaction();
 
     try {
-      if (this.existImage(updateProfileDto)) {
-        if (this.existImage(profile)) {
+      if (updateProfileDto?.image) {
+        if (profile?.image) {
           const { key } = profile.image;
           await this.imageService.remove({ key }, queryRunner);
           await this.imageService.deleteS3Object(key);
@@ -146,13 +146,5 @@ export class UserService {
     } catch (error) {
       this.logger.error(error);
     }
-  }
-
-  existImage(
-    profile: ProfileInfo | CreateProfileDto | UpdateProfileDto,
-  ): boolean {
-    return profile?.image && Object.keys(removeNilFromObject(profile?.image))
-      ? true
-      : false;
   }
 }

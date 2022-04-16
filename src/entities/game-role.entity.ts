@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { GameMember } from './game-member.entity';
-import { EGameRole } from '../common/constants';
+import { EnumGameRole } from '../common/constants';
 
 @Entity('game_role')
 export class GameRole {
@@ -26,22 +26,23 @@ export class GameRole {
     example: 'CITIZEN',
     description: '게임 역할 이름',
   })
-  // @IsEnum(EGameRole)
-  @Column({ type: 'enum', enum: EGameRole, name: 'role' })
-  role: EGameRole;
+  @IsEnum(EnumGameRole)
+  @Column({ type: 'enum', enum: EnumGameRole, name: 'role' })
+  role: EnumGameRole;
 
   @IsDate()
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   createdAt: Date;
 
   @IsDate()
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   updatedAt: Date;
-
-  @IsDate()
-  @IsOptional()
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 
   @OneToMany(() => GameMember, (members) => members.gameRole)
   members: GameMember[];

@@ -10,7 +10,7 @@ export const promiseAllSetteldResult = async (arg: any[]) => {
 
   const value = fulfilled.map((result) => result.value);
 
-  if (rejected.length) {
+  if (rejected?.length) {
     const reason = rejected.map((result) => result.reason);
     return { value, reason };
   }

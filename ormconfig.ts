@@ -11,7 +11,7 @@ const envPath =
 
 dotenv.config({ path: envPath });
 
-export const ormconfig: TypeOrmModuleOptions = {
+const ormconfig: TypeOrmModuleOptions = {
   type: 'mysql',
   host: process.env.DB_HOST,
   port: +process.env.DB_PORT,
@@ -23,7 +23,9 @@ export const ormconfig: TypeOrmModuleOptions = {
   cli: { migrationsDir: 'src/migrations' },
   autoLoadEntities: true,
   charset: 'utf8mb4',
-  synchronize: false,
+  synchronize: true,
   logging: true,
   keepConnectionAlive: true,
 };
+
+module.exports = ormconfig;

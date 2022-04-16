@@ -85,7 +85,10 @@ export class Comment {
     description: '생성 날짜',
   })
   @IsDate()
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   createdAt: Date;
 
   @ApiProperty({
@@ -93,6 +96,9 @@ export class Comment {
     description: '수정 날짜',
   })
   @IsDate()
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamptz',
+    nullable: false,
+  })
   updatedAt: Date;
 }

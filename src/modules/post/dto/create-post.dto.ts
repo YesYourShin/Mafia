@@ -5,7 +5,7 @@ import { Post } from 'src/entities';
 export class CreatePostDto extends PickType(Post, [
   'title',
   'content',
-  'categoryId',
+  'categoryName',
 ]) {
   @ApiProperty({
     description: '추가할 image id 배열',

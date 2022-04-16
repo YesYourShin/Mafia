@@ -1,3 +1,4 @@
+import { BaseCategory, EnumCategoryName } from 'src/common/constants';
 import { Post, Like } from 'src/entities';
 import {
   AbstractRepository,
@@ -7,7 +8,6 @@ import {
 } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { CategoryEnum } from 'src/common/constants';
 
 @EntityRepository(Post)
 export class PostRepository extends AbstractRepository<Post> {
@@ -29,7 +29,7 @@ export class PostRepository extends AbstractRepository<Post> {
         'post.id',
         'post.title',
         'post.content',
-        'post.categoryId',
+        'post.categoryName',
         'post.updatedAt',
       ])
       .addSelect(['postProfile.id', 'postProfile.nickname'])
@@ -56,8 +56,7 @@ export class PostRepository extends AbstractRepository<Post> {
 
     return await qb.getRawAndEntities();
   }
-  async findAll(categoryId: number, skip: number) {
-    console.log('skip', skip);
+  async findAll(categoryName: EnumCategoryName, skip: number) {
     const qb = this.repository
       .createQueryBuilder('post')
       .leftJoin('post.profile', 'profile')
@@ -66,7 +65,7 @@ export class PostRepository extends AbstractRepository<Post> {
         'post.title',
         'post.content',
         'post.updatedAt',
-        'post.categoryId',
+        'post.categoryName',
       ])
       .addSelect(['profile.id', 'profile.nickname'])
       .orderBy('post.id', 'DESC')
@@ -76,41 +75,33 @@ export class PostRepository extends AbstractRepository<Post> {
       .loadRelationCountAndMap('post.likeCount', 'post.likes')
       .loadRelationCountAndMap('post.views', 'post.views');
 
-    if (
-      categoryId === CategoryEnum.ANNOUNCEMENT ||
-      categoryId === CategoryEnum.FREEBOARD ||
-      categoryId === CategoryEnum.INFORMATIN
-    ) {
-      qb.where('post.categoryId = :categoryId', { categoryId });
-    } else {
-      qb.where('post.categoryId IN (:...categoryId)', {
-        categoryId: [2, 3],
-      });
-    }
-    if (categoryId === CategoryEnum.POPULAR) {
+    if (categoryName === EnumCategoryName.POPULAR) {
       qb.leftJoin('post.likes', 'likes')
         .groupBy('post.id')
         .having('COUNT(likes.id) > 5');
     }
+    if (this.isBaseCategory(categoryName)) {
+      qb.where('post.categoryName= :categoryName', { categoryName });
+    } else {
+      qb.where('post.categoryName IN (:...category)', {
+        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.GENERAL],
+      });
+    }
 
     return await qb.getMany();
   }
-  async findPagesCountByCategoryId(categoryId: number) {
+  async findPagesCountByCategoryName(categoryName: EnumCategoryName) {
     const qb = this.repository
       .createQueryBuilder('post')
       .select('COUNT(*) AS postCount');
-    if (
-      categoryId === CategoryEnum.ANNOUNCEMENT ||
-      categoryId === CategoryEnum.FREEBOARD ||
-      categoryId === CategoryEnum.INFORMATIN
-    ) {
-      qb.where('post.categoryId = :categoryId', { categoryId });
+    if (this.isBaseCategory(categoryName)) {
+      qb.where('post.categoryName= :categoryName', { categoryName });
     } else {
-      qb.where('post.categoryId IN (:...categoryId)', {
-        categoryId: [2, 3],
+      qb.where('post.categoryName IN (:...category)', {
+        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.GENERAL],
       });
     }
-    if (categoryId === CategoryEnum.POPULAR) {
+    if (categoryName === EnumCategoryName.POPULAR) {
       qb.leftJoin('post.likes', 'likes')
         .groupBy('post.id')
         .having('COUNT(likes.id) > 5');
@@ -123,7 +114,7 @@ export class PostRepository extends AbstractRepository<Post> {
     createPostDto: CreatePostDto,
     queryRunner?: QueryRunner,
   ) {
-    const { title, content, categoryId } = createPostDto;
+    const { title, content, categoryName } = createPostDto;
     return await getConnection()
       .createQueryBuilder(queryRunner)
       .insert()
@@ -131,7 +122,7 @@ export class PostRepository extends AbstractRepository<Post> {
       .values({
         title,
         content,
-        categoryId,
+        categoryName,
         userId,
       })
       .execute();
@@ -141,7 +132,7 @@ export class PostRepository extends AbstractRepository<Post> {
     updatePostDto: UpdatePostDto,
     queryRunner?: QueryRunner,
   ) {
-    const { title, content, categoryId } = updatePostDto;
+    const { title, content, categoryName } = updatePostDto;
 
     const qb = getConnection()
       .createQueryBuilder(queryRunner)
@@ -149,7 +140,7 @@ export class PostRepository extends AbstractRepository<Post> {
       .set({
         title,
         content,
-        categoryId,
+        categoryName,
       })
       .where('id = :id', { id })
       .execute();
@@ -194,5 +185,12 @@ export class PostRepository extends AbstractRepository<Post> {
       .where('id = :id', { id })
       .execute();
     return qb;
+  }
+  isBaseCategory(categoryName: EnumCategoryName): boolean {
+    return [
+      EnumCategoryName.ANNOUNCEMENT,
+      EnumCategoryName.FREEBOARD,
+      EnumCategoryName.GENERAL,
+    ].includes(categoryName);
   }
 }

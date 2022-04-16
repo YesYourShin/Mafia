@@ -28,6 +28,7 @@ import { ConfigService } from '@nestjs/config';
 import { GameRoom } from 'src/modules/game-room/dto/game-room';
 import { instanceToPlain } from 'class-transformer';
 import { WsException } from '@nestjs/websockets';
+import { ProfileInfo, UserProfile } from 'src/modules/user/dto';
 
 @Injectable()
 export class GameRoomEventService {
@@ -45,7 +46,10 @@ export class GameRoomEventService {
     return await this.janusService.getJanusRoomList();
   }
   // 방 생성
-  async create(createGameRoomDto: CreateGameRoomDto): Promise<GameRoom> {
+  async create(
+    createGameRoomDto: CreateGameRoomDto,
+    user: UserProfile,
+  ): Promise<GameRoom> {
     const { mode, description, publishers, pin } = createGameRoomDto;
     const id = await this.getDailyGameRoomNumber();
 
@@ -71,6 +75,9 @@ export class GameRoomEventService {
         );
 
     await this.saveGameRoomInfo(gameRoom);
+    const member = new Member(user.profile);
+    const members = [member];
+    await this.saveMembers(this.makeRoomKey(id), MEMBER_FIELD, members);
 
     return gameRoom;
   }
@@ -149,7 +156,7 @@ export class GameRoomEventService {
     );
     const { value, reason } = result;
 
-    if (reason) {
+    if (reason?.length) {
       this.logger.error('Error when find game room info', reason);
     }
 

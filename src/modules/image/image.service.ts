@@ -55,7 +55,7 @@ export class ImageService {
     }
     const { value, reason } = await promiseAllSetteldResult(deleteImages);
 
-    if (reason && reason.length) {
+    if (reason?.length) {
       this.logger.error('error when delete s3 objects', reason);
     }
 

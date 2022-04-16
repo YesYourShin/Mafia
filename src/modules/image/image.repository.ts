@@ -1,5 +1,10 @@
 import { Image } from 'src/entities';
-import { AbstractRepository, EntityRepository, QueryRunner } from 'typeorm';
+import {
+  AbstractRepository,
+  EntityRepository,
+  getConnection,
+  QueryRunner,
+} from 'typeorm';
 import { ImageRemoveOptions } from './constants/image-remove-options';
 import { ResponseImage } from './constants/response-image';
 import { S3ImageObject } from './dto/s3-image-object';
@@ -81,23 +86,23 @@ export class ImageRepository extends AbstractRepository<Image> {
     queryRunner?: QueryRunner,
   ) {
     const { id, key, location } = imageRemoveOptions;
-    const qb = this.repository
-      .createQueryBuilder('image', queryRunner)
+    const qb = getConnection()
+      .createQueryBuilder(queryRunner)
       .delete()
       .from(Image);
 
     if (id) {
-      Array.isArray(id)
-        ? qb.where('image.id IN (:...id)', { id })
-        : qb.where('image.id = :id', { id });
+      Array.isArray(id) && id?.length
+        ? qb.where('id IN (:...id)', { id })
+        : qb.where('id = :id', { id });
     } else if (key) {
-      Array.isArray(key)
-        ? qb.where('image.key IN (:...key)', { key })
-        : qb.where('image.key = :key', { key });
+      Array.isArray(key) && key?.length
+        ? qb.where('key IN (:...key)', { key })
+        : qb.where('key = :key', { key });
     } else if (location) {
-      Array.isArray(location)
-        ? qb.where('image.location IN (:...location)', { location })
-        : qb.where('image.location = :location', { location });
+      Array.isArray(location) && location?.length
+        ? qb.where('location IN (:...location)', { location })
+        : qb.where('location = :location', { location });
     }
 
     qb.execute();

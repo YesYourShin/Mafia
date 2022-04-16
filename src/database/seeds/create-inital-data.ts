@@ -1,6 +1,6 @@
 import { Connection } from 'typeorm';
 import { Factory, Seeder } from 'typeorm-seeding';
-import { ECategory, EGameRole } from '../../common/constants';
+import { EnumCategory, EnumGameRole } from '../../common/constants';
 import { Category } from '../../entities/category.entity';
 import { GameRole } from '../../entities/game-role.entity';
 import { ReportType } from '../../entities/report-type.entity';
@@ -17,10 +17,10 @@ export class CreateInitialData implements Seeder {
         .insert()
         .into(GameRole)
         .values([
-          { id: 1, role: EGameRole.CITIZEN },
-          { id: 2, role: EGameRole.MAFIA },
-          { id: 3, role: EGameRole.DOCTOR },
-          { id: 4, role: EGameRole.POLICE },
+          { id: 1, role: EnumGameRole.CITIZEN },
+          { id: 2, role: EnumGameRole.MAFIA },
+          { id: 3, role: EnumGameRole.DOCTOR },
+          { id: 4, role: EnumGameRole.POLICE },
         ])
         .execute();
 
@@ -59,9 +59,9 @@ export class CreateInitialData implements Seeder {
         .insert()
         .into(Category)
         .values([
-          { id: 1, name: ECategory.ANNOUNCEMENT },
-          { id: 2, name: ECategory.FREEBOARD },
-          { id: 3, name: ECategory.INFORMATION },
+          { id: 1, name: EnumCategory.ANNOUNCEMENT },
+          { id: 2, name: EnumCategory.FREEBOARD },
+          { id: 3, name: EnumCategory.INFORMATION },
         ])
         .execute();
 

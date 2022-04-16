@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -18,6 +18,7 @@ import { ImagePost } from './image-post.entity';
 import { Like } from './like.entity';
 import { Profile } from './profile.entity';
 import { View } from './view.entity';
+import { EnumCategory } from '../common/constants';
 
 @Entity('post')
 export class Post {
@@ -46,22 +47,28 @@ export class Post {
   content: string;
 
   @ApiProperty({
-    example: 1,
-    description: '게시물 카테고리 ID',
+    example: '자유게시판/정보게시판/공지사항/전체게시판/인기게시판',
+    description: '게시물 카테고리 이름',
   })
-  @IsInt()
-  @Index('IDX_POST_CATEGORY_ID')
+  @IsEnum(EnumCategory)
+  @Index('IDX_POST_CATEGORY_Name')
   @Column({
-    name: 'category_id',
+    type: 'enum',
+    enum: [
+      EnumCategory.ANNOUNCEMENT,
+      EnumCategory.FREEBOARD,
+      EnumCategory.INFORMATION,
+    ],
+    name: 'category_name',
     nullable: true,
   })
-  categoryId: number;
+  categoryName?: EnumCategory;
 
   @ManyToOne(() => Category, (category) => category.posts, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'category_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'category_name', referencedColumnName: 'name' })
   category: Category;
 
   @ApiProperty({

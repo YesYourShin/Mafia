@@ -17,7 +17,7 @@ import { UserEventModule } from './modules/gateway/user/user-event.module';
 import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { HttpModule } from '@nestjs/axios';
-import { ormconfig } from '../ormconfig';
+import * as ormconfig from '../ormconfig';
 import { SocketApiDocumentController } from './socket-api-document.controller';
 
 @Module({

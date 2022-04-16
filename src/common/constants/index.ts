@@ -6,6 +6,5 @@ export * from './oauth-verify-callback';
 export * from './score';
 export * from './user-role';
 export * from './user-provider';
-export * from './CategoryEnum';
 export * from './remove-nil-from-object';
-export * from './ECategory';
+export * from './enum-category';
