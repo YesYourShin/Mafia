@@ -63,10 +63,7 @@ export class Game {
   limit: number;
 
   @IsDate()
-  @CreateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @CreateDateColumn()
   createdAt: Date;
 
   @IsDate()

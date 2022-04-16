@@ -64,16 +64,10 @@ export class DM {
   @JoinColumn({ name: 'receiver_id', referencedColumnName: 'id' })
   receiver: User;
   @IsDate()
-  @CreateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @CreateDateColumn()
   createdAt: Date;
 
   @IsDate()
-  @UpdateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

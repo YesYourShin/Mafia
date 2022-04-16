@@ -81,16 +81,10 @@ export class GameMember {
   score?: Score;
 
   @IsDate()
-  @CreateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @CreateDateColumn()
   createdAt: Date;
 
   @IsDate()
-  @UpdateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

@@ -31,17 +31,11 @@ export class GameRole {
   role: EnumGameRole;
 
   @IsDate()
-  @CreateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @CreateDateColumn()
   createdAt: Date;
 
   @IsDate()
-  @UpdateDateColumn({
-    type: 'timestamptz',
-    nullable: false,
-  })
+  @UpdateDateColumn()
   updatedAt: Date;
 
   @OneToMany(() => GameMember, (members) => members.gameRole)
