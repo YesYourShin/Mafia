@@ -266,7 +266,7 @@ export class GameGateway
 
   @SubscribeMessage('dayNight')
   async handleDayNight(@MessageBody() data: string) {
-    this.logger.log(` ${data}`);
+
   }
 
   // 능력사용 부분
@@ -282,7 +282,7 @@ export class GameGateway
       socket.id,
     );
 
-    if (clientJob == null) this.logger.log(`현재 user가 경찰이 아닙니다.`);
+    if (!clientJob) this.logger.log(`현재 user가 경찰이 아닙니다.`);
     else this.server.to(socket.id).emit('usePolice2', clientJob);
   }
 
