@@ -12,7 +12,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameEventService } from './game-event.service';
-
+import { AuthenticatedSocket } from './constants/authenticated-socket';
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
 // export class WsAuthenticatedGuard implements CanActivate {
@@ -48,6 +48,15 @@ export class GameGateway
   mafia = 1;
   doctor = 1;
   police = 1;
+
+  //
+  @SubscribeMessage('gameNumber')
+  handleGameRoomNumber(
+    @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    this.logger.log(`게임 number ${socket.data.roomId}`);
+  }
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
