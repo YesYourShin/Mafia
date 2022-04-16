@@ -1,9 +1,10 @@
 export const GameRoomEvent = {
-  UPDATE: 'game:update',
-  JOIN: 'game:join',
-  MESSAGE: 'game:message',
-  MEMBER_LIST: 'game:memberlist',
-  START: 'game:start',
-  READY: 'game:ready',
-  UNREADY: 'game:unready',
+  UPDATE: 'room:update',
+  JOIN: 'room:join',
+  MESSAGE: 'room:message',
+  MEMBER_LIST: 'room:memberlist',
+  LEAVE: 'room:leave',
+  START: 'room:start',
+  READY: 'room:ready',
+  UNREADY: 'room:unready',
 };

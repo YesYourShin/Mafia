@@ -42,7 +42,6 @@ export class GameRoomEventService {
 
   async checkPassword(roomId: number, pin: string) {
     const gameRoom = await this.findOneOfRoomInfo(roomId);
-    console.log(gameRoom.pin, pin);
     if (gameRoom.pin !== pin)
       throw new ForbiddenException('비밀번호가 틀렸습니다');
     return { roomId, joinable: true };
@@ -156,9 +155,12 @@ export class GameRoomEventService {
     );
     const { value, reason } = result;
 
-    // if (reason?.length) {
-    //   this.logger.error('Error when find game room info', reason);
-    // }
+    /**
+     * Todo error 처리
+     *if (reason) {
+     *  this.logger.error('Error when find game room info', reason);
+     *}
+     */
 
     return value;
   }
@@ -297,5 +299,16 @@ export class GameRoomEventService {
 
   async removeJanusRoom(roomId: number): Promise<any> {
     return await this.janusService.destroyJanusRoom(roomId);
+  }
+  async removeJanusRooms(): Promise<any> {
+    try {
+      const data = await this.getJanusRoomList();
+      await Promise.all(
+        data.response.list.map((janus) => this.removeJanusRoom(janus.room)),
+      );
+    } catch (error) {
+      this.logger.error('Error when destroy janus rooms', error);
+    }
+    return { delete: true };
   }
 }

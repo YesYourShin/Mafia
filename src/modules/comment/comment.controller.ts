@@ -50,12 +50,12 @@ export class CommentController {
   async reply(
     @Body() createCommentDto: CreateCommentDto,
     @UserDecorator() user: UserProfile,
-    @Param('postId') postId: string,
-    @Param('parentId') parentId: string,
+    @Param('postId') postId: number,
+    @Param('parentId') parentId: number,
   ) {
     return await this.commentService.reply(
-      +postId,
-      +parentId,
+      postId,
+      parentId,
       createCommentDto,
       user.id,
     );
@@ -74,9 +74,9 @@ export class CommentController {
   async create(
     @Body() createCommentDto: CreateCommentDto,
     @UserDecorator() user: UserProfile,
-    @Param('postId') postId: string,
+    @Param('postId') postId: number,
   ) {
-    return await this.commentService.create(+postId, createCommentDto, user.id);
+    return await this.commentService.create(postId, createCommentDto, user.id);
   }
 
   @ApiOperation({ summary: '댓글 수정' })
@@ -97,10 +97,10 @@ export class CommentController {
   @UseGuards(CommentOwnerGuard)
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body() updateCommentDto: UpdateCommentDto,
   ) {
-    return await this.commentService.update(+id, updateCommentDto);
+    return await this.commentService.update(id, updateCommentDto);
   }
 
   @ApiOkResponse({
@@ -125,7 +125,7 @@ export class CommentController {
   @ApiCookieAuth('connect.sid')
   @UseGuards(CommentOwnerGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return await this.commentService.remove(+id);
+  async remove(@Param('id') id: number) {
+    return await this.commentService.remove(id);
   }
 }

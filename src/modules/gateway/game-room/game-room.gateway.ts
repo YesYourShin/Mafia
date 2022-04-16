@@ -123,6 +123,24 @@ export class GameRoomGateway
       });
   }
 
+  // @SubscribeMessage(GameRoomEvent.LEAVE)
+  // async handleLeave(
+  //   @MessageBody() data: { message: string },
+  //   @ConnectedSocket() socket: AuthenticatedSocket,
+  // ) {
+  //   const { user } = socket.request;
+  //   const { roomId } = socket.data;
+  //   const { message } = data;
+  //   const newNamespace = socket.nsp;
+  //   this.server
+  //     .to(`${newNamespace.name}-${roomId}`)
+  //     .emit(GameRoomEvent.MESSAGE, {
+  //       roomId,
+  //       member: { id: user.id, name: user.profile.nickname },
+  //       message,
+  //     });
+  // }
+
   async handleConnection(@ConnectedSocket() socket: Socket) {}
 
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {

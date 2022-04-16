@@ -1,31 +1,40 @@
-import { Exclude, Expose } from 'class-transformer';
 import { IsEnum, IsNumber } from 'class-validator';
 import { JanusRequestEvent } from '../constants/janus-request-event';
 
 export class DestroyJanusRoomDto {
   @IsEnum(JanusRequestEvent)
-  @Exclude()
-  _request: JanusRequestEvent;
+  request: JanusRequestEvent;
 
   @IsNumber()
-  @Exclude()
-  _room: number;
+  room: number;
 
   constructor(room: number) {
-    this._request = JanusRequestEvent.DESTROY;
-    this._room = room;
-  }
-
-  @Expose()
-  get request(): JanusRequestEvent {
-    return this._request;
-  }
-
-  @Expose()
-  get room(): number {
-    return this._room;
+    this.request = JanusRequestEvent.DESTROY;
+    this.room = room;
   }
 }
+// export class DestroyJanusRoomDto {
+//   @IsEnum(JanusRequestEvent)
+//   _request: JanusRequestEvent;
+
+//   @IsNumber()
+//   _room: number;
+
+//   constructor(room: number) {
+//     this._request = JanusRequestEvent.DESTROY;
+//     this._room = room;
+//   }
+
+//   @Expose()
+//   get request(): JanusRequestEvent {
+//     return this._request;
+//   }
+
+//   @Expose()
+//   get room(): number {
+//     return this._room;
+//   }
+// }
 
 // {
 //         "request" : "destroy",

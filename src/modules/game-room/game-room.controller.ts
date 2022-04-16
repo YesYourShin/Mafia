@@ -58,6 +58,7 @@ export class GameRoomController {
     description: '5초마다 게임 방 정보 최신화해서 보내 줌',
     type: ResponseGameRoomFindAllDto,
   })
+  @ApiOperation({ summary: '5초마다 전체 게임 방 불러오기' })
   @Sse('sse')
   sse(): Observable<MessageEvent> {
     return interval(5000)
@@ -135,6 +136,7 @@ export class GameRoomController {
     return await this.gameRoomEventService.getJanusRoomListParticipants(+room);
   }
 
+  @ApiOperation({ summary: 'janus 요청 신경 x' })
   @Post(':room')
   async join(@Param('room') room: string, @UserDecorator() user: UserProfile) {
     return await this.gameRoomEventService.join(
@@ -194,6 +196,12 @@ export class GameRoomController {
         HttpStatus.FORBIDDEN,
         '비밀번호가 틀렸습니다',
       ),
+    },
+  })
+  @ApiBody({
+    description: '비밀번호',
+    schema: {
+      example: { pin: '1234' },
     },
   })
   @ApiParam({
@@ -289,7 +297,13 @@ export class GameRoomController {
     return await this.gameRoomEventService.remove(+roomId);
   }
 
-  @ApiOperation({ summary: 'janus 요청 신경 x' })
+  @ApiOperation({ summary: 'janus 요청 신경 x 전체 janus 방 삭제' })
+  @Delete('janus/rooms')
+  async removeJanusRooms() {
+    return await this.gameRoomEventService.removeJanusRooms();
+  }
+
+  @ApiOperation({ summary: 'janus 요청 신경 x janus 방 하나 삭제' })
   @Delete('janus/:roomId')
   async removeJanusRoom(@Param('roomId') roomId: string) {
     return await this.gameRoomEventService.removeJanusRoom(+roomId);
