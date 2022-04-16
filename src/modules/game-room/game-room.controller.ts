@@ -30,7 +30,6 @@ import { UserProfile } from '../user/dto';
 import {
   GameRoom,
   GameRoomWithMembers,
-  Member,
   ResponseGameRoomFindAllDto,
   ResponseGameRoomFindOneDto,
   UpdateGameRoomDto,
@@ -119,9 +118,8 @@ export class GameRoomController {
   @Post()
   async create(
     @Body() createGameRoomDto: CreateGameRoomDto,
-    @UserDecorator() user: UserProfile,
   ): Promise<GameRoom> {
-    return await this.gameRoomEventService.create(createGameRoomDto, user);
+    return await this.gameRoomEventService.create(createGameRoomDto);
   }
 
   @ApiOperation({ summary: 'janus 요청 신경 x' })

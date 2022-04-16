@@ -62,7 +62,6 @@ export class JanusService {
         this.configService.get('JANUS_ADMIN_SECRET'),
         janusRequest,
       ),
-      { excludeExtraneousValues: true },
     );
     console.log(request);
     return firstValueFrom(
