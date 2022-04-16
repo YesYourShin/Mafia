@@ -30,6 +30,7 @@ import { UserProfile } from '../user/dto';
 import {
   GameRoom,
   GameRoomWithMembers,
+  Member,
   ResponseGameRoomFindAllDto,
   ResponseGameRoomFindOneDto,
   UpdateGameRoomDto,
@@ -134,6 +135,13 @@ export class GameRoomController {
     return await this.gameRoomEventService.getJanusRoomListParticipants(+room);
   }
 
+  @Post(':room')
+  async join(@Param('room') room: string, @UserDecorator() user: UserProfile) {
+    return await this.gameRoomEventService.join(
+      +room,
+      new Member(user.profile),
+    );
+  }
   @ApiOkResponse({
     description: '게임 방 참가 가능',
     schema: {

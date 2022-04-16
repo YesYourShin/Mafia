@@ -213,7 +213,7 @@ export class GameRoomEventService {
     field: string,
     members: Member[],
   ): Promise<any> {
-    return await this.redisService.hset(key, field, members);
+    return await this.redisService.hset(key, field, instanceToPlain(members));
   }
 
   // 게임 정보 저장
