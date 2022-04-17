@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional } from 'class-validator';
+import { IsDate, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -21,6 +21,7 @@ export class Like {
     description: '추천 고유 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -29,6 +30,7 @@ export class Like {
     description: '게시물 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Index('IDX_LIKE_POST_ID')
   @Column({ type: 'int', name: 'post_id', nullable: true })
   postId: number;
@@ -42,6 +44,7 @@ export class Like {
     description: '유저 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Index('IDX_LIKE_USER_ID')
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;

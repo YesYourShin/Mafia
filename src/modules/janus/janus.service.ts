@@ -1,5 +1,10 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
 import { firstValueFrom } from 'rxjs';
@@ -21,18 +26,30 @@ export class JanusService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    @Inject(Logger) private readonly logger = new Logger('JanusService'),
   ) {}
 
   async destroyJanusRoom(room: number): Promise<DestroyResultDto> {
     const destroyJanusRoomDto = new DestroyJanusRoomDto(room);
-    const response = await this.requestJanus(destroyJanusRoomDto);
-    return response.data;
+
+    try {
+      const response = await this.requestJanus(destroyJanusRoomDto);
+      return response.data;
+    } catch (error) {
+      this.logger.error('request janus server error:', error);
+      throw new InternalServerErrorException('Janus 서버 오류');
+    }
   }
 
   async getJanusRoomList() {
     const janusRoomListDto = new JanusRoomListDto(JanusRequestEvent.LIST);
-    const response = await this.requestJanus(janusRoomListDto);
-    return response.data;
+    try {
+      const response = await this.requestJanus(janusRoomListDto);
+      return response.data;
+    } catch (error) {
+      this.logger.error('request janus server error:', error);
+      throw new InternalServerErrorException('Janus 서버 오류');
+    }
   }
 
   async getJanusRoomListParticipants(room: number) {
@@ -41,8 +58,13 @@ export class JanusService {
       room,
       this.configService.get('JANUS_ADMIN_KEY'),
     );
-    const response = await this.requestJanus(janusRoomListParticipantsDto);
-    return response.data;
+    try {
+      const response = await this.requestJanus(janusRoomListParticipantsDto);
+      return response.data;
+    } catch (error) {
+      this.logger.error('request janus server error:', error);
+      throw new InternalServerErrorException('Janus 서버 오류');
+    }
   }
   async createJanusRoom(
     createGameRoomDto: CreateGameRoomDto,
@@ -51,8 +73,13 @@ export class JanusService {
       createGameRoomDto,
       this.configService.get('JANUS_ADMIN_KEY'),
     );
-    const response = await this.requestJanus(createJanusRoomDto);
-    return response.data;
+    try {
+      const response = await this.requestJanus(createJanusRoomDto);
+      return response.data;
+    } catch (error) {
+      this.logger.error('request janus server error:', error);
+      throw new InternalServerErrorException('Janus 서버 오류');
+    }
   }
   async requestJanus(janusRequest: JanusRequest): Promise<AxiosResponse<any>> {
     const request = new JanusRequestDto(

@@ -113,7 +113,9 @@ export class GameRoomGateway
     const { user } = socket.request;
     const { roomId } = socket.data;
     const { message } = data;
+
     const newNamespace = socket.nsp;
+
     this.server
       .to(`${newNamespace.name}-${roomId}`)
       .emit(GameRoomEvent.MESSAGE, {
@@ -123,23 +125,19 @@ export class GameRoomGateway
       });
   }
 
-  // @SubscribeMessage(GameRoomEvent.LEAVE)
-  // async handleLeave(
-  //   @MessageBody() data: { message: string },
-  //   @ConnectedSocket() socket: AuthenticatedSocket,
-  // ) {
-  //   const { user } = socket.request;
-  //   const { roomId } = socket.data;
-  //   const { message } = data;
-  //   const newNamespace = socket.nsp;
-  //   this.server
-  //     .to(`${newNamespace.name}-${roomId}`)
-  //     .emit(GameRoomEvent.MESSAGE, {
-  //       roomId,
-  //       member: { id: user.id, name: user.profile.nickname },
-  //       message,
-  //     });
-  // }
+  @SubscribeMessage(GameRoomEvent.LEAVE)
+  async handleLeave(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { user } = socket.request;
+    const { roomId } = socket.data;
+    socket.data = null;
+
+    const members = await this.gameRoomEventService.leave(roomId, user.id);
+
+    const newNamespace = socket.nsp;
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameRoomEvent.MEMBER_LIST, { members });
+  }
 
   async handleConnection(@ConnectedSocket() socket: Socket) {}
 
@@ -149,16 +147,14 @@ export class GameRoomGateway
     const newNamespace = socket.nsp;
 
     try {
-      await this.gameRoomEventService.leave(roomId, user.id);
+      const members = await this.gameRoomEventService.leave(roomId, user.id);
+
+      newNamespace
+        .to(`${newNamespace.name}-${roomId}`)
+        .emit(GameRoomEvent.MEMBER_LIST, { members });
     } catch (error) {
       this.logger.error(error);
     }
-
-    const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
-
-    newNamespace
-      .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.MEMBER_LIST, { members });
   }
 
   afterInit(server: any) {}

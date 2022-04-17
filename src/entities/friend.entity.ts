@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional } from 'class-validator';
+import { IsDate, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -19,6 +19,7 @@ export class Friend {
     description: '친구 고유 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -27,6 +28,7 @@ export class Friend {
     description: '친구 신청 유저 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number | null;
 
@@ -42,6 +44,7 @@ export class Friend {
     description: '받아준 친구 유저 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'friend_id', nullable: true })
   friendId: number | null;
 

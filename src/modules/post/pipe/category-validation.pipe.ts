@@ -22,6 +22,9 @@ export class CategoryValidationPipe implements PipeTransform {
       EnumCategoryName.INFORMATION,
       EnumCategoryName.POPULAR,
     ];
-    return category.includes(value);
+    for (const ct of category) {
+      if (ct === value) return true;
+    }
+    return false;
   }
 }

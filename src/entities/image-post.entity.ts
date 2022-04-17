@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt } from 'class-validator';
+import { IsInt, IsNotEmpty } from 'class-validator';
 import {
   Column,
   Entity,
@@ -21,6 +21,7 @@ export class ImagePost {
     description: '이미지 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ name: 'image_id' })
   imageId: number;
 
@@ -36,6 +37,7 @@ export class ImagePost {
     description: '게시물 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ name: 'post_id' })
   postId: number;
 

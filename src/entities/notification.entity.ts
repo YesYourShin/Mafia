@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsEnum, IsInt, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -20,6 +27,7 @@ export class Notification {
     description: '알림 고유 UUID',
   })
   @IsUUID()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn('uuid')
   uuid: string;
 
@@ -28,6 +36,7 @@ export class Notification {
     description: '알림 타입',
   })
   @IsEnum(NotificationType)
+  @IsNotEmpty()
   @Column({ type: 'enum', enum: NotificationType, name: 'type' })
   type: NotificationType;
 
@@ -35,6 +44,7 @@ export class Notification {
     example: '',
     description: '알림 내용',
   })
+  @IsNotEmpty()
   @Column({ type: 'varchar', name: 'data' })
   data: string;
 
@@ -43,6 +53,7 @@ export class Notification {
     description: '알림을 발송하는 유저',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
@@ -55,6 +66,7 @@ export class Notification {
     description: '알림 받는 유저',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'target_id', nullable: true })
   targetId: number;
 
@@ -66,6 +78,7 @@ export class Notification {
     example: 1,
     description: '1 - 읽음 0 - 안읽음',
   })
+  @IsNotEmpty()
   @Column({ type: 'tinyint', name: 'read', default: 0 })
   read: number;
 

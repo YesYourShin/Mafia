@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -27,6 +34,7 @@ export class Post {
     description: '게시물 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -35,6 +43,7 @@ export class Post {
     description: '게시물 제목',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar', length: 100 })
   title: string;
 
@@ -43,6 +52,7 @@ export class Post {
     description: '게시물 내용 html',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'text', name: 'content' })
   content: string;
 
@@ -51,6 +61,7 @@ export class Post {
     description: '게시물 카테고리 이름',
   })
   @IsEnum(EnumCategory)
+  @IsNotEmpty()
   @Index('IDX_POST_CATEGORY_Name')
   @Column({
     type: 'enum',
@@ -76,6 +87,7 @@ export class Post {
     description: '유저 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Index('IDX_POST_USER_ID')
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;

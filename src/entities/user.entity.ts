@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
+import {
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { UserProvider, UserRole } from '../common/constants';
 import {
   Column,
@@ -32,6 +39,7 @@ export class User {
     description: '유저 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -39,6 +47,8 @@ export class User {
     example: '1241824124u8192489121',
     description: '소셜 회원 고유번호',
   })
+  @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar', name: 'social_id' })
   socialId: string;
 
@@ -46,6 +56,7 @@ export class User {
     example: 'google',
     description: '플랫폼(google, naver, kakao)',
   })
+  @IsNotEmpty()
   @IsEnum(UserProvider)
   @Column({
     type: 'enum',
@@ -58,6 +69,7 @@ export class User {
     example: 0,
     description: '유저 권한(0 유저 / 1 어드민) ',
   })
+  @IsNotEmpty()
   @IsEnum(UserRole)
   @Column({ type: 'tinyint', name: 'role', default: 0 })
   role: UserRole;
