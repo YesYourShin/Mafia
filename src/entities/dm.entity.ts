@@ -1,4 +1,10 @@
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -19,6 +25,7 @@ export class DM {
     description: 'DM 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -27,6 +34,7 @@ export class DM {
     description: '채팅 메세지',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar', name: 'message' })
   message: string;
 
@@ -35,6 +43,7 @@ export class DM {
     description: '보내는 유저 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'sender_id', nullable: true })
   senderId: number | null;
 
@@ -55,6 +64,7 @@ export class DM {
     name: 'receiver_id',
     nullable: true,
   })
+  @IsNotEmpty()
   receiverId: number | null;
 
   @ManyToOne(() => User, (user) => user.receiveDm, {

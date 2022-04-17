@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -25,7 +26,7 @@ export class JanusService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-    private readonly logger = new Logger('JanusService'),
+    @Inject(Logger) private readonly logger = new Logger('JanusService'),
   ) {}
 
   async destroyJanusRoom(room: number): Promise<DestroyResultDto> {

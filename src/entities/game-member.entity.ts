@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional } from 'class-validator';
+import { IsDate, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -22,6 +22,7 @@ export class GameMember {
     description: '게임 방 멤버 고유 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -30,6 +31,7 @@ export class GameMember {
     description: '방 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'game_id', nullable: true })
   gameId: number | null;
 
@@ -45,6 +47,7 @@ export class GameMember {
     description: '게임 참여 유저 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number | null;
 
@@ -63,6 +66,7 @@ export class GameMember {
     name: 'game_role_id',
     nullable: true,
   })
+  @IsNotEmpty()
   gameRoleId: number | null;
 
   @ManyToOne(() => GameRole, (role) => role.members, {
@@ -77,6 +81,7 @@ export class GameMember {
     description: '1 - 승/0 - 패',
     required: false,
   })
+  @IsNotEmpty()
   @Column({ type: 'tinyint', name: 'score' })
   score?: Score;
 

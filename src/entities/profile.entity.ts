@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -24,6 +30,7 @@ export class Profile {
     description: '프로필 고유 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -32,6 +39,7 @@ export class Profile {
     description: '닉네임',
   })
   @IsString()
+  @IsNotEmpty()
   @Index('UX_PROFILE_NICKNAME', { unique: true })
   @Column('varchar', {
     name: 'nickname',

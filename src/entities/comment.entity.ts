@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -20,6 +26,7 @@ export class Comment {
     description: '댓글 고유 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -28,6 +35,7 @@ export class Comment {
     description: '댓글 내용',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar', length: 100, comment: '댓글 내용' })
   content: string;
 
@@ -36,6 +44,7 @@ export class Comment {
     description: '유저 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
@@ -51,6 +60,7 @@ export class Comment {
     description: '게시물 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @Column({ type: 'int', name: 'post_id', nullable: true })
   postId: number | null;
 

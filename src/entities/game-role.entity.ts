@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsEnum, IsInt, IsOptional } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -19,6 +19,7 @@ export class GameRole {
     description: '게임 역할 고유 ID',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryColumn()
   id: number;
 
@@ -27,6 +28,7 @@ export class GameRole {
     description: '게임 역할 이름',
   })
   @IsEnum(EnumGameRole)
+  @IsNotEmpty()
   @Column({ type: 'enum', enum: EnumGameRole, name: 'role' })
   role: EnumGameRole;
 

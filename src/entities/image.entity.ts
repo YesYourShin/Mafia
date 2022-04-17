@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDecimal, IsInt, IsString } from 'class-validator';
+import { IsDecimal, IsInt, IsNotEmpty, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
@@ -20,6 +20,7 @@ export class Image {
     description: '아이디',
   })
   @IsInt()
+  @IsNotEmpty()
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -28,6 +29,7 @@ export class Image {
     description: '파일 원본 이름',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar' })
   originalname: string;
 
@@ -36,6 +38,7 @@ export class Image {
     description: '7bit',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar' })
   encoding: string;
 
@@ -44,6 +47,7 @@ export class Image {
     description: 'imag/png',
   })
   @IsString()
+  @IsNotEmpty()
   @Column({ type: 'varchar' })
   mimetype: string;
 
@@ -52,6 +56,7 @@ export class Image {
     description: '파일 크기',
   })
   @IsDecimal()
+  @IsNotEmpty()
   @Column('decimal', { precision: 10, scale: 2 })
   size: number;
 
@@ -60,6 +65,7 @@ export class Image {
     description: 'S3 Object key',
   })
   @Index('UX_IMAGE_KEY', { unique: true })
+  @IsNotEmpty()
   @Column({ type: 'varchar', unique: true })
   key: string;
 
@@ -68,6 +74,7 @@ export class Image {
     description: '파일 경로',
   })
   @Index('UX_IMAGE_LOCATION', { unique: true })
+  @IsNotEmpty()
   @Column({ type: 'varchar', unique: true })
   location: string;
 
