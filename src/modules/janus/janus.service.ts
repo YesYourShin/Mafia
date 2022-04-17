@@ -60,7 +60,6 @@ export class JanusService {
       this.configService.get('JANUS_ADMIN_SECRET'),
       janusRequest,
     );
-    console.log('request', request);
     return firstValueFrom(
       this.httpService.post(this.configService.get('JANUS_URL'), request),
     );
