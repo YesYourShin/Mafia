@@ -57,6 +57,7 @@ export class PostRepository extends AbstractRepository<Post> {
     return await qb.getRawAndEntities();
   }
   async findAll(categoryName: EnumCategoryName, skip: number) {
+    console.log(categoryName);
     const qb = this.repository
       .createQueryBuilder('post')
       .leftJoin('post.profile', 'profile')
@@ -80,11 +81,16 @@ export class PostRepository extends AbstractRepository<Post> {
         .groupBy('post.id')
         .having('COUNT(likes.id) > 5');
     }
-    if (this.isBaseCategory(categoryName)) {
+
+    if (
+      categoryName === EnumCategoryName.FREEBOARD ||
+      categoryName === EnumCategoryName.INFORMATION ||
+      categoryName === EnumCategoryName.ANNOUNCEMENT
+    ) {
       qb.where('post.categoryName= :categoryName', { categoryName });
     } else {
       qb.where('post.categoryName IN (:...category)', {
-        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.GENERAL],
+        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.INFORMATION],
       });
     }
 
@@ -94,17 +100,23 @@ export class PostRepository extends AbstractRepository<Post> {
     const qb = this.repository
       .createQueryBuilder('post')
       .select('COUNT(*) AS postCount');
-    if (this.isBaseCategory(categoryName)) {
-      qb.where('post.categoryName= :categoryName', { categoryName });
-    } else {
-      qb.where('post.categoryName IN (:...category)', {
-        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.GENERAL],
-      });
-    }
+
     if (categoryName === EnumCategoryName.POPULAR) {
       qb.leftJoin('post.likes', 'likes')
         .groupBy('post.id')
         .having('COUNT(likes.id) > 5');
+    }
+
+    if (
+      categoryName === EnumCategoryName.FREEBOARD ||
+      categoryName === EnumCategoryName.INFORMATION ||
+      categoryName === EnumCategoryName.ANNOUNCEMENT
+    ) {
+      qb.where('post.categoryName= :categoryName', { categoryName });
+    } else {
+      qb.where('post.categoryName IN (:...category)', {
+        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.INFORMATION],
+      });
     }
 
     return await qb.getCount();

@@ -48,9 +48,7 @@ import { SocketApiDocumentController } from './socket-api-document.controller';
   controllers: [
     AppController,
     HealthController,
-    process.env.NODE_ENV === 'development'
-      ? SocketApiDocumentController
-      : undefined,
+    // SocketApiDocumentController,
   ],
   providers: [AppService],
 })
