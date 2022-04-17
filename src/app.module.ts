@@ -53,7 +53,7 @@ import { SocketApiDocumentController } from './socket-api-document.controller';
   providers: [AppService],
 })
 export class AppModule implements NestModule {
-  configure(consumenr: MiddlewareConsumer): any {
-    consumenr.apply(LoggerMiddleware).forRoutes('*');
+  configure(consumer: MiddlewareConsumer): any {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
   }
 }

@@ -238,18 +238,7 @@ export class GameRoomEventService {
     const members = await this.findMembersByRoomId(roomId);
     for (const member of members) {
       if (member.userId === memberId) {
-        member.ready = true;
-      }
-    }
-    await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, members);
-    return members;
-  }
-
-  async setUnReady(roomId: number, memberId: number): Promise<Member[]> {
-    const members = await this.findMembersByRoomId(roomId);
-    for (const member of members) {
-      if (member.userId === memberId) {
-        member.ready = false;
+        member.ready = !member.ready;
       }
     }
     await this.saveMembers(this.makeRoomKey(roomId), MEMBER_FIELD, members);

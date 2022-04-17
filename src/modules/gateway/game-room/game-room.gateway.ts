@@ -80,7 +80,7 @@ export class GameRoomGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    const members = await this.gameRoomEventService.setUnReady(roomId, user.id);
+    const members = await this.gameRoomEventService.setReady(roomId, user.id);
 
     this.server
       .to(`${newNamespace.name}-${roomId}`)
