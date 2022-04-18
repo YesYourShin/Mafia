@@ -265,11 +265,18 @@ export class GameRoomEventService {
   //Todo 미구현
   async startGame(roomId: number, memberId: number) {
     const members = await this.findMembersByRoomId(roomId);
-    if (!this.matchSpecificMember(members[0].userId, memberId)) {
+    const room = await this.findOneOfRoomInfo(roomId);
+
+    if (
+      !this.matchSpecificMember(members[0].userId, memberId) ||
+      members.length < 6 ||
+      members.length > room.publishers
+    ) {
       throw new WsException('게임을 시작할 수 있는 권한이 없습니다');
     }
-    for (const member of members) {
-      if (!member.ready) {
+
+    for (let i = 1; i < members.length; i++) {
+      if (!members[i].ready) {
         throw new WsException(
           '모든 유저가 준비를 해야 게임을 시작할 수 있습니다',
         );
