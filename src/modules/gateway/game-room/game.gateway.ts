@@ -12,6 +12,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameEventService } from './game-event.service';
+import { AuthenticatedSocket } from './constants/authenticated-socket';
 
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
@@ -26,6 +27,7 @@ import { GameEventService } from './game-event.service';
 //     return can;
 //   }
 // }
+
 @WebSocketGateway({
   // path: '/socket.io' <- defaut path,
   transports: ['websocket'],
@@ -48,6 +50,16 @@ export class GameGateway
   mafia = 1;
   doctor = 1;
   police = 1;
+  typesOfJobs = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+
+  //
+  @SubscribeMessage('gameNumber')
+  handleGameRoomNumber(
+    @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    this.logger.log(`게임 number ${socket.data.roomId}`);
+  }
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
@@ -55,14 +67,14 @@ export class GameGateway
     @MessageBody() data: number,
     @ConnectedSocket() socket: Socket,
   ) {
-    if (this.gamePlayerNum > 5) {
-      setTimeout(() => {
-        this.server
-          .to(this.roomName)
-          .emit('gameMessage2', { status: 'ok', time: `${data}` });
-        this.logger.log(`socketid: ${socket.id} , 발생 `);
-      }, 1000 * data);
-    }
+    this.logger.log(`gameMessage 값: ${data}`);
+    if (this.gamePlayerNum < 6) return;
+    setTimeout(() => {
+      this.server
+        .to(this.roomName)
+        .emit('gameMessage2', { status: 'ok', time: `${data}` });
+      this.logger.log(`socketid: ${socket.id} , 발생 `);
+    }, 1000 * data);
   }
 
   // 임의로 만든 것
@@ -183,7 +195,7 @@ export class GameGateway
         redisVote[element] = (redisVote[element] || 0) + 1;
       });
 
-      const aaaaaaaaa = [];
+      const voteUser = [];
 
       Object.keys(redisVote).forEach((value) => {
         this.logger.log(value);
@@ -193,10 +205,10 @@ export class GameGateway
           voteSum: redisVote[value],
         };
 
-        aaaaaaaaa.push(data);
+        voteUser.push(data);
       });
 
-      redisVote = aaaaaaaaa.sort(function (a, b) {
+      redisVote = voteUser.sort(function (a, b) {
         return b.vote - a.vote;
       });
 
@@ -256,8 +268,27 @@ export class GameGateway
   }
 
   @SubscribeMessage('dayNight')
-  async handleDayNight(@MessageBody() data: string) {
-    this.logger.log(` ${data}`);
+  async handleDayNight(
+    @MessageBody() data: { dayNight: string },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    // 살아있는 마피아 수,
+
+    const numberOfMafias = this.roomClient.filter(
+      (item) => item.job === this.typesOfJobs[1] && item.die === false,
+    ).length;
+
+    const numberOfCitizen = this.roomClient.filter(
+      (item) => item.job !== this.typesOfJobs[1] && item.die === false,
+    ).length;
+
+    this.logger.log(`살아있는 마피아 수: ${numberOfMafias}`);
+    // 마피아 수가 0일 시
+    if (!numberOfMafias)
+      this.server.to(socket.id).emit('dayNight2', '마피아 패');
+    // 밤일 경우, 마피아 수가 시민수와 같을 시
+    if (numberOfMafias === numberOfCitizen && data.dayNight === 'night')
+      this.server.to(socket.id).emit('dayNight2', '마피아 승');
   }
 
   // 능력사용 부분
@@ -273,7 +304,7 @@ export class GameGateway
       socket.id,
     );
 
-    if (clientJob == null) this.logger.log(`현재 user가 경찰이 아닙니다.`);
+    if (!clientJob) this.logger.log(`현재 user가 경찰이 아닙니다.`);
     else this.server.to(socket.id).emit('usePolice2', clientJob);
   }
 
@@ -293,24 +324,21 @@ export class GameGateway
   }
 
   // 마피아 능력
-  // userState = [];
 
-  // // // 능력 사용 결과
+  // // 능력 사용 결과
   // @SubscribeMessage('useState')
-  // handleUseStat(
+  // handleUseState(
   //   @MessageBody()
   //   data: {
   //     user: string;
   //     job: string;
   //     useNum: number;
-  //     citizen: number;
   //   },
   // ) {
-  //   let limit = this.cr;
   //   this.logger.log(`능력사용`);
   //   const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
-  //   if (data.job != grantJob[0] && limit > 0) {
+  //   if (data.job !== grantJob[0] && ) {
   //     const a = {
   //       user: data.user,
   //       job: data.job,
@@ -319,10 +347,6 @@ export class GameGateway
   //     this.userState.push(a);
   //     limit -= 1;
   //   }
-
-  //   // 마피아 + 의사의 지목이 같은 사람일 경우 살아있음.
-  //   // 아닐 경우 dead
-  //   // 밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
   // }
 
   // -----------------------
