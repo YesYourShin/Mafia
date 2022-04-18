@@ -267,12 +267,14 @@ export class GameRoomEventService {
     const members = await this.findMembersByRoomId(roomId);
     const room = await this.findOneOfRoomInfo(roomId);
 
-    if (
-      !this.matchSpecificMember(members[0].userId, memberId) ||
-      members.length < 6 ||
-      members.length > room.publishers
-    ) {
+    if (!this.matchSpecificMember(members[0].userId, memberId)) {
       throw new WsException('게임을 시작할 수 있는 권한이 없습니다');
+    }
+    // if (members.length < 6) {
+    //   throw new WsException('인원이 부족합니다');
+    // }
+    if (members.length > room.publishers) {
+      throw new WsException('제한 인원보다 멤버 인원이 많습니다');
     }
 
     for (let i = 1; i < members.length; i++) {

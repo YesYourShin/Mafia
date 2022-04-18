@@ -133,12 +133,15 @@ export class GameRoomGateway
     const { roomId } = socket.data;
     socket.data = null;
 
-    const members = await this.gameRoomEventService.leave(roomId, user.id);
+    const member = new Member(user.profile);
+
+    await this.gameRoomEventService.leave(roomId, user.id);
 
     const newNamespace = socket.nsp;
+
     this.server
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.MEMBER_LIST, { members });
+      .emit(GameRoomEvent.LEAVE, { member });
   }
 
   async handleConnection(@ConnectedSocket() socket: Socket) {}
