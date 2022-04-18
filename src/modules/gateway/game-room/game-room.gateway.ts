@@ -131,7 +131,6 @@ export class GameRoomGateway
   async handleLeave(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
     const { roomId } = socket.data;
-    socket.data = null;
 
     const member = new Member(user.profile);
 
@@ -150,6 +149,7 @@ export class GameRoomGateway
     const { user } = socket.request;
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
+    // socket.data = null;
 
     try {
       const members = await this.gameRoomEventService.leave(roomId, user.id);
