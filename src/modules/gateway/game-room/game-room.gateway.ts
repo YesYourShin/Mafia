@@ -97,6 +97,8 @@ export class GameRoomGateway
 
     try {
       await this.gameRoomEventService.startGame(roomId, user.id);
+      await this.gameRoomEventService.setGame(roomId);
+
       this.server
         .to(`${newNamespace.name}-${roomId}`)
         .emit(GameRoomEvent.START, { roomId, start: true });

@@ -7,11 +7,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  GAME,
   GameRoomEvent,
   GAME_ROOM,
   GAME_SOCKET_NAMESPACE,
   INFO_FIELD,
   MEMBER_FIELD,
+  PLAYER_FIELD,
 } from './constants';
 import {
   UpdateGameRoomDto,
@@ -27,6 +29,7 @@ import { JanusService } from 'src/modules/janus/janus.service';
 import { ConfigService } from '@nestjs/config';
 import { GameRoom } from 'src/modules/game-room/dto/game-room';
 import { WsException } from '@nestjs/websockets';
+import { Player } from 'src/modules/game-room/dto/player';
 
 @Injectable()
 export class GameRoomEventService {
@@ -245,11 +248,25 @@ export class GameRoomEventService {
     return members;
   }
 
+  async setGame(roomId: number) {
+    const room = await this.findOneOfRoomInfo(roomId);
+    const members = await this.findMembersByRoomId(roomId);
+
+    const players = members.map((member) => new Player(member));
+
+    await this.redisService.hset(this.makeGameKey(roomId), INFO_FIELD, room);
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYER_FIELD,
+      players,
+    );
+  }
+
   //Todo 미구현
   async startGame(roomId: number, memberId: number) {
     const members = await this.findMembersByRoomId(roomId);
     if (!this.matchSpecificMember(members[0].userId, memberId)) {
-      throw new ForbiddenException('게임을 시작할 수 있는 권한이 없습니다');
+      throw new WsException('게임을 시작할 수 있는 권한이 없습니다');
     }
     for (const member of members) {
       if (!member.ready) {
@@ -281,6 +298,9 @@ export class GameRoomEventService {
 
   makeRoomKey(roomId: number): string {
     return `${GAME_ROOM}:${roomId}`;
+  }
+  makeGameKey(roomId: number): string {
+    return `${GAME}:${roomId}`;
   }
   async getJanusRoomListParticipants(roomId: number): Promise<any> {
     return await this.janusService.getJanusRoomListParticipants(roomId);
