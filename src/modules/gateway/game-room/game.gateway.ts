@@ -52,28 +52,38 @@ export class GameGateway
   police = 1;
   typesOfJobs = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
-  //
-  @SubscribeMessage('gameNumber')
-  handleGameRoomNumber(
-    @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    this.logger.log(`게임 number ${socket.data.roomId}`);
-  }
+  // //
+  // @SubscribeMessage('gameNumber')
+  // handleGameRoomNumber(
+  //   @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
+  //   @ConnectedSocket() socket: AuthenticatedSocket,
+  // ) {
+  //   this.logger.log(`게임 number ${socket.data.roomId}`);
+  // }
 
   // 시작 신호 보내기
   @SubscribeMessage('gameMessage')
   async gamestart(
     @MessageBody() data: number,
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
-    this.logger.log(`gameMessage 값: ${data}`);
+    const roomId = socket.data.roomId;
+
+    //시작 멤버 반한.
+    const gamePlayers = this.gameEventService.findOfGameMember(roomId);
+    // 해당 방 이름.
+    // const gameInfo = this.gameEventService.makeGameKey(roomId);
     if (this.gamePlayerNum < 6) return;
     setTimeout(() => {
       this.server
         .to(this.roomName)
         .emit('gameMessage2', { status: 'ok', time: `${data}` });
       this.logger.log(`socketid: ${socket.id} , 발생 `);
+
+      // this.server
+      //   .to(roomId)
+      //   .emit('gameMessage2', { status: 'ok', time: `${data}` });
+      // this.logger.log(`socketid: ${socket.id} , 발생 `);
     }, 1000 * data);
   }
 
