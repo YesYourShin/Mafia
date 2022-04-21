@@ -11,8 +11,9 @@ export class GameRoomWithMemberCount {
   @Exclude() private readonly _publishers: number;
   @Exclude() private readonly _isPrivate: boolean;
   @Exclude() private readonly _memberCount: number;
+  @Exclude() private readonly _leader: string;
 
-  constructor(gameRoom: GameRoom, memberCount: number) {
+  constructor(gameRoom: GameRoom, memberCount: number, leader: string) {
     const { id, description, mode, pin, publishers, room } = gameRoom;
     this._id = id;
     this._mode = mode;
@@ -21,6 +22,7 @@ export class GameRoomWithMemberCount {
     this._publishers = publishers;
     this._isPrivate = pin ? true : false;
     this._memberCount = memberCount;
+    this._leader = leader;
   }
 
   @ApiProperty({
@@ -83,5 +85,14 @@ export class GameRoomWithMemberCount {
   @Expose()
   get memberCount(): number {
     return this._memberCount;
+  }
+
+  @ApiProperty({
+    description: '방장 닉네임',
+    example: 'gjgjajaj',
+  })
+  @Expose()
+  get leader(): string {
+    return this._leader;
   }
 }

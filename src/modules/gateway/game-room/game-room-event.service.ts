@@ -145,14 +145,14 @@ export class GameRoomEventService {
     return members;
   }
 
-  async findGameRoomWithMemberCount(): Promise<GameRoomWithMemberCount[]> {
+  async findAll(): Promise<GameRoomWithMembers[]> {
     const roomKeys: string[] = await this.getRoomKeys();
 
     const result = await promiseAllSetteldResult(
       roomKeys.map(async (key) => {
         const room: GameRoom = await this.redisService.hget(key, INFO_FIELD);
         const members = await this.findMembersByRoomId(room.id);
-        const gameRoom = new GameRoomWithMemberCount(room, members.length);
+        const gameRoom = new GameRoomWithMembers(room, members);
         return gameRoom;
       }),
     );
