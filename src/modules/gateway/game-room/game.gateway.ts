@@ -309,16 +309,16 @@ export class GameGateway
   }
 
   @SubscribeMessage('myFaceLandmarks')
-  handleLandmarks(@MessageBody() data: { landmarks: string; number: string }) {
+  handleLandmarks(@MessageBody() data: { landmarks: string; id: string }) {
     if (!data.landmarks) {
       this.server.emit('othersFaceLandmarks', {
         landmarks: null,
-        number: data.number,
+        id: data.id,
       });
     } else {
       this.server.emit('othersFaceLandmarks', {
         landmarks: data.landmarks,
-        number: data.number,
+        id: data.id,
       });
     }
   }
