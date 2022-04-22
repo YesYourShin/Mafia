@@ -55,22 +55,21 @@ export class PostService {
     return post;
   }
   async findAll(categoryName: EnumCategoryName, take: number, page: number) {
-    const takeItem = 10;
     const items = await this.postRepository.findAll(
       categoryName,
       take,
-      (page - 1) * takeItem,
+      (page - 1) * take,
     );
     const totalItems = await this.postRepository.findPagesCountByCategoryName(
       categoryName,
     );
-    const totalPages = Math.ceil(totalItems / takeItem);
+    const totalPages = Math.ceil(totalItems / take);
     const itemCount = items.length;
-    const temp = Math.floor(page / takeItem);
+    const temp = Math.floor(page / take);
     const links = {};
 
     for (let i = 1; i <= 10; i++) {
-      const tPage = i + temp * takeItem;
+      const tPage = i + temp * take;
       if (tPage > totalPages) break;
       links[i] = `${this.configService.get(
         'FRONT_URL',
