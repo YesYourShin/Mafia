@@ -52,7 +52,9 @@ import {
   UserProfile,
   ProfileInfo,
 } from './dto';
+import { RankingDto, ResponseRankingDto } from './dto/response-ranking.dto';
 import { MyProfileImageGuard } from './guards/my-profile-image.guard';
+import { NumberValidationPipe } from './number-validation.pipe';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
@@ -129,6 +131,27 @@ export class UserController {
   @Get('profile/:id')
   async getUserProfile(@Param('id') id: number): Promise<ProfileInfo> {
     return await this.userService.findProfile(id);
+  }
+
+  @ApiOkResponse({
+    description: '경험치 랭킹 순위 요청 성공',
+    type: ResponseRankingDto,
+  })
+  @ApiQuery({
+    name: 'page',
+    description: '페이지 번호',
+  })
+  @ApiQuery({
+    name: 'take',
+    description: '불러올 갯수',
+  })
+  @ApiOperation({ summary: '경험치 랭킹 순위' })
+  @Get('ranking')
+  async getRanking(
+    @Query('page', new NumberValidationPipe()) page: number,
+    @Query('item', new NumberValidationPipe()) item: number,
+  ): Promise<RankingDto> {
+    return await this.userService.getRanking(item, page);
   }
 
   @ApiCreatedResponse({
