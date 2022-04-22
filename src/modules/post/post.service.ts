@@ -54,10 +54,11 @@ export class PostService {
     post.isLiked = raw[0].isLiked ? true : false;
     return post;
   }
-  async findAll(categoryName: EnumCategoryName, page: number) {
+  async findAll(categoryName: EnumCategoryName, take: number, page: number) {
     const takeItem = 10;
     const items = await this.postRepository.findAll(
       categoryName,
+      take,
       (page - 1) * takeItem,
     );
     const totalItems = await this.postRepository.findPagesCountByCategoryName(

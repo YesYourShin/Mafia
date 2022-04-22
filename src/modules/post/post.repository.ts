@@ -56,7 +56,7 @@ export class PostRepository extends AbstractRepository<Post> {
 
     return await qb.getRawAndEntities();
   }
-  async findAll(categoryName: EnumCategoryName, skip: number) {
+  async findAll(categoryName: EnumCategoryName, take: number, skip: number) {
     console.log(categoryName);
     const qb = this.repository
       .createQueryBuilder('post')
@@ -70,7 +70,7 @@ export class PostRepository extends AbstractRepository<Post> {
       ])
       .addSelect(['profile.id', 'profile.nickname'])
       .orderBy('post.id', 'DESC')
-      .take(10)
+      .take(take)
       .skip(skip)
       .loadRelationCountAndMap('post.commentCount', 'post.comments')
       .loadRelationCountAndMap('post.likeCount', 'post.likes')
