@@ -61,10 +61,16 @@ export class GameGateway
   // }
 
   @SubscribeMessage('gamejoin')
-  async handleGamejoin(@ConnectedSocket() socket: AuthenticatedSocket) {
-    const { roomId } = socket.data;
+  async handleGamejoin(
+    @MessageBody() data: { roomId : number}
+    @ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = data;
     const { user } = socket.request;
     const Namespace = socket.nsp;
+    socket.data['roomId'] = roomId;
+
+
+    this.logger.log(roomId);
 
     try {
       await socket.join(`${Namespace}-${roomId}`);
@@ -364,8 +370,9 @@ export class GameGateway
   // socket이 연결됐을 때
   async handleConnection(@ConnectedSocket() socket: AuthenticatedSocket) {
     // 생성될 때 소켓 인스턴스의 namespace,  id
-    this.logger.log(`socket connected ${socket.nsp.name} ${socket.id}`);
-    this.handleGamejoin(socket);
+    this.logger.log(
+      `socket connected ${socket.nsp.name} ${socket.id} ${socket.data.roomId}`,
+    );
   }
   // socket이 연결 끊겼을 때
   async handleDisconnect(@ConnectedSocket() socket: Socket) {
