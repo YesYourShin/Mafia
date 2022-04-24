@@ -131,14 +131,16 @@ export class GameRoomGateway
   async handleLeave(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
     const { roomId } = socket.data;
-    socket.data = null;
 
-    const members = await this.gameRoomEventService.leave(roomId, user.id);
+    const member = new Member(user.profile);
+
+    await this.gameRoomEventService.leave(roomId, user.id);
 
     const newNamespace = socket.nsp;
+
     this.server
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.MEMBER_LIST, { members });
+      .emit(GameRoomEvent.LEAVE, { member });
   }
 
   async handleConnection(@ConnectedSocket() socket: Socket) {}
@@ -147,6 +149,7 @@ export class GameRoomGateway
     const { user } = socket.request;
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
+    // socket.data = null;
 
     try {
       const members = await this.gameRoomEventService.leave(roomId, user.id);

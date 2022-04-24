@@ -62,11 +62,7 @@ export class GameRoomController {
   @Sse('sse')
   sse(): Observable<MessageEvent> {
     return interval(5000)
-      .pipe(
-        concatMap(() =>
-          from(this.gameRoomEventService.findGameRoomWithMemberCount()),
-        ),
-      )
+      .pipe(concatMap(() => from(this.gameRoomEventService.findAll())))
       .pipe(map((response) => ({ data: response })));
   }
 
@@ -76,8 +72,8 @@ export class GameRoomController {
   })
   @ApiOperation({ summary: '전체 게임 방 불러오기' })
   @Get()
-  async findAll(): Promise<GameRoomWithMemberCount[]> {
-    return await this.gameRoomEventService.findGameRoomWithMemberCount();
+  async findAll(): Promise<GameRoomWithMembers[]> {
+    return await this.gameRoomEventService.findAll();
   }
 
   @ApiOkResponse({

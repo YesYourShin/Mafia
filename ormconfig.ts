@@ -23,7 +23,7 @@ const ormconfig: TypeOrmModuleOptions = {
   cli: { migrationsDir: 'src/migrations' },
   autoLoadEntities: true,
   charset: 'utf8mb4',
-  synchronize: process.env.NODE_ENV === 'production' ? false : true,
+  synchronize: false,
   logging: true,
   keepConnectionAlive: true,
 };

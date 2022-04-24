@@ -145,14 +145,14 @@ export class GameRoomEventService {
     return members;
   }
 
-  async findGameRoomWithMemberCount(): Promise<GameRoomWithMemberCount[]> {
+  async findAll(): Promise<GameRoomWithMembers[]> {
     const roomKeys: string[] = await this.getRoomKeys();
 
     const result = await promiseAllSetteldResult(
       roomKeys.map(async (key) => {
         const room: GameRoom = await this.redisService.hget(key, INFO_FIELD);
         const members = await this.findMembersByRoomId(room.id);
-        const gameRoom = new GameRoomWithMemberCount(room, members.length);
+        const gameRoom = new GameRoomWithMembers(room, members);
         return gameRoom;
       }),
     );
@@ -265,11 +265,20 @@ export class GameRoomEventService {
   //Todo 미구현
   async startGame(roomId: number, memberId: number) {
     const members = await this.findMembersByRoomId(roomId);
+    const room = await this.findOneOfRoomInfo(roomId);
+
     if (!this.matchSpecificMember(members[0].userId, memberId)) {
       throw new WsException('게임을 시작할 수 있는 권한이 없습니다');
     }
-    for (const member of members) {
-      if (!member.ready) {
+    // if (members.length < 6) {
+    //   throw new WsException('인원이 부족합니다');
+    // }
+    if (members.length > room.publishers) {
+      throw new WsException('제한 인원보다 멤버 인원이 많습니다');
+    }
+
+    for (let i = 1; i < members.length; i++) {
+      if (!members[i].ready) {
         throw new WsException(
           '모든 유저가 준비를 해야 게임을 시작할 수 있습니다',
         );

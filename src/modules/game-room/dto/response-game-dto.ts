@@ -1,6 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
-import { GameRoomWithMemberCount } from './game-room-with-member-count';
 import { GameRoomWithMembers } from './game-room-with-members';
 
 export class ResponseGameRoomFindAllDto extends PickType(ResponseDto, [
@@ -8,8 +7,8 @@ export class ResponseGameRoomFindAllDto extends PickType(ResponseDto, [
   'status',
   'data',
 ]) {
-  @ApiProperty({ type: () => GameRoomWithMemberCount, isArray: true })
-  data: GameRoomWithMemberCount;
+  @ApiProperty({ type: () => GameRoomWithMembers, isArray: true })
+  data: GameRoomWithMembers;
 }
 
 export class ResponseGameRoomFindOneDto extends PickType(ResponseDto, [
@@ -17,7 +16,7 @@ export class ResponseGameRoomFindOneDto extends PickType(ResponseDto, [
   'status',
   'data',
 ]) {
-  @ApiProperty({ type: () => GameRoomWithMembers, isArray: true })
+  @ApiProperty({ type: () => GameRoomWithMembers })
   data: GameRoomWithMembers;
 }
 
