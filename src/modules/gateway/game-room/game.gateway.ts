@@ -1,4 +1,4 @@
-import { Inject, Logger, LoggerService } from '@nestjs/common';
+import { Inject, Logger, LoggerService, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -13,6 +13,8 @@ import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameEventService } from './game-event.service';
 import { AuthenticatedSocket } from './constants/authenticated-socket';
+import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
+import { GamePlayerGuard } from '../guards/game-player.guard';
 
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
@@ -28,6 +30,7 @@ import { AuthenticatedSocket } from './constants/authenticated-socket';
 //   }
 // }
 
+@UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
   // path: '/socket.io' <- defaut path,
   transports: ['websocket'],
@@ -59,6 +62,24 @@ export class GameGateway
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
     this.logger.log(`게임 number ${socket.data.roomId}`);
+  }
+
+  @UseGuards(GamePlayerGuard)
+  @SubscribeMessage('game:join')
+  async handleGameJoin(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { roomId: number },
+  ) {
+    const { user } = socket.request;
+    const newNamespace = socket.nsp;
+    const { roomId } = data;
+    socket.data['roomId'] = roomId;
+
+    try {
+      await socket.join(`${newNamespace.name}-${roomId}`);
+    } catch (error) {
+      this.logger.error('socket join event error', error);
+    }
   }
 
   // 시작 신호 보내기

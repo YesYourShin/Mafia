@@ -18,7 +18,6 @@ import {
 import {
   UpdateGameRoomDto,
   Member,
-  GameRoomWithMemberCount,
   GameRoomWithMembers,
   CreateGameRoomDto,
 } from 'src/modules/game-room/dto';
@@ -311,12 +310,15 @@ export class GameRoomEventService {
   makeGameKey(roomId: number): string {
     return `${GAME}:${roomId}`;
   }
-  async getJanusRoomListParticipants(roomId: number): Promise<any> {
-    return await this.janusService.getJanusRoomListParticipants(roomId);
+  async getJanusRoomListParticipants(room: number): Promise<any> {
+    return await this.janusService.getJanusRoomListParticipants(room);
+  }
+  async getJanusRoomListForwarders(room: number): Promise<any> {
+    return await this.janusService.getJanusRoomListForwarders(room);
   }
 
-  async removeJanusRoom(roomId: number): Promise<any> {
-    return await this.janusService.destroyJanusRoom(roomId);
+  async removeJanusRoom(room: number): Promise<any> {
+    return await this.janusService.destroyJanusRoom(room);
   }
   async removeJanusRooms(): Promise<any> {
     try {
