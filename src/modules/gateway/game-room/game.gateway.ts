@@ -62,13 +62,13 @@ export class GameGateway
 
   @SubscribeMessage('gamejoin')
   async handleGamejoin(
-    @MessageBody() data: { roomId : number}
-    @ConnectedSocket() socket: AuthenticatedSocket) {
+    @MessageBody() data: { roomId: number },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
     const { roomId } = data;
     const { user } = socket.request;
     const Namespace = socket.nsp;
     socket.data['roomId'] = roomId;
-
 
     this.logger.log(roomId);
 
