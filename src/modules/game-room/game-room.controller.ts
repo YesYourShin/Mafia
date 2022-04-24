@@ -128,17 +128,20 @@ export class GameRoomController {
 
   @ApiOperation({ summary: 'janus 요청 신경 x' })
   @Post('list-participants/:room')
-  async getListParticipants(@Param('room') room: string) {
-    return await this.gameRoomEventService.getJanusRoomListParticipants(+room);
+  async getListParticipants(@Param('room') room: number) {
+    return await this.gameRoomEventService.getJanusRoomListParticipants(room);
+  }
+
+  @ApiOperation({ summary: 'janus 요청 신경 x' })
+  @Post('list-forwarders/:room')
+  async getListForwarders(@Param('room') room: number) {
+    return await this.gameRoomEventService.getJanusRoomListForwarders(room);
   }
 
   @ApiOperation({ summary: 'janus 요청 신경 x' })
   @Post(':room')
-  async join(@Param('room') room: string, @UserDecorator() user: UserProfile) {
-    return await this.gameRoomEventService.join(
-      +room,
-      new Member(user.profile),
-    );
+  async join(@Param('room') room: number, @UserDecorator() user: UserProfile) {
+    return await this.gameRoomEventService.join(room, new Member(user.profile));
   }
   @ApiOkResponse({
     description: '게임 방 참가 가능',

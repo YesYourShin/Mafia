@@ -1,4 +1,4 @@
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, LoggerService, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -13,6 +13,8 @@ import { Server, Socket } from 'socket.io';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { GameEventService } from './game-event.service';
 import { AuthenticatedSocket } from './constants/authenticated-socket';
+import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
+import { GamePlayerGuard } from '../guards/game-player.guard';
 
 // @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
 // @Injectable()
@@ -28,6 +30,7 @@ import { AuthenticatedSocket } from './constants/authenticated-socket';
 //   }
 // }
 
+@UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
   // path: '/socket.io' <- defaut path,
   transports: ['websocket'],
@@ -60,28 +63,49 @@ export class GameGateway
   //   this.server.emit();
   // }
 
-  @SubscribeMessage('gamejoin')
-  async handleGamejoin(
-    @MessageBody() data: { roomId: number },
+  // @SubscribeMessage('gamejoin')
+  // async handleGamejoin(
+  //   @MessageBody() data: { roomId: number },
+  //   @ConnectedSocket() socket: AuthenticatedSocket,
+  // ) {
+  //   const { roomId } = data;
+  //   const { user } = socket.request;
+  //   const Namespace = socket.nsp;
+  //   socket.data['roomId'] = roomId;
+
+  //   this.logger.log(roomId);
+
+  //   try {
+  //     await socket.join(`${Namespace}-${roomId}`);
+  //     this.logger.log(
+  //       `${Namespace}-${roomId} 에 접속했습니다. 해당 유저는 : ${user} 입니다.`,
+  //       Namespace,
+  //       roomId,
+  //     );
+  //     this.server.in(socket.id).emit('gamejoin', user);
+  //   } catch (error) {
+  //     this.logger.log(`접속 error`, error);
+  //   }
+  // }
+
+  // 가드를 통해서 플레이어인지 확인
+  @UseGuards(GamePlayerGuard)
+  @SubscribeMessage('game:join')
+  async handleGameJoin(
     @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { roomId: number },
   ) {
-    const { roomId } = data;
     const { user } = socket.request;
-    const Namespace = socket.nsp;
+    const newNamespace = socket.nsp;
+    const { roomId } = data;
     socket.data['roomId'] = roomId;
 
     this.logger.log(roomId);
 
     try {
-      await socket.join(`${Namespace}-${roomId}`);
-      this.logger.log(
-        `${Namespace}-${roomId} 에 접속했습니다. 해당 유저는 : ${user} 입니다.`,
-        Namespace,
-        roomId,
-      );
-      this.server.in(socket.id).emit('gamejoin', user);
+      await socket.join(`${newNamespace.name}-${roomId}`);
     } catch (error) {
-      this.logger.log(`접속 error`, error);
+      this.logger.error('socket join event error', error);
     }
   }
 
@@ -94,7 +118,7 @@ export class GameGateway
     const roomId = socket.data.roomId;
 
     //시작 멤버 반한.
-    const gamePlayers = this.gameEventService.findOfGameMember(roomId);
+    const gamePlayers = this.gameEventService.findPlayers(roomId);
     // 해당 방 이름.
     // const gameInfo = this.gameEventService.makeGameKey(roomId);
     if (this.gamePlayerNum < 6) return;

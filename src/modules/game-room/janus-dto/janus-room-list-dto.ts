@@ -9,17 +9,3 @@ export class JanusRoomListDto {
     this.request = request;
   }
 }
-// export class JanusRoomListDto {
-//   @IsEnum(JanusRequestEvent)
-//   @Exclude()
-//   private readonly _request: JanusRequestEvent.LIST;
-
-//   constructor(request: JanusRequestEvent.LIST) {
-//     this._request = request;
-//   }
-
-//   @Expose()
-//   get request(): JanusRequestEvent.LIST {
-//     return this._request;
-//   }
-// }
