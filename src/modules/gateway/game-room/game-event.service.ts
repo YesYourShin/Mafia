@@ -13,12 +13,43 @@ export class GameEventService {
     private readonly redisService: RedisService,
   ) {}
 
+  async findGame(roomId: number): Promise<GameRoom> {
+    const game = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      INFO_FIELD,
+    );
+    if (!game) {
+      throw new WsException('존재하지 않는 게임입니다');
+    }
+
+    return game;
+  }
+
+  // 해당 방의 게임 플레이어 값을 찾아서 제공.
+  async findPlayers(roomId: number): Promise<Player[]> {
+    const players = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      PLAYER_FIELD,
+    );
+
+    if (!players) {
+      throw new WsException('존재하지 않는 게임입니다');
+    }
+
+    return players;
+  }
+
+  makeGameKey(roomId: number): string {
+    return `${GAME}:${roomId}`;
+  }
+
   GrantJob(data: { playerNum: number; jobData: number[] }) {
     this.logger.log(`grantjob ` + data.jobData);
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
     let Job = []; //해당 방의 직업
 
+    // 분배 +
     for (let item = 0; item < data.playerNum; item++) {
       const ran = Math.floor(Math.random() * grantJob.length); //직업
       const jobCountData = Job.filter((item) => item === grantJob[ran]).length; //현재 같은 직업 수
@@ -72,34 +103,5 @@ export class GameEventService {
     });
 
     return job;
-  }
-
-  async findGame(roomId: number): Promise<GameRoom> {
-    const game = await this.redisService.hget(
-      this.makeGameKey(roomId),
-      INFO_FIELD,
-    );
-    if (!game) {
-      throw new WsException('존재하지 않는 게임입니다');
-    }
-
-    return game;
-  }
-
-  async findPlayers(roomId: number): Promise<Player[]> {
-    const players = await this.redisService.hget(
-      this.makeGameKey(roomId),
-      PLAYER_FIELD,
-    );
-
-    if (!players) {
-      throw new WsException('존재하지 않는 게임입니다');
-    }
-
-    return players;
-  }
-
-  makeGameKey(roomId: number): string {
-    return `${GAME}:${roomId}`;
   }
 }
