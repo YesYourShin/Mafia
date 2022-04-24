@@ -23,6 +23,10 @@ export class GameEventService {
     return players;
   }
 
+  gameJoin(roomId: number) {
+    return this.gameRoomEventService.makeGameKey(roomId);
+  }
+
   // async findOfGameInfo(roomId: number): Promise<> {
   //   const;
   // }
@@ -33,6 +37,7 @@ export class GameEventService {
 
     let Job = []; //해당 방의 직업
 
+    // 분배 +
     for (let item = 0; item < data.playerNum; item++) {
       const ran = Math.floor(Math.random() * grantJob.length); //직업
       const jobCountData = Job.filter((item) => item === grantJob[ran]).length; //현재 같은 직업 수
