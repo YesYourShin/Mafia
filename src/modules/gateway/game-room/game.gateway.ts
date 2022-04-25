@@ -310,17 +310,17 @@ export class GameGateway
 
   @SubscribeMessage('myFaceLandmarks')
   handleLandmarks(@MessageBody() data: { landmarks: string; id: string }) {
-    if (!data.landmarks) {
-      this.server.emit('othersFaceLandmarks', {
-        landmarks: null,
-        id: data.id,
-      });
-    } else {
-      this.server.emit('othersFaceLandmarks', {
-        landmarks: data.landmarks,
-        id: data.id,
-      });
-    }
+    const response = data?.landmarks
+      ? {
+          landmarks: data.landmarks,
+          id: data.id,
+        }
+      : {
+          landmarks: null,
+          id: data.id,
+        };
+
+    this.server.emit('othersFaceLandmarks', response);
   }
 
   // 마피아 능력
