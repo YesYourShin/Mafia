@@ -100,11 +100,14 @@ export class GameGateway
     @MessageBody() data: { day: boolean },
   ) {
     const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
 
     // default - 밤
     if (data.day === false) {
       const thisDay = !data.day;
-      this.server.in(roomId).emit(GameEvent.Day, { day: thisDay });
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Day, { day: thisDay });
     }
   }
 
