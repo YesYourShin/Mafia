@@ -15,20 +15,8 @@ import { GameEventService } from './game-event.service';
 import { AuthenticatedSocket } from './constants/authenticated-socket';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-
-// @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
-// @Injectable()
-// export class WsAuthenticatedGuard implements CanActivate {
-//   canActivate(context: ExecutionContext): boolean {
-//     const client = context.switchToWs().getClient(); //클라이언트
-//     const request = client.request; //클라이언트 요청
-//     const can = request.isAuthenticated(); //클라이언트
-//     if (!can) {
-//       throw new WsException('유효하지 않은 사용자');
-//     }
-//     return can;
-//   }
-// }
+import { GameEvent } from './constants';
+import { Game } from '../../../entities/game.entity';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -63,31 +51,6 @@ export class GameGateway
   //   this.server.emit();
   // }
 
-  // @SubscribeMessage('gamejoin')
-  // async handleGamejoin(
-  //   @MessageBody() data: { roomId: number },
-  //   @ConnectedSocket() socket: AuthenticatedSocket,
-  // ) {
-  //   const { roomId } = data;
-  //   const { user } = socket.request;
-  //   const Namespace = socket.nsp;
-  //   socket.data['roomId'] = roomId;
-
-  //   this.logger.log(roomId);
-
-  //   try {
-  //     await socket.join(`${Namespace}-${roomId}`);
-  //     this.logger.log(
-  //       `${Namespace}-${roomId} 에 접속했습니다. 해당 유저는 : ${user} 입니다.`,
-  //       Namespace,
-  //       roomId,
-  //     );
-  //     this.server.in(socket.id).emit('gamejoin', user);
-  //   } catch (error) {
-  //     this.logger.log(`접속 error`, error);
-  //   }
-  // }
-
   // 가드를 통해서 플레이어인지 확인
   @UseGuards(GamePlayerGuard)
   @SubscribeMessage('game:join')
@@ -104,9 +67,30 @@ export class GameGateway
 
     try {
       await socket.join(`${newNamespace.name}-${roomId}`);
+      this.server.in(socket.id).emit('gamejoin', user);
     } catch (error) {
       this.logger.error('socket join event error', error);
     }
+  }
+
+  @SubscribeMessage(GameEvent.Timer)
+  async handleTimer(socket: AuthenticatedSocket) {
+    const roomId = socket.data.roomId;
+    const newNamespace = socket.nsp;
+
+    let counter = 60;
+    const StartTimer = setInterval(function () {
+      this.server
+        .to(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Timer, { counter: counter });
+      counter--;
+      if (counter === 0) {
+        this.server
+          .to(`${newNamespace.name}-${roomId}`)
+          .emit(GameEvent.Timer, { counter: counter });
+        clearInterval(StartTimer);
+      }
+    }, 1000);
   }
 
   // 시작 신호 보내기
