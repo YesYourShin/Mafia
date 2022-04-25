@@ -17,6 +17,7 @@ import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
 import { GamePlayerGuard } from '../guards/game-player.guard';
 import { GameEvent } from './constants';
 import { Game } from '../../../entities/game.entity';
+import dayjs from 'dayjs';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -91,6 +92,20 @@ export class GameGateway
         clearInterval(StartTimer);
       }
     }, 1000);
+  }
+
+  @SubscribeMessage(GameEvent.Day)
+  async Handle(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { day: boolean },
+  ) {
+    const { roomId } = socket.data;
+
+    // default - 밤
+    if (data.day === false) {
+      const thisDay = !data.day;
+      this.server.in(roomId).emit(GameEvent.Day, { day: thisDay });
+    }
   }
 
   // 시작 신호 보내기
