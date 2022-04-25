@@ -1,9 +1,47 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
+import { GameRoom } from 'src/modules/game-room/dto';
+import { Player } from 'src/modules/game-room/dto/player';
+import { RedisService } from 'src/modules/redis/redis.service';
+import { GAME, INFO_FIELD, PLAYER_FIELD } from './constants';
 
 // 직업 부여 분리
 @Injectable()
 export class GameEventService {
-  constructor(@Inject(Logger) private readonly logger: Logger) {}
+  constructor(
+    @Inject(Logger) private readonly logger: Logger,
+    private readonly redisService: RedisService,
+  ) {}
+
+  async findGame(roomId: number): Promise<GameRoom> {
+    const game = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      INFO_FIELD,
+    );
+    if (!game) {
+      throw new WsException('존재하지 않는 게임입니다');
+    }
+
+    return game;
+  }
+
+  // 해당 방의 게임 플레이어 값을 찾아서 제공.
+  async findPlayers(roomId: number): Promise<Player[]> {
+    const players = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      PLAYER_FIELD,
+    );
+
+    if (!players) {
+      throw new WsException('존재하지 않는 게임입니다');
+    }
+
+    return players;
+  }
+
+  makeGameKey(roomId: number): string {
+    return `${GAME}:${roomId}`;
+  }
 
   GrantJob(data: { playerNum: number; jobData: number[] }) {
     this.logger.log(`grantjob ` + data.jobData);
@@ -11,6 +49,7 @@ export class GameEventService {
 
     let Job = []; //해당 방의 직업
 
+    // 분배 +
     for (let item = 0; item < data.playerNum; item++) {
       const ran = Math.floor(Math.random() * grantJob.length); //직업
       const jobCountData = Job.filter((item) => item === grantJob[ran]).length; //현재 같은 직업 수

@@ -18,6 +18,7 @@ import {
   UpdateProfileDto,
   UserProfile,
 } from './dto';
+import { RankingDto } from './dto/response-ranking.dto';
 import { ProfileRepository } from './profile.repository';
 import { UserRepository } from './user.repository';
 
@@ -55,7 +56,7 @@ export class UserService {
     await queryRunner.startTransaction();
 
     try {
-      if (profile?.image) {
+      if (profile?.image?.location) {
         const imageId = await this.imageService.save(
           profile.image,
           queryRunner,
@@ -146,5 +147,9 @@ export class UserService {
     } catch (error) {
       this.logger.error(error);
     }
+  }
+  async getRanking(take: number, page: number): Promise<RankingDto> {
+    const skip = (page - 1) * take;
+    return await this.userRepository.getRanking(take, skip);
   }
 }

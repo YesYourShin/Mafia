@@ -49,6 +49,7 @@ import { ResponseDto } from 'src/common/dto';
 import { ImageService } from '../image/image.service';
 import { EnumCategoryName } from 'src/common/constants';
 import { CategoryValidationPipe } from './pipe/category-validation.pipe';
+import { NumberValidationPipe } from '../user/number-validation.pipe';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -80,7 +81,7 @@ export class PostController {
   }
 
   @ApiQuery({
-    description: 'default 전체 게시판',
+    description: '전체 게시판',
     name: 'category',
     example: 'api/posts?category=1',
     schema: {
@@ -88,7 +89,15 @@ export class PostController {
     },
   })
   @ApiQuery({
-    description: 'default 1 / 1페이지',
+    description: '가져올 아이템 개수',
+    name: 'item',
+    example: 'api/posts?item=1',
+    schema: {
+      default: 1,
+    },
+  })
+  @ApiQuery({
+    description: '1페이지',
     name: 'page',
     example: 'api/posts?page=1',
     schema: {
@@ -104,9 +113,10 @@ export class PostController {
   async findAll(
     @Query('category', new CategoryValidationPipe())
     category: EnumCategoryName,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('item', new NumberValidationPipe()) item: number,
+    @Query('page', new NumberValidationPipe()) page: number,
   ) {
-    return await this.postService.findAll(category, page);
+    return await this.postService.findAll(category, item, page);
   }
 
   @ApiCreatedResponse({

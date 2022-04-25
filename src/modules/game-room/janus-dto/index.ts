@@ -7,4 +7,5 @@ export * from './janus-response-dto';
 export * from './kick-janus-room-dto';
 export * from './janus-room-list-participants-dto';
 export * from './janus-room-list-dto';
+export * from './janus-room-list-forwarders-dto';
 export * from './error-result-dto';

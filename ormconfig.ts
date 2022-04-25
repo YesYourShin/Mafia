@@ -22,7 +22,7 @@ const ormconfig: TypeOrmModuleOptions = {
   migrations: [path.join(__dirname + 'src/database/migrations/*.ts')],
   cli: { migrationsDir: 'src/migrations' },
   autoLoadEntities: true,
-  charset: 'utf8mb4',
+  charset: 'utf8mb4_general_ci',
   synchronize: false,
   logging: true,
   keepConnectionAlive: true,

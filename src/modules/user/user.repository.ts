@@ -1,9 +1,11 @@
 import { User } from 'src/entities/user.entity';
-import { AbstractRepository, EntityRepository } from 'typeorm';
+import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { JoinRequestUserDto } from './dto/join-request-user.dto';
 import { UserFindOneOptions } from './constants';
 import { removeNilFromObject } from 'src/common/constants';
 import { UserProfile } from './dto';
+import { Profile } from 'src/entities';
+import { RankingDto } from './dto/response-ranking.dto';
 
 @EntityRepository(User)
 export class UserRepository extends AbstractRepository<User> {
@@ -82,5 +84,11 @@ export class UserRepository extends AbstractRepository<User> {
       .from(User)
       .where('id = :id', { id })
       .execute();
+  }
+  async getRanking(take: number, skip: number): Promise<RankingDto> {
+    const query =
+      "SELECT p3.nickname,p3.level,p3.exp,p3.row_num, image.location FROM (SELECT nickname,level,exp, image_id, @RANK := IF(@PF_NICKNAME=nickname, @RANK + 1, 1) AS row_num, @PF_NICKNAME := nickname,@PF_EXP := exp FROM (SELECT p1.nickname, p1.level, p1.exp, p1.image_id FROM profile p1 ORDER BY p1.nickname, p1.exp DESC LIMIT ? OFFSET ?) p2, (SELECT @RANK := 1, @PF_NICKNAME := '', @PF_EXP := '') tmp) p3 LEFT JOIN image ON image.id=p3.image_id ORDER BY p3.nickname,p3.row_num;";
+    const param = [take, skip];
+    return await getConnection().query(query, param);
   }
 }

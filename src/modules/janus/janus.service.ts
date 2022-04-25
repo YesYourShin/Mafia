@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
+import { instanceToPlain } from 'class-transformer';
 import { firstValueFrom } from 'rxjs';
 import { JanusRequestEvent } from '../game-room/constants/janus-request-event';
 import { CreateGameRoomDto } from '../game-room/dto';
@@ -18,6 +19,7 @@ import {
   JanusRequestDto,
   JanusResponseDto,
   JanusRoomListDto,
+  JanusRoomListForwardersDto,
   JanusRoomListParticipantsDto,
 } from '../game-room/janus-dto';
 import { DestroyResultDto } from '../game-room/janus-dto/destroy-result-dto';
@@ -54,12 +56,25 @@ export class JanusService {
 
   async getJanusRoomListParticipants(room: number) {
     const janusRoomListParticipantsDto = new JanusRoomListParticipantsDto(
-      JanusRequestEvent.LIST_PARTICIPANTS,
       room,
       this.configService.get('JANUS_ADMIN_KEY'),
     );
     try {
+      console.log(janusRoomListParticipantsDto);
       const response = await this.requestJanus(janusRoomListParticipantsDto);
+      return response.data;
+    } catch (error) {
+      this.logger.error('request janus server error:', error);
+      throw new InternalServerErrorException('Janus 서버 오류');
+    }
+  }
+  async getJanusRoomListForwarders(room: number) {
+    const listForwardersDto = new JanusRoomListForwardersDto(
+      room,
+      this.configService.get('JANUS_ADMIN_KEY'),
+    );
+    try {
+      const response = await this.requestJanus(listForwardersDto);
       return response.data;
     } catch (error) {
       this.logger.error('request janus server error:', error);
