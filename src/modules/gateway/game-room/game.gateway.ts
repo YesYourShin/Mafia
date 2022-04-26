@@ -90,7 +90,7 @@ export class GameGateway
     this.logger.log(`start: ${endTime}`);
 
     this.server
-      .in(`${newNamespace}-${roomId}`)
+      .in(`${newNamespace.name}-${roomId}`)
       .emit(GameEvent.Timer, { start: startTime, end: endTime });
   }
 
@@ -310,29 +310,29 @@ export class GameGateway
     this.server.to(this.roomName).emit('death', this.roomClient);
   }
 
-  @SubscribeMessage('dayNight')
-  async handleDayNight(
-    @MessageBody() data: { dayNight: string },
-    @ConnectedSocket() socket: Socket,
-  ) {
-    // 살아있는 마피아 수,
+  // @SubscribeMessage('dayNight')
+  // async handleDayNight(
+  //   @MessageBody() data: { dayNight: string },
+  //   @ConnectedSocket() socket: Socket,
+  // ) {
+  //   // 살아있는 마피아 수,
 
-    const numberOfMafias = this.roomClient.filter(
-      (item) => item.job === this.typesOfJobs[1] && item.die === false,
-    ).length;
+  //   const numberOfMafias = this.roomClient.filter(
+  //     (item) => item.job === this.typesOfJobs[1] && item.die === false,
+  //   ).length;
 
-    const numberOfCitizen = this.roomClient.filter(
-      (item) => item.job !== this.typesOfJobs[1] && item.die === false,
-    ).length;
+  //   const numberOfCitizen = this.roomClient.filter(
+  //     (item) => item.job !== this.typesOfJobs[1] && item.die === false,
+  //   ).length;
 
-    this.logger.log(`살아있는 마피아 수: ${numberOfMafias}`);
-    // 마피아 수가 0일 시
-    if (!numberOfMafias)
-      this.server.to(socket.id).emit('dayNight', '마피아 패');
-    // 밤일 경우, 마피아 수가 시민수와 같을 시
-    if (numberOfMafias === numberOfCitizen && data.dayNight === 'night')
-      this.server.to(socket.id).emit('dayNight', '마피아 승');
-  }
+  //   this.logger.log(`살아있는 마피아 수: ${numberOfMafias}`);
+  //   // 마피아 수가 0일 시
+  //   if (!numberOfMafias)
+  //     this.server.to(socket.id).emit('dayNight', '마피아 패');
+  //   // 밤일 경우, 마피아 수가 시민수와 같을 시
+  //   if (numberOfMafias === numberOfCitizen && data.dayNight === 'night')
+  //     this.server.to(socket.id).emit('dayNight', '마피아 승');
+  // }
 
   // 능력사용 부분
   // 경찰 능력
