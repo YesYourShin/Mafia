@@ -77,19 +77,21 @@ export class GameGateway
     const roomId = socket.data.roomId;
     const newNamespace = socket.nsp;
 
-    let counter = 60;
-    const StartTimer = setInterval(function () {
-      this.server
-        .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.Timer, { counter: counter });
-      counter--;
-      if (counter === 0) {
-        this.server
-          .to(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.Timer, { counter: counter });
-        clearInterval(StartTimer);
-      }
-    }, 1000);
+    this.logger.log(roomId);
+
+    const now = dayjs();
+
+    //시작 신호
+    const startTime = now.format();
+    this.logger.log(`start: ${startTime}`);
+
+    //만료 신호
+    const endTime = now.add(1, 'm').format();
+    this.logger.log(`start: ${endTime}`);
+
+    this.server
+      .in(`${newNamespace}-${roomId}`)
+      .emit(GameEvent.Timer, { start: startTime, end: endTime });
   }
 
   @SubscribeMessage(GameEvent.Day)
@@ -100,6 +102,8 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
+    this.logger.log(roomId);
+
     // default - 밤 - false
     if (data.day === false) {
       const thisDay = !data.day;
@@ -108,6 +112,7 @@ export class GameGateway
         .emit(GameEvent.Day, { day: thisDay });
     }
   }
+
   @SubscribeMessage(GameEvent.Start)
   async handleStart(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
@@ -140,8 +145,8 @@ export class GameGateway
     const mafia = 1;
     const doctor = 1;
     const police = 1;
-
     const cr = this.gamePlayerNum - (mafia + doctor + police);
+
     // 마피아, 의사,경찰, 시민
     const jobData = [cr, mafia, doctor, police];
     this.logger.log(`grantjob ` + jobData);
