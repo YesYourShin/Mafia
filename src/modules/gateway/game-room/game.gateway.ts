@@ -73,11 +73,9 @@ export class GameGateway
   }
 
   @SubscribeMessage(GameEvent.Timer)
-  async handleTimer(socket: AuthenticatedSocket) {
-    const roomId = socket.data.roomId;
+  async handleTimer(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = socket.data;
     const newNamespace = socket.nsp;
-
-    this.logger.log(roomId);
 
     const now = dayjs();
 
@@ -87,11 +85,14 @@ export class GameGateway
 
     //만료 신호
     const endTime = now.add(1, 'm').format();
-    this.logger.log(`start: ${endTime}`);
-
-    this.server
-      .in(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.Timer, { start: startTime, end: endTime });
+    this.logger.log(`end: ${endTime}`);
+    try {
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Timer, { start: startTime, end: endTime });
+    } catch (error) {
+      this.logger.error('event error', error);
+    }
   }
 
   @SubscribeMessage(GameEvent.Day)
@@ -132,67 +133,61 @@ export class GameGateway
   }
 
   // 직업 배분
-  @SubscribeMessage(GameEvent.Job)
-  async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
-    const { user } = socket.request;
-    const { roomId } = socket.data;
-    const newNamespace = socket.nsp;
+  // @SubscribeMessage(GameEvent.Job)
+  // async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
+  //   const { user } = socket.request;
+  //   const { roomId } = socket.data;
+  //   const newNamespace = socket.nsp;
 
-    const gamePlayers = await this.gameEventService.findPlayers(roomId);
+  //   const gamePlayers = await this.gameEventService.findPlayers(roomId);
 
-    this.logger.log(gamePlayers);
+  //   this.logger.log(gamePlayers);
 
-    const mafia = 1;
-    const doctor = 1;
-    const police = 1;
-    const cr = this.gamePlayerNum - (mafia + doctor + police);
+  //   const mafia = 1;
+  //   const doctor = 1;
+  //   const police = 1;
+  //   const cr = this.gamePlayerNum - (mafia + doctor + police);
 
-    // 마피아, 의사,경찰, 시민
-    const jobData = [cr, mafia, doctor, police];
-    this.logger.log(`grantjob ` + jobData);
-    let roomJob = []; //해당 방의 직업
-    const roomC = [];
+  //   const jobData = [cr, mafia, doctor, police];
+  //   let roomJob = []; //해당 방의 직업
+  //   const roomC = [];
 
-    this.logger.log(
-      ` 현재 room : ${this.roomName} 인원수 ${this.gamePlayerNum}`,
-    );
+  //   // 자신의 직업만 보내줘야 함. 해당 소켓에다가
 
-    // 자신의 직업만 보내줘야 함. 해당 소켓에다가
-    if (roomC.length === 0) {
-      // 직업 분배 + 셔플
-      roomJob = this.gameEventService.GrantJob({
-        playerNum: this.gamePlayerNum,
-        jobData: jobData,
-      });
+  //   // 직업 분배 + 셔플
+  //   roomJob = this.gameEventService.GrantJob({
+  //     playerNum: this.gamePlayerNum,
+  //     jobData: jobData,
+  //   });
 
-      // roomJob = this.gameEventService.shuffle(roomJob);
+  //   for (let i = 0; i < this.gamePlayerNum; i++) {
+  //     gamePlayers[i].job = roomJob[i];
 
-      for (let i = 0; i < this.gamePlayerNum; i++) {
-        const data = {
-          num: i + 1,
-          user: Array.from(this.gamePlayers)[i],
-          job: roomJob[i],
-          die: false,
-        };
-        roomC.push(data);
-      }
-    }
+  //     this.server.in(socket.id).emit(GameEvent.Job);
 
-    this.logger.log(this.roomClient);
-    this.logger.log(roomC);
-    this.roomClient = roomC;
+  //     // const data = {
+  //     //   num: i + 1,
+  //     //   user: Array.from(this.gamePlayers)[i],
+  //     //   job: roomJob[i],
+  //     //   die: false,
+  //     // };
+  //     // roomC.push(data);
+  //   }
 
-    const returndata = {
-      room: this.roomName,
-      jobs: this.roomClient,
-    };
+  //   // for (let i = 0; i < this.gamePlayerNum; i++) {
+  //   //   const data = {
+  //   //     num: i + 1,
+  //   //     user: Array.from(this.gamePlayers)[i],
+  //   //     job: roomJob[i],
+  //   //     die: false,
+  //   //   };
+  //   //   roomC.push(data);
+  //   // }
 
-    // 직업 배분 셔플 결과
-    this.logger.log('returndata');
-    this.logger.log(returndata);
-
-    this.server.to(this.roomName).emit('grantJob', returndata);
-  }
+  //   // this.logger.log(this.roomClient);
+  //   // this.logger.log(roomC);
+  //   // this.roomClient = roomC;
+  // }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
