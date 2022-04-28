@@ -117,19 +117,28 @@ export class GameGateway
   @SubscribeMessage(GameEvent.Start)
   async handleStart(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
+    const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    const gamePlayers = await this.gameEventService.findPlayers(roomId);
-    if (gamePlayers.length < 6)
-      //  throw new ForbiddenException()
-      throw new ForbiddenException('인원이 부족합니다.');
 
+    const gamePlayers = await this.gameEventService.findPlayers(roomId);
+    // if (gamePlayers.length < 6)
+    //   //  throw new ForbiddenException()
+    //   throw new ForbiddenException('인원이 부족합니다.');
+
+    gamePlayers.map((value)=>{if(value.id === user.id) this.gameEventService.setPlayerNum(roomId) })
+
+    const count = await this.gameEventService.getPlayerNum(roomId)
+
+    if(gamePlayers.length === count){
     // 비동기 신호
-    setTimeout(() => {
+    setTimeout(() => { 
       this.server
         .to(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.Start, gamePlayers);
-    }, 5000);
+    }, 1000);
+    }
+
   }
 
   // 직업 배분
@@ -139,54 +148,43 @@ export class GameGateway
   //   const { roomId } = socket.data;
   //   const newNamespace = socket.nsp;
 
-  //   const gamePlayers = await this.gameEventService.findPlayers(roomId);
+  //   // 현재 방의 인원
+  //   let gamePlayers = await this.gameEventService.findPlayers(roomId);
 
-  //   this.logger.log(gamePlayers);
+  //   this.logger.log("직업 분배 job", gamePlayers);
 
   //   const mafia = 1;
   //   const doctor = 1;
   //   const police = 1;
-  //   const cr = this.gamePlayerNum - (mafia + doctor + police);
+  //   const cr = gamePlayers.length - (mafia + doctor + police);
 
   //   const jobData = [cr, mafia, doctor, police];
   //   let roomJob = []; //해당 방의 직업
-  //   const roomC = [];
 
   //   // 자신의 직업만 보내줘야 함. 해당 소켓에다가
+  //   this.logger.log(gamePlayers);
 
   //   // 직업 분배 + 셔플
+  //   if(!roomJob)
   //   roomJob = this.gameEventService.GrantJob({
   //     playerNum: this.gamePlayerNum,
   //     jobData: jobData,
   //   });
 
+  //   // 
+
+  //   // 유저 정보가 일치하는 것
   //   for (let i = 0; i < this.gamePlayerNum; i++) {
-  //     gamePlayers[i].job = roomJob[i];
-
-  //     this.server.in(socket.id).emit(GameEvent.Job);
-
-  //     // const data = {
-  //     //   num: i + 1,
-  //     //   user: Array.from(this.gamePlayers)[i],
-  //     //   job: roomJob[i],
-  //     //   die: false,
-  //     // };
-  //     // roomC.push(data);
+  //       gamePlayers[i].job = roomJob[i];
+  //       this.logger.log(`hello 유저 직업 중 ${i}번째`);
+  //       this.logger.log(gamePlayers);
   //   }
 
-  //   // for (let i = 0; i < this.gamePlayerNum; i++) {
-  //   //   const data = {
-  //   //     num: i + 1,
-  //   //     user: Array.from(this.gamePlayers)[i],
-  //   //     job: roomJob[i],
-  //   //     die: false,
-  //   //   };
-  //   //   roomC.push(data);
-  //   // }
+  //   this.logger.log(gamePlayers);
 
-  //   // this.logger.log(this.roomClient);
-  //   // this.logger.log(roomC);
-  //   // this.roomClient = roomC;
+
+  //   this.server.in(socket.id).emit(GameEvent.Job, user);
+    
   // }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기

@@ -4,7 +4,7 @@ import { interval } from 'rxjs';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
-import { GAME, INFO_FIELD, PLAYER_FIELD } from './constants';
+import { GAME, INFO_FIELD, PLAYERNUM_FIELD, PLAYER_FIELD } from './constants';
 
 // 직업 부여 분리
 @Injectable()
@@ -42,6 +42,32 @@ export class GameEventService {
 
   makeGameKey(roomId: number): string {
     return `${GAME}:${roomId}`;
+  }
+
+  async setPlayerNum(roomId: number) {
+    await this.redisService.hincrby(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+  }
+
+  async getPlayerNum(roomId: number){
+    return await this.redisService.hget(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+  }
+  // this.makeRoomKey(roomId), MEMBER_FIELD, newMembers
+
+  // async Job(roomId: number, Player: ] ): Promise<Player[] | object>{
+    
+
+  //   await this.savePlayerJob(this.makeGameKey(roomId), PLAYER_FIELD, jobPlayer);
+
+  //   return jobPlayer;
+  // }
+
+
+  async savePlayerJob(
+    key: string,
+    field: string,
+    player: Player[],
+  ): Promise<any> {
+    return await this.redisService.hset(key, field, player);
   }
 
   GrantJob(data: { playerNum: number; jobData: number[] }) {
