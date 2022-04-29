@@ -1,9 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
+import { interval } from 'rxjs';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
-import { GAME, INFO_FIELD, PLAYER_FIELD } from './constants';
+import { GAME, INFO_FIELD, PLAYERJOB_FIELD, PLAYERNUM_FIELD, PLAYER_FIELD, VOTE_FIELD } from './constants';
 
 // 직업 부여 분리
 @Injectable()
@@ -39,32 +40,51 @@ export class GameEventService {
     return players;
   }
 
-  makeGameKey(roomId: number): string {
-    return `${GAME}:${roomId}`;
+  // async findPlayer(roomId: number, playerId: number) {
+  //   const players = await this.findPlayers(roomId);
+  //   return this.getMemberInGameRoomMember(members, memberId);
+  // }
+
+  async getPlayerJobs(roomId: number){
+    try {
+      const playerJobs = await this.redisService.hget(
+        this.makeGameKey(roomId),
+        PLAYERJOB_FIELD
+      )
+      this.logger.log(2)
+      return playerJobs
+
+    }catch(err){
+      console.log(err);
+    }
+  }
+  
+  async setPlayerJobs(roomId: number, job:number[], Num:number){
+    const jobs = this.grantJob(job, Num);
+    const playerJobs = await this.findPlayers(roomId);
+
+   for(let i = 0; i < Num; i++){
+     playerJobs[i].job = jobs[i];
+   }
+    return await this.redisService.hset(this.makeGameKey(roomId), PLAYERJOB_FIELD , playerJobs);
   }
 
-  GrantJob(data: { playerNum: number; jobData: number[] }) {
-    this.logger.log(`grantjob ` + data.jobData);
+  // setVote(roomId: number,){
+  //   await this.redisService.hset(this.makeGameKey(room), VOTE_FIELD, {})
+  // }
+
+  grantJob(job: number[], Num: number){
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
-    let Job = []; //해당 방의 직업
-
-    // 분배 +
-    for (let item = 0; item < data.playerNum; item++) {
-      const ran = Math.floor(Math.random() * grantJob.length); //직업
-      const jobCountData = Job.filter((item) => item === grantJob[ran]).length; //현재 같은 직업 수
-
-      if (jobCountData < data.jobData[ran]) {
-        Job.push(grantJob[ran]);
-      } else {
-        item--;
-      }
+    let roomJob = []; //해당 방의 직업
+    let typesOfJobs = 0;
+    for(let jobs = 0; jobs < Num; jobs++ ){
+      roomJob.push(grantJob[typesOfJobs]);
+      job[jobs]--;
+      if(!job[typesOfJobs]) typesOfJobs++;
     }
-    this.logger.log(`grantjob` + Job);
 
-    Job = this.shuffle(Job);
-
-    return Job;
+    return this.shuffle(roomJob);
   }
 
   shuffle(job: string[]) {
@@ -79,9 +99,33 @@ export class GameEventService {
       strikeOut.push(job.pop());
     }
 
-    this.logger.log(`grantjob` + strikeOut);
+    // this.logger.log(`grantjob ` + strikeOut);
 
     return strikeOut;
+  }
+
+  makeGameKey(roomId: number): string {
+    return `${GAME}:${roomId}`;
+  }
+
+  async setPlayerNum(roomId: number) {
+    return await this.redisService.hincrby(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+  }
+
+  async getPlayerNum(roomId: number){
+    return await this.redisService.hget(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+  }
+
+  async delPlayerNum(roomId: number){
+    return await this.redisService.hdel(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+  }
+
+  async savePlayerJob(
+    key: string,
+    field: string,
+    player: Player[],
+  ): Promise<any> {
+    return await this.redisService.hset(key, field, player);
   }
 
   usePoliceState(num: number, client: any[], user: string) {

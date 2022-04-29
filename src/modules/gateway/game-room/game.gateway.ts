@@ -1,4 +1,4 @@
-import { Inject, Logger, LoggerService, UseGuards } from '@nestjs/common';
+import { ForbiddenException, Inject, Logger, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -15,20 +15,11 @@ import { GameEventService } from './game-event.service';
 import { AuthenticatedSocket } from './constants/authenticated-socket';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-
-// @UseGuards(WsAuthenticatedGuard) - 현재 소켓에 가드 설정
-// @Injectable()
-// export class WsAuthenticatedGuard implements CanActivate {
-//   canActivate(context: ExecutionContext): boolean {
-//     const client = context.switchToWs().getClient(); //클라이언트
-//     const request = client.request; //클라이언트 요청
-//     const can = request.isAuthenticated(); //클라이언트
-//     if (!can) {
-//       throw new WsException('유효하지 않은 사용자');
-//     }
-//     return can;
-//   }
-// }
+import { GameEvent } from './constants';
+import { Game } from '../../../entities/game.entity';
+import dayjs from 'dayjs';
+import { Index } from 'typeorm';
+import { check } from 'prettier';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -49,43 +40,16 @@ export class GameGateway
   roomName = 'room1'; //방 이름.
   roomClient = []; // room인원
   private gamePlayerNum = 0;
-  private gamePlayers;
+
   // 마피아는 인원수에 따라 변경 6부터 1명 , 나미저 2명
-  mafia = 1;
-  doctor = 1;
-  police = 1;
-  typesOfJobs = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+
+  // typesOfJobs = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
   // 서버에서 시간을 돌려야 하는 것도 있다. - 서버에서 시간을 돌린다.
   // @SubscribeMessage('counter')
   // counter(){
   //   // 브로드 캐스트
   //   this.server.emit();
-  // }
-
-  // @SubscribeMessage('gamejoin')
-  // async handleGamejoin(
-  //   @MessageBody() data: { roomId: number },
-  //   @ConnectedSocket() socket: AuthenticatedSocket,
-  // ) {
-  //   const { roomId } = data;
-  //   const { user } = socket.request;
-  //   const Namespace = socket.nsp;
-  //   socket.data['roomId'] = roomId;
-
-  //   this.logger.log(roomId);
-
-  //   try {
-  //     await socket.join(`${Namespace}-${roomId}`);
-  //     this.logger.log(
-  //       `${Namespace}-${roomId} 에 접속했습니다. 해당 유저는 : ${user} 입니다.`,
-  //       Namespace,
-  //       roomId,
-  //     );
-  //     this.server.in(socket.id).emit('gamejoin', user);
-  //   } catch (error) {
-  //     this.logger.log(`접속 error`, error);
-  //   }
   // }
 
   // 가드를 통해서 플레이어인지 확인
@@ -100,93 +64,143 @@ export class GameGateway
     const { roomId } = data;
     socket.data['roomId'] = roomId;
 
-    this.logger.log(roomId);
+    this.logger.log(`gameRoom ${roomId}`);
 
     try {
       await socket.join(`${newNamespace.name}-${roomId}`);
+      this.server.in(socket.id).emit('gamejoin', user);
     } catch (error) {
       this.logger.error('socket join event error', error);
     }
   }
 
-  // 시작 신호 보내기
-  @SubscribeMessage('gameMessage')
-  async gamestart(
-    @MessageBody() data: number,
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    const roomId = socket.data.roomId;
+  @SubscribeMessage(GameEvent.Timer)
+  async handleTimer(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
 
-    //시작 멤버 반한.
-    const gamePlayers = this.gameEventService.findPlayers(roomId);
-    // 해당 방 이름.
-    // const gameInfo = this.gameEventService.makeGameKey(roomId);
-    if (this.gamePlayerNum < 6) return;
+    const now = dayjs();
 
-    // 비동기 신호
-    setTimeout(() => {
-      this.server.to(this.roomName).emit('gameMessage', gamePlayers);
-      this.logger.log(`socketid: ${socket.id} , 발생 `);
-    }, 1000 * data);
+    //시작 신호
+    const startTime = now.format();
+    this.logger.log(`start: ${startTime}`);
+
+    //만료 신호
+    const endTime = now.add(1, 'm').format();
+    this.logger.log(`end: ${endTime}`);
+    try {
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Timer, { start: startTime, end: endTime });
+    } catch (error) {
+      this.logger.error('event error', error);
+    }
   }
 
-  // 직업 배분
-  @SubscribeMessage('grantJob')
-  async handleGrantJob(
-    @MessageBody() data: { user: UserProfile; gameRoomNumber: number },
+  @SubscribeMessage(GameEvent.Day)
+  async HandleDay(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { day: boolean },
   ) {
-    // 해당 room에 소켓 정보들
-    this.gamePlayers = await this.server.in(this.roomName).allSockets();
-    //해당 room에 인원 수
-    this.gamePlayerNum = this.gamePlayers.size;
-    // room의 정해진 직업을 주면 대입
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
 
-    const cr = this.gamePlayerNum - (this.mafia + this.doctor + this.police);
-    // 마피아, 의사,경찰, 시민
-    const jobData = [cr, this.mafia, this.doctor, this.police];
-    this.logger.log(`grantjob ` + jobData);
-    let roomJob = []; //해당 방의 직업
-    const roomC = [];
+    // default - 밤 - false
+    if (data.day === false) {
+      const thisDay = !data.day;
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Day, { day: thisDay });
+    }
+  }
 
-    this.logger.log(
-      ` 현재 room : ${this.roomName} 인원수 ${this.gamePlayerNum}`,
-    );
+  @SubscribeMessage(GameEvent.Start)
+  async handleStart(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = socket.data;
+    const { user } = socket.request;
+    const newNamespace = socket.nsp;
 
-    // 자신의 직업만 보내줘야 함. 해당 소켓에다가
-    if (roomC.length === 0) {
-      // 직업 분배 + 셔플
-      roomJob = this.gameEventService.GrantJob({
-        playerNum: this.gamePlayerNum,
-        jobData: jobData,
-      });
+    const gamePlayers = await this.gameEventService.findPlayers(roomId);
+    // if (gamePlayers.length < 6)
+    //   //  throw new ForbiddenException()
+    //   throw new ForbiddenException('인원이 부족합니다.');
 
-      // roomJob = this.gameEventService.shuffle(roomJob);
+    let count;
+    //count
+    for(const player of gamePlayers){
+        if(player.id === user.id) {count = await this.gameEventService.setPlayerNum(roomId)}
+      }
 
-      for (let i = 0; i < this.gamePlayerNum; i++) {
-        const data = {
-          num: i + 1,
-          user: Array.from(this.gamePlayers)[i],
-          job: roomJob[i],
-          die: false,
-        };
-        roomC.push(data);
+    if(gamePlayers.length === count){
+      this.gameEventService.delPlayerNum(roomId);
+    // 비동기 신호
+    setTimeout(() => { 
+      this.server
+        .to(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Start, gamePlayers);
+    }, 1000);
+    }
+
+  }
+
+  // 직업배분
+
+  // 각자의 직업만 제공
+  @SubscribeMessage(GameEvent.Job)
+  async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { user } = socket.request; 
+    const { roomId } = socket.data;
+
+    // 현재 방의 인원
+    let gamePlayers = await this.gameEventService.findPlayers(roomId);
+    let Num = gamePlayers.length;
+
+
+    const mafia = 1;
+    const doctor = 1;
+    const police = 1;
+    const cr = Num - (mafia + doctor + police);
+    const jobData = [cr, mafia, doctor, police];
+
+    let count;
+    for(const player of gamePlayers){
+      if(player.id === user.id) {
+        count = await this.gameEventService.setPlayerNum(roomId);
+        break;
       }
     }
 
-    this.logger.log(this.roomClient);
-    this.logger.log(roomC);
-    this.roomClient = roomC;
+    // 첫번째 소켓일 때, 직업 설정
+    if(count === 1){
+      await this.gameEventService.setPlayerJobs(roomId, jobData, Num);
+    }
+    
+    // 특정 플레이어의 순서 === jobs[순서]
+    const checkJob = await this.gameEventService.getPlayerJobs(roomId);
 
-    const returndata = {
-      room: this.roomName,
-      jobs: this.roomClient,
-    };
+    this.logger.log(`socket:id ${socket.id}`);
+    this.logger.log('변경전', gamePlayers);
 
-    // 직업 배분 셔플 결과
-    this.logger.log('returndata');
-    this.logger.log(returndata);
+    for(let i = 0; i< Num; i++){
+      if(gamePlayers[i].id === user.profile.id){
+        gamePlayers[i].job = checkJob[i].job;
+        this.logger.log(gamePlayers[i].job);
+        this.logger.log(checkJob[i].job);
+        break;
+      }
+    }
+    this.logger.log('변경 후', gamePlayers);
+    // for(let i = 0; i< Num; i++){
+    //   if(gamePlayers[i].id === user.profile.id){
+    //     gamePlayers[i].job = checkJob.jobs[i];
+    //   }
+    // }
 
-    this.server.to(this.roomName).emit('grantJob', returndata);
+    // for(let playerJob in gamePlayers){
+    //   gamePlayers[playerJob].job = checkJob[playerJob].job
+    // }
+
+    this.server.in(socket.id).emit(GameEvent.Job, gamePlayers);
   }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
@@ -195,19 +209,23 @@ export class GameGateway
 
   @SubscribeMessage('vote')
   handleVote(
-    @MessageBody() payload: { voteNum: number },
-    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { vote: number },
+    @ConnectedSocket() socket: AuthenticatedSocket
   ) {
-    // 1. 플레이어 숫자 내일 경우 값 추가. (플레이어는 손으로 선택해서 주지만 일단.. 테스트할 때 조심하기 위해서)
-    if (
-      payload.voteNum <= this.gamePlayerNum &&
-      this.vote.length <= this.gamePlayerNum &&
-      typeof payload.voteNum === 'number'
-    )
-      this.vote.push(payload.voteNum); //undefined
-    this.logger.log(
-      `플레이어 수 : ${this.gamePlayerNum}, user: ${socket.id}, 투표 번호: ${payload.voteNum}, 총 투표수 : ${this.vote.length}`,
-    );
+
+    const { roomId } = socket.data;
+
+
+    // // 1. 플레이어 숫자 내일 경우 값 추가. (플레이어는 손으로 선택해서 주지만 일단.. 테스트할 때 조심하기 위해서)
+    // if (
+    //   data.voteNum <= this.gamePlayerNum &&
+    //   this.vote.length <= this.gamePlayerNum &&
+    //   typeof payload.voteNum === 'number'
+    // )
+    //   this.vote.push(payload.voteNum); //undefined
+    // this.logger.log(
+    //   `플레이어 수 : ${this.gamePlayerNum}, user: ${socket.id}, 투표 번호: ${payload.voteNum}, 총 투표수 : ${this.vote.length}`,
+    // );
   }
 
   // 투표 합.
@@ -305,29 +323,29 @@ export class GameGateway
     this.server.to(this.roomName).emit('death', this.roomClient);
   }
 
-  @SubscribeMessage('dayNight')
-  async handleDayNight(
-    @MessageBody() data: { dayNight: string },
-    @ConnectedSocket() socket: Socket,
-  ) {
-    // 살아있는 마피아 수,
+  // @SubscribeMessage('dayNight')
+  // async handleDayNight(
+  //   @MessageBody() data: { dayNight: string },
+  //   @ConnectedSocket() socket: Socket,
+  // ) {
+  //   // 살아있는 마피아 수,
 
-    const numberOfMafias = this.roomClient.filter(
-      (item) => item.job === this.typesOfJobs[1] && item.die === false,
-    ).length;
+  //   const numberOfMafias = this.roomClient.filter(
+  //     (item) => item.job === this.typesOfJobs[1] && item.die === false,
+  //   ).length;
 
-    const numberOfCitizen = this.roomClient.filter(
-      (item) => item.job !== this.typesOfJobs[1] && item.die === false,
-    ).length;
+  //   const numberOfCitizen = this.roomClient.filter(
+  //     (item) => item.job !== this.typesOfJobs[1] && item.die === false,
+  //   ).length;
 
-    this.logger.log(`살아있는 마피아 수: ${numberOfMafias}`);
-    // 마피아 수가 0일 시
-    if (!numberOfMafias)
-      this.server.to(socket.id).emit('dayNight', '마피아 패');
-    // 밤일 경우, 마피아 수가 시민수와 같을 시
-    if (numberOfMafias === numberOfCitizen && data.dayNight === 'night')
-      this.server.to(socket.id).emit('dayNight', '마피아 승');
-  }
+  //   this.logger.log(`살아있는 마피아 수: ${numberOfMafias}`);
+  //   // 마피아 수가 0일 시
+  //   if (!numberOfMafias)
+  //     this.server.to(socket.id).emit('dayNight', '마피아 패');
+  //   // 밤일 경우, 마피아 수가 시민수와 같을 시
+  //   if (numberOfMafias === numberOfCitizen && data.dayNight === 'night')
+  //     this.server.to(socket.id).emit('dayNight', '마피아 승');
+  // }
 
   // 능력사용 부분
   // 경찰 능력
