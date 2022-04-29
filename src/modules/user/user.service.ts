@@ -7,10 +7,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/typeorm';
-import { removeNilFromObject } from 'src/common/constants';
 import { Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { Connection } from 'typeorm';
+import { UserEvent } from '../gateway/game-room/constants/user-event';
+import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
 import {
   CreateProfileDto,
@@ -18,6 +19,7 @@ import {
   UpdateProfileDto,
   UserProfile,
 } from './dto';
+import { FindUserByNickname } from './dto/response-find-user-by-nickname-dto';
 import { RankingDto } from './dto/response-ranking.dto';
 import { ProfileRepository } from './profile.repository';
 import { UserRepository } from './user.repository';
@@ -28,6 +30,7 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly imageService: ImageService,
     private readonly profileRepository: ProfileRepository,
+    private readonly userGateway: UserGateway,
     @Inject(Logger) private readonly logger = new Logger('UserService'),
     @InjectConnection() private readonly connection: Connection,
   ) {}
@@ -116,10 +119,18 @@ export class UserService {
       await queryRunner.release();
     }
   }
-  async checkDuplicateNickname(nickname: string) {
-    const exNickname = await this.profileRepository.checkDuplicateNickname(
+
+  async findUserByNickname(nickname: string): Promise<FindUserByNickname> {
+    const user = (await this.profileRepository.findUserByNickname(
       nickname,
-    );
+    )) as FindUserByNickname;
+    if (!user) {
+      throw new NotFoundException('존재하지 않는 유저입니다');
+    }
+    return user;
+  }
+  async checkDuplicateNickname(nickname: string) {
+    const exNickname = await this.profileRepository.findNickname(nickname);
     if (exNickname) {
       throw new ForbiddenException('중복된 닉네임입니다');
     }
@@ -151,5 +162,42 @@ export class UserService {
   async getRanking(take: number, page: number): Promise<RankingDto> {
     const skip = (page - 1) * take;
     return await this.userRepository.getRanking(take, skip);
+  }
+  async requestFriend(userId: number, friendId: number) {
+    await (this.checkOneWay(userId, friendId)
+      ? this.userRepository.requestFriend(userId, friendId)
+      : this.userRepository.requestFriend(friendId, userId));
+    await this.userRepository.requestFriend(userId, friendId);
+    this.userGateway.server
+      .to(`/user-${friendId}`)
+      .emit(UserEvent.FRIEND_REQUEST, { userId, message: '친구 요청' });
+  }
+
+  async acceptFriend(userId: number, friendId: number) {
+    await (this.checkOneWay(userId, friendId)
+      ? this.userRepository.acceptFriend(userId, friendId)
+      : this.userRepository.acceptFriend(friendId, userId));
+    await this.userRepository.findFriend(userId, friendId);
+    this.userGateway.server
+      .to(`/user-${friendId}`)
+      .emit(UserEvent.FRIEND_REQUEST_ACCEPT, { userId, message: '친구 수락' });
+  }
+
+  async rejectFriend(userId: number, friendId: number) {
+    await (this.checkOneWay(userId, friendId)
+      ? this.userRepository.rejectFriend(userId, friendId)
+      : this.userRepository.rejectFriend(friendId, userId));
+    return await this.userRepository.rejectFriend(userId, friendId);
+  }
+
+  async removeFriend(userId: number, friendId: number) {
+    await (this.checkOneWay(userId, friendId)
+      ? this.userRepository.removeFriend(userId, friendId)
+      : this.userRepository.removeFriend(friendId, userId));
+    return { delete: true, friendId };
+  }
+
+  checkOneWay(userId1: number, userId2: number) {
+    return userId1 > userId2;
   }
 }

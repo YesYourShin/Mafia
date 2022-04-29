@@ -118,13 +118,19 @@ export class GameRoomGateway
 
     const newNamespace = socket.nsp;
 
-    this.server
-      .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.MESSAGE, {
-        roomId,
-        member: { id: user.id, name: user.profile.nickname },
-        message,
-      });
+    console.log(message);
+
+    try {
+      this.server
+        .to(`${newNamespace.name}-${roomId}`)
+        .emit(GameRoomEvent.MESSAGE, {
+          roomId,
+          member: { id: user.id, name: user.profile.nickname },
+          message,
+        });
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   @SubscribeMessage(GameRoomEvent.LEAVE)

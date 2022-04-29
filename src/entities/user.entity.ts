@@ -27,6 +27,7 @@ import { DM } from './dm.entity';
 import { Notification } from './notification.entity';
 import { Profile } from './profile.entity';
 import { Report } from './report.entity';
+import { VFriend } from './friend.view';
 
 @Index('UX_USER_SOCIAL_ID_PROVIDER', ['socialId', 'provider'], {
   unique: true,

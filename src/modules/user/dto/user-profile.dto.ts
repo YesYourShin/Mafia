@@ -2,6 +2,15 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import { User } from 'src/entities/user.entity';
 import { ProfileInfo } from '.';
 
+export class FriendProfile {
+  id: number;
+  nickname: string;
+  userId: number;
+  image: {
+    location: string;
+  } | null;
+}
+
 export class UserProfile extends PickType(User, [
   'id',
   'socialId',
@@ -11,5 +20,8 @@ export class UserProfile extends PickType(User, [
   'updatedAt',
 ]) {
   @ApiProperty({ type: () => ProfileInfo })
-  profile?: ProfileInfo;
+  profile?: ProfileInfo | null;
+
+  @ApiProperty({ type: () => FriendProfile, isArray: true })
+  friends?: FriendProfile[] | null;
 }

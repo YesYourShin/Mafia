@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportSerializer } from '@nestjs/passport';
-import { UserProfile } from '../user/dto';
+import { FriendProfile, UserProfile } from '../user/dto';
 import { UserRepository } from '../user/user.repository';
 
 @Injectable()
@@ -10,12 +10,16 @@ export class SessionSerializer extends PassportSerializer {
   }
 
   serializeUser(user: UserProfile, done: CallableFunction) {
-    done(null, user);
+    done(null, user.id);
   }
 
-  async deserializeUser(user: UserProfile, done: CallableFunction) {
+  async deserializeUser(id: number, done: CallableFunction) {
     try {
-      user = await this.userRepository.findOne({ id: user.id });
+      const user = await this.userRepository.findOne({ id });
+      const friends: FriendProfile[] = await this.userRepository.findFriend(
+        user.id,
+      );
+      user.friends = friends;
       done(null, user);
     } catch (error) {
       done(error);

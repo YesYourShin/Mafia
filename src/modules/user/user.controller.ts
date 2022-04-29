@@ -31,6 +31,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { ResponseDto } from 'src/common/dto';
 import { ExistedProfileGuard } from 'src/common/guards';
 import { ApiFile } from 'src/decorators/api-file.decorator';
@@ -52,6 +53,10 @@ import {
   UserProfile,
   ProfileInfo,
 } from './dto';
+import {
+  FindUserByNickname,
+  ResponseFindUserByNickname,
+} from './dto/response-find-user-by-nickname-dto';
 import { RankingDto, ResponseRankingDto } from './dto/response-ranking.dto';
 import { MyProfileImageGuard } from './guards/my-profile-image.guard';
 import { NumberValidationPipe } from './number-validation.pipe';
@@ -62,7 +67,6 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly imageService: ImageService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -131,6 +135,33 @@ export class UserController {
   @Get('profile/:id')
   async getUserProfile(@Param('id') id: number): Promise<ProfileInfo> {
     return await this.userService.findProfile(id);
+  }
+
+  @ApiOkResponse({
+    description: '해당 프로필 찾기 성공',
+    type: ResponseFindUserByNickname,
+  })
+  @ApiNotFoundResponse({
+    description: '프로필이 존재하지 않을 때',
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.NOT_FOUND,
+        '존재하지 않는 유저입니다',
+      ),
+    },
+  })
+  @ApiQuery({
+    name: 'nickname',
+    required: true,
+    description: '유저 닉네임',
+  })
+  @ApiOperation({ summary: '닉네임으로 유저 정보 조회' })
+  @Get('profile')
+  async findUserByNickname(
+    @Query('nickname') nickname: string,
+  ): Promise<FindUserByNickname> {
+    return await this.userService.findUserByNickname(nickname);
   }
 
   @ApiOkResponse({
@@ -242,8 +273,21 @@ export class UserController {
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '친구 신청' })
   @UseGuards(LoggedInGuard)
+  @Post('friend/:id')
+  async requestFriend(
+    @Param('id') id: number,
+    @UserDecorator() user: UserProfile,
+  ) {
+    return await this.userService.requestFriend(user.id, id);
+  }
+
   @Patch('friend/:id')
-  async requestFriend() {}
+  async acceptFriend(
+    @Param('id') id: number,
+    @UserDecorator() user: UserProfile,
+  ) {
+    return await this.userService.acceptFriend(user.id, id);
+  }
 
   @ApiOkResponse({
     description: '친구 삭제 성공',
@@ -278,7 +322,12 @@ export class UserController {
   @ApiOperation({ summary: '친구 제거' })
   @UseGuards(LoggedInGuard)
   @Delete('friend/:id')
-  async removeFriend() {}
+  async removeFriend(
+    @Param('id') id: number,
+    @UserDecorator() user: UserProfile,
+  ) {
+    return await this.userService.removeFriend(user.id, id);
+  }
 
   @ApiResponse({
     status: HttpStatus.CREATED,

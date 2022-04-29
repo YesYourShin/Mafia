@@ -1,17 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
+import { EnumStatus } from 'src/common/constants/enum-status';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 
+@Unique('UK_FRIEND_USER_ID_FRIEND_ID', ['user', 'friendId'])
 @Entity('friend')
 export class Friend {
   @ApiProperty({
@@ -29,8 +32,9 @@ export class Friend {
   })
   @IsInt()
   @IsNotEmpty()
-  @Column({ type: 'int', name: 'user_id', nullable: true })
-  userId: number | null;
+  @Index('UX_FRIEND_USER_ID', { unique: true })
+  @Column({ type: 'int', name: 'user_id' })
+  userId: number;
 
   @ManyToOne(() => User, (user) => user.friend1, {
     onUpdate: 'CASCADE',
@@ -45,8 +49,9 @@ export class Friend {
   })
   @IsInt()
   @IsNotEmpty()
-  @Column({ type: 'int', name: 'friend_id', nullable: true })
-  friendId: number | null;
+  @Index('UX_FRIEND_FRIEND_ID', { unique: true })
+  @Column({ type: 'int', name: 'friend_id' })
+  friendId: number;
 
   @ManyToOne(() => User, (user) => user.friend2, {
     onUpdate: 'CASCADE',
@@ -54,6 +59,15 @@ export class Friend {
   })
   @JoinColumn({ name: 'friend_id', referencedColumnName: 'id' })
   friend: User;
+
+  @IsEnum(EnumStatus)
+  @IsOptional()
+  @Column({
+    type: 'enum',
+    enum: [EnumStatus.ACCEPT, EnumStatus.REJECT, EnumStatus.REQUEST],
+    default: EnumStatus.REQUEST,
+  })
+  status: EnumStatus;
 
   @IsDate()
   @CreateDateColumn()

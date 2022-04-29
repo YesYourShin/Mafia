@@ -20,6 +20,7 @@ import {
 } from 'typeorm';
 import { Image } from '.';
 import { Comment } from './comment.entity';
+import { VFriend } from './friend.view';
 import { Post } from './post.entity';
 import { User } from './user.entity';
 
@@ -129,4 +130,10 @@ export class Profile {
 
   @OneToMany(() => Comment, (comments) => comments.profile)
   comments: Comment[];
+
+  @OneToMany(() => VFriend, (friends) => friends.userProfile)
+  friend1: VFriend[];
+
+  @OneToMany(() => VFriend, (friends) => friends.friendProfile)
+  friend2: VFriend[];
 }

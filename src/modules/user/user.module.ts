@@ -7,6 +7,7 @@ import { ProfileRepository } from './profile.repository';
 import { MulterModule } from '@nestjs/platform-express';
 import { ProfileMulterS3Service } from 'src/shared/profile-multer-s3.service';
 import { ImageModule } from '../image/image.module';
+import { UserEventModule } from '../gateway/user/user-event.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ImageModule } from '../image/image.module';
       useClass: ProfileMulterS3Service,
     }),
     ImageModule,
+    UserEventModule,
   ],
   controllers: [UserController],
   providers: [UserService, Logger],
