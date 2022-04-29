@@ -50,9 +50,9 @@ export class GameEventService {
       const playerJobs = await this.redisService.hget(
         this.makeGameKey(roomId),
         PLAYERJOB_FIELD
-      )
+      );
       this.logger.log(2)
-      return playerJobs
+      return playerJobs;
 
     }catch(err){
       console.log(err);
@@ -116,7 +116,7 @@ export class GameEventService {
     return await this.redisService.hget(this.makeGameKey(roomId), PLAYERNUM_FIELD);
   }
 
-  async delPlayerNum(roomId: number){
+  async delPlayerNum(roomId: number, value: number){
     return await this.redisService.hdel(this.makeGameKey(roomId), PLAYERNUM_FIELD);
   }
 

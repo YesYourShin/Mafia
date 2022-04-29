@@ -131,18 +131,28 @@ export class GameGateway
         if(player.id === user.id) {count = await this.gameEventService.setPlayerNum(roomId)}
       }
 
+    this.logger.log(count);
+
     if(gamePlayers.length === count){
-      this.gameEventService.delPlayerNum(roomId);
+      await this.gameEventService.delPlayerNum(roomId, count);
     // 비동기 신호
     setTimeout(() => { 
       this.server
         .to(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.Start, gamePlayers);
-    }, 1000);
+      }, 1000);
     }
-
+    const jobData = this.getJobData(gamePlayers.length); 
+    await this.gameEventService.setPlayerJobs(roomId, jobData,  gamePlayers.length);
   }
-
+  getJobData(playerCount: number) {
+    const mafia = 1;
+    const doctor = 1;
+    const police = 1;
+    const cr = playerCount - (mafia + doctor + police);
+    const jobData = [cr, mafia, doctor, police];
+    return jobData;
+  }
   // 직업배분
 
   // 각자의 직업만 제공
@@ -152,36 +162,15 @@ export class GameGateway
     const { roomId } = socket.data;
 
     // 현재 방의 인원
-    let gamePlayers = await this.gameEventService.findPlayers(roomId);
-    let Num = gamePlayers.length;
+    const gamePlayers = await this.gameEventService.findPlayers(roomId);
 
-
-    const mafia = 1;
-    const doctor = 1;
-    const police = 1;
-    const cr = Num - (mafia + doctor + police);
-    const jobData = [cr, mafia, doctor, police];
-
-    let count;
-    for(const player of gamePlayers){
-      if(player.id === user.id) {
-        count = await this.gameEventService.setPlayerNum(roomId);
-        break;
-      }
-    }
-
-    // 첫번째 소켓일 때, 직업 설정
-    if(count === 1){
-      await this.gameEventService.setPlayerJobs(roomId, jobData, Num);
-    }
-    
     // 특정 플레이어의 순서 === jobs[순서]
     const checkJob = await this.gameEventService.getPlayerJobs(roomId);
 
     this.logger.log(`socket:id ${socket.id}`);
     this.logger.log('변경전', gamePlayers);
 
-    for(let i = 0; i< Num; i++){
+    for(let i = 0; i< gamePlayers.length; i++){
       if(gamePlayers[i].id === user.profile.id){
         gamePlayers[i].job = checkJob[i].job;
         this.logger.log(gamePlayers[i].job);
