@@ -167,134 +167,109 @@ export class GameGateway
     // 특정 플레이어의 순서 === jobs[순서]
     const checkJob = await this.gameEventService.getPlayerJobs(roomId);
 
-    this.logger.log(`socket:id ${socket.id}`);
-    this.logger.log('변경전', gamePlayers);
-
     for(let i = 0; i< gamePlayers.length; i++){
       if(gamePlayers[i].id === user.profile.id){
         gamePlayers[i].job = checkJob[i].job;
-        this.logger.log(gamePlayers[i].job);
-        this.logger.log(checkJob[i].job);
         break;
       }
     }
-    this.logger.log('변경 후', gamePlayers);
-    // for(let i = 0; i< Num; i++){
-    //   if(gamePlayers[i].id === user.profile.id){
-    //     gamePlayers[i].job = checkJob.jobs[i];
-    //   }
-    // }
-
-    // for(let playerJob in gamePlayers){
-    //   gamePlayers[playerJob].job = checkJob[playerJob].job
-    // }
-
     this.server.in(socket.id).emit(GameEvent.Job, gamePlayers);
   }
 
-  // 하나하나 받은 투표 결과들을 배열로 추가하기
-  vote = [];
-  //배열의 합..
+  // // 하나하나 받은 투표 결과들을 배열로 추가하기
+  // vote = [];
+  // //배열의 합..
 
-  @SubscribeMessage('vote')
-  handleVote(
+  @SubscribeMessage(GameEvent.Vote)
+  async handleVote(
     @MessageBody() data: { vote: number },
     @ConnectedSocket() socket: AuthenticatedSocket
   ) {
 
     const { roomId } = socket.data;
-
-
-    // // 1. 플레이어 숫자 내일 경우 값 추가. (플레이어는 손으로 선택해서 주지만 일단.. 테스트할 때 조심하기 위해서)
-    // if (
-    //   data.voteNum <= this.gamePlayerNum &&
-    //   this.vote.length <= this.gamePlayerNum &&
-    //   typeof payload.voteNum === 'number'
-    // )
-    //   this.vote.push(payload.voteNum); //undefined
-    // this.logger.log(
-    //   `플레이어 수 : ${this.gamePlayerNum}, user: ${socket.id}, 투표 번호: ${payload.voteNum}, 총 투표수 : ${this.vote.length}`,
-    // );
+    await this.gameEventService.setVote(roomId, data.vote);
   }
 
   // 투표 합.
-  @SubscribeMessage('finishVote')
+  @SubscribeMessage(GameEvent.FinishV)
   async handleFinishVote(
-    @MessageBody() payload: { voteNum: number },
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
-    /* 낮일 시, 투표고 / 밤일 시, 능력사용?
-      낮 - 한 유저 당 선택한 USER의 NUM
+    const {roomId} = socket.data;
+    const {user} = socket.request;
+    const newNamespace = socket.nsp;
 
-      밤 - 한 유저의 직업 + 선택한 USER의 NUM - 특수직업 만큼만.
-     */
-    if (this.roomClient.length === 0) this.logger.log(`직업 분배부터 부탁함.`);
-    const gamePlayers = await this.server.in(this.roomName).allSockets();
-    this.gamePlayerNum = gamePlayers.size;
-    let redisVote = [];
+    const gamePlayers = await this.gameEventService.getPlayerJobs(roomId);
 
-    //roomClient - 숫자, user, 직업.
+    let count;
+    //count
+    for(const player of gamePlayers){
+        if(player.id === user.id) {count = await this.gameEventService.setPlayerNum(roomId)
+        break;}
+      }
 
-    if (this.vote.length === this.gamePlayerNum) {
-      this.vote.forEach((element) => {
-        redisVote[element] = (redisVote[element] || 0) + 1;
-      });
+    if(gamePlayers.length === count){
+      await 
+      const vote = await this.gameEventService.getVote(roomId);
+      const result = this.gameEventService.finishVote(vote);
 
-      const voteUser = [];
+      this.logger.log(result);
 
-      Object.keys(redisVote).forEach((value) => {
-        this.logger.log(value);
-        const data = {
-          num: value,
-          user: this.roomClient[+value - 1].user,
-          voteSum: redisVote[value],
-        };
-
-        voteUser.push(data);
-      });
-
-      redisVote = voteUser.sort(function (a, b) {
-        return b.vote - a.vote;
-      });
-
-      this.logger.log(redisVote);
-
-      this.server.to(this.roomName).emit('finishVote', {
-        voteResult: redisVote,
-      });
+      this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FinishV, result);
     }
   }
+
+  @SubscribeMessage(GameEvent.Punish)
+  async handlePunish(
+    @MessageBody() data: { punish: number },
+    @ConnectedSocket() socket: AuthenticatedSocket
+  ) {
+    const { roomId } = socket.data;
+    await this.gameEventService.setVote(roomId, data.punish);
+  }
+
+  @SubscribeMessage(GameEvent.FinishP)
+  async handleFinishPunish(
+    @MessageBody() data: { vote: number },
+    @ConnectedSocket() socket: AuthenticatedSocket
+  ) {
+
+    const { roomId } = socket.data;
+    await this.gameEventService.setVote(roomId, data.vote);
+  }
+  
+  
 
   punis = [];
 
   // 찬반투표
-  @SubscribeMessage('startPunishmentVote')
-  handleStartPunishmentVote(
-    @MessageBody() payload: { Punishment: boolean; user: string },
-    @ConnectedSocket() socket: Socket,
-  ) {
-    this.logger.log(` ${payload.Punishment}`);
-    if (
-      this.vote.length <= this.gamePlayerNum &&
-      typeof payload.Punishment === 'boolean'
-    )
-      this.punis.push(payload.Punishment);
-    if (this.punis.length === this.gamePlayerNum) {
-      const punisAgreement = this.punis.filter((item) => item === true).length; //찬성 수
+  // @SubscribeMessage('startPunishmentVote')
+  // handleStartPunishmentVote(
+  //   @MessageBody() payload: { Punishment: boolean; user: string },
+  //   @ConnectedSocket() socket: Socket,
+  // ) {
+  //   this.logger.log(` ${payload.Punishment}`);
+  //   if (
+  //     this.vote.length <= this.gamePlayerNum &&
+  //     typeof payload.Punishment === 'boolean'
+  //   )
+  //     this.punis.push(payload.Punishment);
+  //   if (this.punis.length === this.gamePlayerNum) {
+  //     const punisAgreement = this.punis.filter((item) => item === true).length; //찬성 수
 
-      this.logger.log(` 찬성 : ${punisAgreement}`);
+  //     this.logger.log(` 찬성 : ${punisAgreement}`);
 
-      const punisOpposition = this.gamePlayerNum - punisAgreement;
+  //     const punisOpposition = this.gamePlayerNum - punisAgreement;
 
-      this.server.to(this.roomName).emit('startPunishmentVote', {
-        voteResult: {
-          user: payload.user,
-          Agreement: punisAgreement,
-          Opposition: punisOpposition,
-        },
-      });
-    }
-  }
+  //     this.server.to(this.roomName).emit('startPunishmentVote', {
+  //       voteResult: {
+  //         user: payload.user,
+  //         Agreement: punisAgreement,
+  //         Opposition: punisOpposition,
+  //       },
+  //     });
+  //   }
+  // }
 
   // 사형.death
   @SubscribeMessage('death')

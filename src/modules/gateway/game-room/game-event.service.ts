@@ -4,7 +4,7 @@ import { interval } from 'rxjs';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
-import { GAME, INFO_FIELD, PLAYERJOB_FIELD, PLAYERNUM_FIELD, PLAYER_FIELD, VOTE_FIELD } from './constants';
+import { GAME, INFO_FIELD, NUM_FIELD, PLAYERJOB_FIELD, PLAYERNUM_FIELD, PLAYER_FIELD, PUNISH_FIELD, VOTE_FIELD } from './constants';
 
 // 직업 부여 분리
 @Injectable()
@@ -40,11 +40,6 @@ export class GameEventService {
     return players;
   }
 
-  // async findPlayer(roomId: number, playerId: number) {
-  //   const players = await this.findPlayers(roomId);
-  //   return this.getMemberInGameRoomMember(members, memberId);
-  // }
-
   async getPlayerJobs(roomId: number){
     try {
       const playerJobs = await this.redisService.hget(
@@ -68,10 +63,6 @@ export class GameEventService {
    }
     return await this.redisService.hset(this.makeGameKey(roomId), PLAYERJOB_FIELD , playerJobs);
   }
-
-  // setVote(roomId: number,){
-  //   await this.redisService.hset(this.makeGameKey(room), VOTE_FIELD, {})
-  // }
 
   grantJob(job: number[], Num: number){
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
@@ -108,6 +99,34 @@ export class GameEventService {
     return `${GAME}:${roomId}`;
   }
 
+  finishVote(vote: number[]){
+    let redisVote = [];
+
+    // 해당 숫자값 세주기
+    vote.forEach((element) => {
+      redisVote[element] = (redisVote[element] || 0) + 1;
+    });
+
+    // 정렬 내림차순으로
+    redisVote = redisVote.sort(function (a, b) {
+      return b.vote - a.vote;
+    });
+
+    return redisVote;
+  }
+
+  async setPunish(roomId:number, punish:boolean){
+    await this.redisService.hset(this.makeGameKey(roomId), PUNISH_FIELD, punish);
+  }
+
+  async setVote(roomId:number, vote:number ){
+    await this.redisService.hset(this.makeGameKey(roomId), VOTE_FIELD, vote);
+  }
+
+  async getVote(roomId:number ){
+    return await this.redisService.hget(this.makeGameKey(roomId), VOTE_FIELD);
+  }
+
   async setPlayerNum(roomId: number) {
     return await this.redisService.hincrby(this.makeGameKey(roomId), PLAYERNUM_FIELD);
   }
@@ -119,6 +138,16 @@ export class GameEventService {
   async delPlayerNum(roomId: number, value: number){
     return await this.redisService.hdel(this.makeGameKey(roomId), PLAYERNUM_FIELD);
   }
+
+  async setNum(roomId: number){
+    return await this.redisService.hget(this.makeGameKey(roomId), NUM_FIELD);
+  }
+
+  async delNum(roomId: number, value: number){
+    return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
+  }
+
+
 
   async savePlayerJob(
     key: string,
