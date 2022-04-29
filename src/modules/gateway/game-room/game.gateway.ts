@@ -133,61 +133,63 @@ export class GameGateway
   }
 
   // 직업 배분
-  // @SubscribeMessage(GameEvent.Job)
-  // async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
-  //   const { user } = socket.request;
-  //   const { roomId } = socket.data;
-  //   const newNamespace = socket.nsp;
+  @SubscribeMessage(GameEvent.Job)
+  async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { user } = socket.request;
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
 
-  //   const gamePlayers = await this.gameEventService.findPlayers(roomId);
+    const gamePlayers = await this.gameEventService.findPlayers(roomId);
 
-  //   this.logger.log(gamePlayers);
+    this.logger.log(gamePlayers);
 
-  //   const mafia = 1;
-  //   const doctor = 1;
-  //   const police = 1;
-  //   const cr = this.gamePlayerNum - (mafia + doctor + police);
+    const mafia = 1;
+    const doctor = 1;
+    const police = 1;
+    const cr = this.gamePlayerNum - (mafia + doctor + police);
 
-  //   const jobData = [cr, mafia, doctor, police];
-  //   let roomJob = []; //해당 방의 직업
-  //   const roomC = [];
+    const jobData = [cr, mafia, doctor, police];
+    let roomJob = []; //해당 방의 직업
 
-  //   // 자신의 직업만 보내줘야 함. 해당 소켓에다가
+    // 자신의 직업만 보내줘야 함. 해당 소켓에다가
 
-  //   // 직업 분배 + 셔플
-  //   roomJob = this.gameEventService.GrantJob({
-  //     playerNum: this.gamePlayerNum,
-  //     jobData: jobData,
-  //   });
+    // 직업 분배 + 셔플
+    roomJob = this.gameEventService.GrantJob({
+      playerNum: this.gamePlayerNum,
+      jobData: jobData,
+    });
 
-  //   for (let i = 0; i < this.gamePlayerNum; i++) {
-  //     gamePlayers[i].job = roomJob[i];
+    for (let i = 0; i < this.gamePlayerNum; i++) {
+      if (user.id === i + 1) {
+        gamePlayers[user.id].job = roomJob[user.id];
+        this.logger.log(roomJob[user.id]);
+        this.server.in(socket.id).emit(GameEvent.Job, gamePlayers);
+      }
+      // gamePlayers[i].job = roomJob[i];
 
-  //     this.server.in(socket.id).emit(GameEvent.Job);
+      // const data = {
+      //   num: i + 1,
+      //   user: Array.from(this.gamePlayers)[i],
+      //   job: roomJob[i],
+      //   die: false,
+      // };
+      // roomC.push(data);
+    }
 
-  //     // const data = {
-  //     //   num: i + 1,
-  //     //   user: Array.from(this.gamePlayers)[i],
-  //     //   job: roomJob[i],
-  //     //   die: false,
-  //     // };
-  //     // roomC.push(data);
-  //   }
+    // for (let i = 0; i < this.gamePlayerNum; i++) {
+    //   const data = {
+    //     num: i + 1,
+    //     user: Array.from(this.gamePlayers)[i],
+    //     job: roomJob[i],
+    //     die: false,
+    //   };
+    //   roomC.push(data);
+    // }
 
-  //   // for (let i = 0; i < this.gamePlayerNum; i++) {
-  //   //   const data = {
-  //   //     num: i + 1,
-  //   //     user: Array.from(this.gamePlayers)[i],
-  //   //     job: roomJob[i],
-  //   //     die: false,
-  //   //   };
-  //   //   roomC.push(data);
-  //   // }
-
-  //   // this.logger.log(this.roomClient);
-  //   // this.logger.log(roomC);
-  //   // this.roomClient = roomC;
-  // }
+    // this.logger.log(this.roomClient);
+    // this.logger.log(roomC);
+    // this.roomClient = roomC;
+  }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];
