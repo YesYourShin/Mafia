@@ -18,6 +18,7 @@ import { GamePlayerGuard } from '../guards/game-player.guard';
 import { GameEvent } from './constants';
 import { Game } from '../../../entities/game.entity';
 import dayjs from 'dayjs';
+import { Index } from 'typeorm';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -38,10 +39,10 @@ export class GameGateway
   roomName = 'room1'; //방 이름.
   roomClient = []; // room인원
   private gamePlayerNum = 0;
-  private gamePlayers;
+
   // 마피아는 인원수에 따라 변경 6부터 1명 , 나미저 2명
 
-  typesOfJobs = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+  // typesOfJobs = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
   // 서버에서 시간을 돌려야 하는 것도 있다. - 서버에서 시간을 돌린다.
   // @SubscribeMessage('counter')
@@ -103,8 +104,6 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    this.logger.log(roomId);
-
     // default - 밤 - false
     if (data.day === false) {
       const thisDay = !data.day;
@@ -128,9 +127,10 @@ export class GameGateway
 
     gamePlayers.map((value)=>{if(value.id === user.id) this.gameEventService.setPlayerNum(roomId) })
 
-    const count = await this.gameEventService.getPlayerNum(roomId)
+    const count = await this.gameEventService.getPlayerNum(roomId);
 
     if(gamePlayers.length === count){
+      this.gameEventService.delPlayerNum(roomId);
     // 비동기 신호
     setTimeout(() => { 
       this.server
@@ -141,51 +141,53 @@ export class GameGateway
 
   }
 
-  // 직업 배분
-  // @SubscribeMessage(GameEvent.Job)
-  // async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
-  //   const { user } = socket.request;
-  //   const { roomId } = socket.data;
-  //   const newNamespace = socket.nsp;
+  // 직업배분
 
-  //   // 현재 방의 인원
-  //   let gamePlayers = await this.gameEventService.findPlayers(roomId);
+  // 각자의 직업만 제공
+  @SubscribeMessage(GameEvent.Job)
+  async handleGrantJob(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { user } = socket.request; 
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
 
-  //   this.logger.log("직업 분배 job", gamePlayers);
+    // 현재 방의 인원
+    let gamePlayers = await this.gameEventService.findPlayers(roomId);
+    let Num = gamePlayers.length;
 
-  //   const mafia = 1;
-  //   const doctor = 1;
-  //   const police = 1;
-  //   const cr = gamePlayers.length - (mafia + doctor + police);
+    const mafia = 1;
+    const doctor = 1;
+    const police = 1;
+    const cr = Num - (mafia + doctor + police);
+    const jobData = [cr, mafia, doctor, police];
 
-  //   const jobData = [cr, mafia, doctor, police];
-  //   let roomJob = []; //해당 방의 직업
+    // // count
+    let count;
+    for(const player of gamePlayers){
+      if(player.id === user.id) {count = await this.gameEventService.setPlayerNum(roomId)}
+    }
 
-  //   // 자신의 직업만 보내줘야 함. 해당 소켓에다가
-  //   this.logger.log(gamePlayers);
-
-  //   // 직업 분배 + 셔플
-  //   if(!roomJob)
-  //   roomJob = this.gameEventService.GrantJob({
-  //     playerNum: this.gamePlayerNum,
-  //     jobData: jobData,
-  //   });
-
-  //   // 
-
-  //   // 유저 정보가 일치하는 것
-  //   for (let i = 0; i < this.gamePlayerNum; i++) {
-  //       gamePlayers[i].job = roomJob[i];
-  //       this.logger.log(`hello 유저 직업 중 ${i}번째`);
-  //       this.logger.log(gamePlayers);
-  //   }
-
-  //   this.logger.log(gamePlayers);
-
-
-  //   this.server.in(socket.id).emit(GameEvent.Job, user);
+    // 첫번째 소켓일 때, 직업 설정
+    if(count === 1){
+      await this.gameEventService.setJobs(roomId, jobData, Num);
+    }
     
-  // }
+    // 특정 플레이어의 순서 === jobs[순서]
+    let checkJob = await this.gameEventService.getJobs(roomId);
+
+    for(let i = 0; i< Num; i++){
+      if(gamePlayers[i].id === user.profile.id){
+      this.logger.log(user);
+      this.logger.log(`jobs : ${checkJob.jobs[i]}`);
+      this.logger.log(`user.id : ${user.id}`);
+        gamePlayers[i].job = checkJob.jobs[i];
+      }
+    }
+
+    this.logger.log(`socket.id : ${socket.id}`);
+    this.logger.log(gamePlayers);
+    this.server.in(socket.id).emit(GameEvent.Job, gamePlayers);
+    
+  }
 
   // 하나하나 받은 투표 결과들을 배열로 추가하기
   vote = [];

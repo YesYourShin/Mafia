@@ -4,7 +4,7 @@ import { interval } from 'rxjs';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
-import { GAME, INFO_FIELD, PLAYERNUM_FIELD, PLAYER_FIELD } from './constants';
+import { GAME, INFO_FIELD, PLAYERJOB_FIELD, PLAYERNUM_FIELD, PLAYER_FIELD } from './constants';
 
 // 직업 부여 분리
 @Injectable()
@@ -45,22 +45,16 @@ export class GameEventService {
   }
 
   async setPlayerNum(roomId: number) {
-    await this.redisService.hincrby(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+    return await this.redisService.hincrby(this.makeGameKey(roomId), PLAYERNUM_FIELD);
   }
 
   async getPlayerNum(roomId: number){
     return await this.redisService.hget(this.makeGameKey(roomId), PLAYERNUM_FIELD);
   }
-  // this.makeRoomKey(roomId), MEMBER_FIELD, newMembers
 
-  // async Job(roomId: number, Player: ] ): Promise<Player[] | object>{
-    
-
-  //   await this.savePlayerJob(this.makeGameKey(roomId), PLAYER_FIELD, jobPlayer);
-
-  //   return jobPlayer;
-  // }
-
+  async delPlayerNum(roomId: number){
+    return await this.redisService.hdel(this.makeGameKey(roomId), PLAYERNUM_FIELD);
+  }
 
   async savePlayerJob(
     key: string,
@@ -70,28 +64,30 @@ export class GameEventService {
     return await this.redisService.hset(key, field, player);
   }
 
-  GrantJob(data: { playerNum: number; jobData: number[] }) {
-    this.logger.log(`grantjob ` + data.jobData);
+  async getJobs(roomId: number){
+    const playerJob = await this.redisService.hget(this.makeGameKey(roomId), PLAYERJOB_FIELD); 
+    
+    return playerJob
+  }
+  
+  async setJobs(roomId: number, job:number[], Num:number){
+    const jobs = this.grantJob(job, Num);
+    
+    await this.redisService.hset(this.makeGameKey(roomId), PLAYERJOB_FIELD , {jobs: jobs});
+  }
+
+  grantJob(job: number[], Num: number){
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
-    let Job = []; //해당 방의 직업
-
-    // 분배 +
-    for (let item = 0; item < data.playerNum; item++) {
-      const ran = Math.floor(Math.random() * grantJob.length); //직업
-      const jobCountData = Job.filter((item) => item === grantJob[ran]).length; //현재 같은 직업 수
-
-      if (jobCountData < data.jobData[ran]) {
-        Job.push(grantJob[ran]);
-      } else {
-        item--;
-      }
+    let roomJob = []; //해당 방의 직업
+    let typesOfJobs = 0;
+    for(let jobs = 0; jobs < Num; jobs++ ){
+      roomJob.push(grantJob[typesOfJobs]);
+      job[jobs]--;
+      if(!job[typesOfJobs]) typesOfJobs++;
     }
-    this.logger.log(`grantjob` + Job);
 
-    Job = this.shuffle(Job);
-
-    return Job;
+    return this.shuffle(roomJob);
   }
 
   shuffle(job: string[]) {
@@ -106,7 +102,7 @@ export class GameEventService {
       strikeOut.push(job.pop());
     }
 
-    this.logger.log(`grantjob` + strikeOut);
+    this.logger.log(`grantjob ` + strikeOut);
 
     return strikeOut;
   }
