@@ -20,6 +20,10 @@ export class RedisService {
     return await this.redis.hmget(key, fields);
   }
 
+  async hincrby(key: string, field: string){
+    return await this.redis.hincrby(key, field, 1);
+  }
+
   async hkeys(key: string): Promise<string[]> {
     return await this.redis.hkeys(key);
   }
