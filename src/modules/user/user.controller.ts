@@ -31,7 +31,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 import { ResponseDto } from 'src/common/dto';
 import { ExistedProfileGuard } from 'src/common/guards';
 import { ApiFile } from 'src/decorators/api-file.decorator';
@@ -44,7 +43,6 @@ import {
   ResponseS3ImageObject,
   S3ImageObject,
 } from '../image/dto/s3-image-object';
-import { ImageService } from '../image/image.service';
 import {
   ResponseUserProfileDto,
   UpdateProfileDto,
@@ -53,6 +51,7 @@ import {
   UserProfile,
   ProfileInfo,
 } from './dto';
+import { RequestFriendRequestDto } from './dto/request-friend-request-dto';
 import {
   FindUserByNickname,
   ResponseFindUserByNickname,
@@ -269,31 +268,56 @@ export class UserController {
       ),
     },
   })
-  @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
+  @ApiParam({ name: 'id', required: true, description: '친구 신청 받는 유저' })
+  @ApiParam({
+    name: 'requestId',
+    required: true,
+    description: '친구 신청 보내는 유저',
+  })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '친구 신청' })
   @UseGuards(LoggedInGuard)
-  @Post('friend/:id')
+  @Post(':id/requests/friends/:requestId')
   async requestFriend(
     @Param('id') id: number,
+    @Param('requestId') requestId: number,
     @UserDecorator() user: UserProfile,
   ) {
-    return await this.userService.requestFriend(user.id, id);
+    return await this.userService.requestFriend(user.profile, id, requestId);
   }
 
-  @Patch('friend/:id')
-  async acceptFriend(
+  @ApiOkResponse({
+    description: '친구 수락',
+    type: ResponseProfileDto,
+  })
+  @ApiParam({ name: 'id', required: true, description: '친구 신청 받는 유저' })
+  @ApiParam({
+    name: 'requestId',
+    required: true,
+    description: '친구 신청 보낸 유저',
+  })
+  @Patch(':id/requests/friends/:requestId')
+  @UseGuards(LoggedInGuard)
+  async friendAction(
     @Param('id') id: number,
+    @Param('requestId') requestId: number,
+    @Body() requestFriendRequestDto: RequestFriendRequestDto,
     @UserDecorator() user: UserProfile,
   ) {
-    return await this.userService.acceptFriend(user.id, id);
+    return await this.userService.friendAction(
+      user.profile,
+      id,
+      requestId,
+      requestFriendRequestDto,
+    );
   }
 
   @ApiOkResponse({
     description: '친구 삭제 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        message: '친구 삭제 완료',
+        delete: true,
+        friendId: 1,
       }),
     },
   })
@@ -317,16 +341,18 @@ export class UserController {
       ),
     },
   })
-  @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
+  @ApiParam({ name: 'id', required: true, description: '요청 유저 아이디' })
+  @ApiParam({ name: 'friendId', required: true, description: '친구 아이디' })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '친구 제거' })
   @UseGuards(LoggedInGuard)
-  @Delete('friend/:id')
+  @Delete(':id/friend/:friendId')
   async removeFriend(
     @Param('id') id: number,
+    @Param('friendId') friendId: number,
     @UserDecorator() user: UserProfile,
   ) {
-    return await this.userService.removeFriend(user.id, id);
+    return await this.userService.removeFriend(id, friendId);
   }
 
   @ApiResponse({

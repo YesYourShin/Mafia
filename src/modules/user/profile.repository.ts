@@ -7,7 +7,6 @@ import {
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Profile } from 'src/entities';
-import { FindUserByNickname } from './dto/response-find-user-by-nickname-dto';
 
 export interface ProfileFindOption {
   nickname: string;
@@ -82,7 +81,7 @@ export class ProfileRepository extends AbstractRepository<Profile> {
       .execute();
   }
 
-  async findNickname(nickname: string) {
+  async findByNickname(nickname: string) {
     return await this.repository
       .createQueryBuilder('profile')
       .where('profile.nickname = :nickname', { nickname })

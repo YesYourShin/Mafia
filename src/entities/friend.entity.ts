@@ -12,7 +12,7 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+import { Profile } from './profile.entity';
 
 @Unique('UK_FRIEND_USER_ID_FRIEND_ID', ['user', 'friendId'])
 @Entity('friend')
@@ -36,12 +36,12 @@ export class Friend {
   @Column({ type: 'int', name: 'user_id' })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.friend1, {
+  @ManyToOne(() => Profile, (user) => user.friend1, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'userId' })
+  user: Profile;
 
   @ApiProperty({
     example: 1,
@@ -53,12 +53,12 @@ export class Friend {
   @Column({ type: 'int', name: 'friend_id' })
   friendId: number;
 
-  @ManyToOne(() => User, (user) => user.friend2, {
+  @ManyToOne(() => Profile, (user) => user.friend2, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'friend_id', referencedColumnName: 'id' })
-  friend: User;
+  @JoinColumn({ name: 'friend_id', referencedColumnName: 'userId' })
+  friend: Profile;
 
   @IsEnum(EnumStatus)
   @IsOptional()

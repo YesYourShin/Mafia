@@ -20,6 +20,7 @@ import {
 } from 'typeorm';
 import { Image } from '.';
 import { Comment } from './comment.entity';
+import { Friend } from './friend.entity';
 import { VFriend } from './friend.view';
 import { Post } from './post.entity';
 import { User } from './user.entity';
@@ -102,7 +103,8 @@ export class Profile {
     description: '유저 ID',
   })
   @IsInt()
-  @Column({ type: 'int', name: 'user_id', nullable: true })
+  @Index('UX_PROFILE_USER_ID', { unique: true })
+  @Column({ type: 'int', name: 'user_id', unique: true })
   userId: number;
 
   @OneToOne(() => User, (user) => user.profile, {
@@ -131,9 +133,15 @@ export class Profile {
   @OneToMany(() => Comment, (comments) => comments.profile)
   comments: Comment[];
 
-  @OneToMany(() => VFriend, (friends) => friends.userProfile)
-  friend1: VFriend[];
+  @OneToMany(() => VFriend, (friends) => friends.vUser)
+  vFriend1: VFriend[];
 
-  @OneToMany(() => VFriend, (friends) => friends.friendProfile)
-  friend2: VFriend[];
+  @OneToMany(() => VFriend, (friends) => friends.vFriend)
+  vFriend2: VFriend[];
+
+  @OneToMany(() => Friend, (friends) => friends.user)
+  friend1: Friend[];
+
+  @OneToMany(() => Friend, (friends) => friends.friend)
+  friend2: Friend[];
 }

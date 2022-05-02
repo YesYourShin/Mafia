@@ -18,11 +18,11 @@ export class VFriend {
   userId: number;
   @ManyToOne(() => Profile, (profile) => profile.friend1)
   @JoinColumn({ name: 'user_id', referencedColumnName: 'userId' })
-  userProfile: Profile;
+  vUser: Profile;
 
   @ViewColumn({ name: 'friend_id' })
   friendId: number;
   @ManyToOne(() => Profile, (profile) => profile.friend2)
   @JoinColumn({ name: 'friend_id', referencedColumnName: 'userId' })
-  friendProfile: Profile;
+  vFriend: Profile;
 }

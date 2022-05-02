@@ -91,12 +91,6 @@ export class User {
   @OneToMany(() => Like, (likes) => likes.user)
   likes: Like[];
 
-  @OneToMany(() => Friend, (friends) => friends.user)
-  friend1: Friend[];
-
-  @OneToMany(() => Friend, (friends) => friends.friend)
-  friend2: Friend[];
-
   @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
   gameMembers: GameMember[];
 

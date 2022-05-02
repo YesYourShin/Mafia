@@ -144,7 +144,7 @@ export class UserRepository extends AbstractRepository<User> {
     const qb = getConnection()
       .createQueryBuilder()
       .from(VFriend, 'friend')
-      .leftJoin('friend.friendProfile', 'profile')
+      .leftJoin('friend.vFriend', 'profile')
       .leftJoin('profile.image', 'image')
       .select(['profile.id', 'profile.userId', 'profile.nickname'])
       .addSelect(['image.location'])
@@ -156,5 +156,15 @@ export class UserRepository extends AbstractRepository<User> {
     }
 
     return await qb.getMany();
+  }
+
+  async existFriendRequest(userId: number, friendId: number) {
+    return await getConnection()
+      .createQueryBuilder()
+      .from(Friend, 'friend')
+      .where('friend.userId = :userId', { userId })
+      .andWhere('friend.friendId = :friendId', { friendId })
+      .andWhere('friend.status = :status', { status: EnumStatus.REQUEST })
+      .getOne();
   }
 }
