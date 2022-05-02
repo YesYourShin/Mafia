@@ -156,6 +156,8 @@ export class GameGateway
         break;
       }
     }
+
+    this.logger.log(`socket.id: ${socket.id}`);
     this.server.in(socket.id).emit(GameEvent.Job, Players);
   }
 
@@ -190,7 +192,7 @@ export class GameGateway
       await this.gameEventService.delPlayerNum(roomId);
 
       const vote = await this.gameEventService.getVote(roomId);
-      const result = this.gameEventService.finishVote(vote);
+      const result = await this.gameEventService.finishVote(roomId, vote);
 
       this.logger.log(result);
 
@@ -247,6 +249,17 @@ export class GameGateway
       //     Opposition: Opposition,
       //   },
       // });
+
+      if (gamePlayers.length / 2 < Agreement) {
+        // 죽이려는 대상 찾기
+        const humon = await this.gameEventService.votedeath(roomId);
+        this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
+
+        const death = await this.gameEventService.death(roomId, humon);
+        this.server
+          .to(`${newNamespace.name}-${roomId}`)
+          .emit(GameEvent.FinishP, death); //죽음의 결과.
+      }
     }
   }
 
@@ -257,21 +270,9 @@ export class GameGateway
 
   // 사형.death
   // async handleDeath(roomId: number, userNum: number) {
-  //  userNum - 1 가
-
+  // //  userNum - 1 가
   // const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
-
-  // gamePlayer
-
-  // this.logger.log(` ${payload.agrement}`);
-  // if (payload.agrement === true) {
-  //   this.roomClient.filter((client) => {
-  //     if (client.user == payload.user) {
-  //       client.dead = true;
-  //     }
-  //   });
-  // }
-  // this.server.to(this.roomName).emit('death', this.roomClient);
+  // // this.server.to(this.roomName).emit('death', this.roomClient);
   // }
 
   // @SubscribeMessage('dayNight')

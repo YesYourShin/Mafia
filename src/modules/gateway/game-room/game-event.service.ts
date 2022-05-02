@@ -5,9 +5,9 @@ import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import {
+  FINSH_VOTE_FIELD,
   GAME,
   INFO_FIELD,
-  NUM_FIELD,
   PLAYERJOB_FIELD,
   PLAYERNUM_FIELD,
   PLAYER_FIELD,
@@ -62,6 +62,30 @@ export class GameEventService {
     }
   }
 
+  async votedeath(roomId: number) {
+    const votehumon = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      FINSH_VOTE_FIELD,
+    );
+
+    this.logger.log(`죽이려는 대상의 번호가 맞나..? ${votehumon}`);
+
+    return votehumon.key[0];
+  }
+
+  async death(roomId: number, userNum: number) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+    gamePlayer[userNum].die = !gamePlayer[userNum].die;
+
+    this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERJOB_FIELD,
+      gamePlayer,
+    );
+
+    return gamePlayer;
+  }
+
   async setPlayerJobs(roomId: number, job: number[], Num: number) {
     const jobs = this.grantJob(job, Num);
     const playerJobs = await this.findPlayers(roomId);
@@ -111,7 +135,7 @@ export class GameEventService {
     return `${GAME}:${roomId}`;
   }
 
-  finishVote(vote: number[]) {
+  async finishVote(roomId: number, vote: number[]): Promise<any[]> {
     let redisVote = [];
 
     // 해당 숫자값 세주기
@@ -124,10 +148,16 @@ export class GameEventService {
       return b.vote - a.vote;
     });
 
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      FINSH_VOTE_FIELD,
+      redisVote,
+    );
+
     return redisVote;
   }
 
-  async setPunish(roomId: number, punish: boolean) {
+  async setPunish(roomId: number, punish: boolean): Promise<any> {
     await this.redisService.hset(
       this.makeGameKey(roomId),
       PUNISH_FIELD,
@@ -135,7 +165,7 @@ export class GameEventService {
     );
   }
 
-  async getPunish(roomId: number) {
+  async getPunish(roomId: number): Promise<number> {
     const punish = await this.redisService.hget(
       this.makeGameKey(roomId),
       VOTE_FIELD,
@@ -148,15 +178,43 @@ export class GameEventService {
     return punisAgreement;
   }
 
-  async setVote(roomId: number, vote: number) {
-    await this.redisService.hset(this.makeGameKey(roomId), VOTE_FIELD, vote);
+  async usePoliceState(
+    roomId: number,
+    userNum: number,
+    user: UserProfile,
+  ): Promise<string> {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    let userJob, police;
+
+    for (const player of gamePlayer) {
+      if (player.id === user.profile.id) {
+        police = player.job;
+      }
+
+      userJob = gamePlayer[userNum].job;
+    }
+
+    if (police !== 'POLICE') {
+      throw new WsException('경찰이 아닙니다.');
+    } else {
+      return userJob;
+    }
   }
 
-  async getVote(roomId: number) {
+  async setVote(roomId: number, vote: number): Promise<any> {
+    return await this.redisService.hset(
+      this.makeGameKey(roomId),
+      VOTE_FIELD,
+      vote,
+    );
+  }
+
+  async getVote(roomId: number): Promise<number[]> {
     return await this.redisService.hget(this.makeGameKey(roomId), VOTE_FIELD);
   }
 
-  async setPlayerNum(roomId: number) {
+  async setPlayerNum(roomId: number): Promise<number> {
     return await this.redisService.hincrby(
       this.makeGameKey(roomId),
       PLAYERNUM_FIELD,
@@ -175,33 +233,5 @@ export class GameEventService {
       this.makeGameKey(roomId),
       PLAYERNUM_FIELD,
     );
-  }
-
-  async savePlayerJob(
-    key: string,
-    field: string,
-    player: Player[],
-  ): Promise<any> {
-    return await this.redisService.hset(key, field, player);
-  }
-
-  async usePoliceState(roomId: number, userNum: number, user: UserProfile) {
-    const gamePlayer = await this.getPlayerJobs(roomId);
-
-    let userJob, police;
-
-    for (const player of gamePlayer) {
-      if (player.id === user.profile.id) {
-        police = player.job;
-      }
-
-      userJob = gamePlayer[userNum].job;
-    }
-
-    if (police !== 'POLICE') {
-      throw new WsException('경찰이 아닙니다.');
-    } else {
-      return userJob;
-    }
   }
 }
