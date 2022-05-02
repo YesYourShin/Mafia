@@ -48,6 +48,9 @@ export class GameRoomGateway
 
     try {
       await socket.join(`${newNamespace.name}-${roomId}`);
+      if (roomId === 0) {
+        return;
+      }
 
       const member = new Member(user.profile);
       await this.gameRoomEventService.join(roomId, member);
@@ -118,7 +121,7 @@ export class GameRoomGateway
 
     const newNamespace = socket.nsp;
 
-    console.log(message);
+    this.logger.log(`${user.profile.nickname}님이 ${message}를 보냈습니다.`);
 
     try {
       this.server
@@ -137,16 +140,20 @@ export class GameRoomGateway
   async handleLeave(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
     const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+    socket.data = null;
 
     const member = new Member(user.profile);
 
-    await this.gameRoomEventService.leave(roomId, user.id);
+    try {
+      await this.gameRoomEventService.leave(roomId, user.id);
 
-    const newNamespace = socket.nsp;
-
-    this.server
-      .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameRoomEvent.LEAVE, { member });
+      this.server
+        .to(`${newNamespace.name}-${roomId}`)
+        .emit(GameRoomEvent.LEAVE, { member });
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   async handleConnection(@ConnectedSocket() socket: Socket) {}
@@ -155,7 +162,12 @@ export class GameRoomGateway
     const { user } = socket.request;
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
-    // socket.data = null;
+
+    if (!roomId) {
+      return;
+    }
+
+    socket.data = null;
 
     try {
       const members = await this.gameRoomEventService.leave(roomId, user.id);

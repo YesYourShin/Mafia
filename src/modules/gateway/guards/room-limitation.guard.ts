@@ -16,6 +16,9 @@ export class RoomLimitationGuard implements CanActivate {
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { roomId } = context.switchToWs().getData();
+    if (roomId === 0) {
+      return true;
+    }
 
     const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
 
