@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Logger, UseGuards } from '@nestjs/common';
+import { Inject, Logger, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,7 +9,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { GameEventService } from './game-event.service';
 import { AuthenticatedSocket } from './constants/authenticated-socket';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
@@ -117,7 +117,7 @@ export class GameGateway
     this.logger.log(count);
 
     if (Players.length === count) {
-      await this.gameEventService.delPlayerNum(roomId, count);
+      await this.gameEventService.delPlayerNum(roomId);
       // 비동기 신호
       setTimeout(() => {
         this.server
@@ -200,7 +200,7 @@ export class GameGateway
         .to(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.FinishV, result);
 
-      await this.gameEventService.delPlayerNum(roomId, count);
+      await this.gameEventService.delPlayerNum(roomId);
     }
   }
 
@@ -242,7 +242,7 @@ export class GameGateway
 
     if (gamePlayers.length === count) {
       const Agreement = await this.gameEventService.getPunish(roomId);
-      const Opposition = gamePlayers.length - Agreement;
+      // const Opposition = gamePlayers.length - Agreement;
 
       // 버전 1 , 찬성값만 주기
       this.server
@@ -257,7 +257,7 @@ export class GameGateway
       //   },
       // });
 
-      await this.gameEventService.delPlayerNum(roomId, count);
+      await this.gameEventService.delPlayerNum(roomId);
     }
   }
 
@@ -381,8 +381,11 @@ export class GameGateway
     );
   }
   // socket이 연결 끊겼을 때
-  async handleDisconnect(@ConnectedSocket() socket: Socket) {
-    socket.leave(this.roomName);
+  async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const newNamespace = socket.nsp;
+    const { roomId } = socket.data;
+
+    socket.leave(`${newNamespace.name}-${roomId}`);
     this.logger.log(`socket disconnected: ${socket.id}`);
   }
 

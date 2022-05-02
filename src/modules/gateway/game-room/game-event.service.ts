@@ -1,6 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
-import { interval } from 'rxjs';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
@@ -171,7 +170,7 @@ export class GameEventService {
     );
   }
 
-  async delPlayerNum(roomId: number, value: number) {
+  async delPlayerNum(roomId: number) {
     return await this.redisService.hdel(
       this.makeGameKey(roomId),
       PLAYERNUM_FIELD,
@@ -182,7 +181,7 @@ export class GameEventService {
     return await this.redisService.hget(this.makeGameKey(roomId), NUM_FIELD);
   }
 
-  async delNum(roomId: number, value: number) {
+  async delNum(roomId: number) {
     return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
   }
 
@@ -207,7 +206,7 @@ export class GameEventService {
       userJob = gamePlayer[userNum].job;
     }
 
-    if (userJob !== 'POLICE') {
+    if (police !== 'POLICE') {
       throw new WsException('경찰이 아닙니다.');
     } else {
       return userJob;
