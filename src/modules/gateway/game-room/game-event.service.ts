@@ -163,26 +163,18 @@ export class GameEventService {
     );
   }
 
-  async getPlayerNum(roomId: number) {
-    return await this.redisService.hget(
-      this.makeGameKey(roomId),
-      PLAYERNUM_FIELD,
-    );
-  }
+  // async getPlayerNum(roomId: number) {
+  //   return await this.redisService.hget(
+  //     this.makeGameKey(roomId),
+  //     PLAYERNUM_FIELD,
+  //   );
+  // }
 
   async delPlayerNum(roomId: number) {
     return await this.redisService.hdel(
       this.makeGameKey(roomId),
       PLAYERNUM_FIELD,
     );
-  }
-
-  async setNum(roomId: number) {
-    return await this.redisService.hget(this.makeGameKey(roomId), NUM_FIELD);
-  }
-
-  async delNum(roomId: number) {
-    return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
   }
 
   async savePlayerJob(

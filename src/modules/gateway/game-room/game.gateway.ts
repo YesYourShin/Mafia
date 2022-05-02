@@ -159,10 +159,6 @@ export class GameGateway
     this.server.in(socket.id).emit(GameEvent.Job, Players);
   }
 
-  // // 하나하나 받은 투표 결과들을 배열로 추가하기
-  // vote = [];
-  // //배열의 합..
-
   @SubscribeMessage(GameEvent.Vote)
   async handleVote(
     @MessageBody() data: { vote: number },
@@ -191,6 +187,8 @@ export class GameGateway
     }
 
     if (gamePlayers.length === count) {
+      await this.gameEventService.delPlayerNum(roomId);
+
       const vote = await this.gameEventService.getVote(roomId);
       const result = this.gameEventService.finishVote(vote);
 
@@ -199,8 +197,6 @@ export class GameGateway
       this.server
         .to(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.FinishV, result);
-
-      await this.gameEventService.delPlayerNum(roomId);
     }
   }
 
@@ -218,13 +214,6 @@ export class GameGateway
   // 찬반투표
   @SubscribeMessage(GameEvent.FinishP)
   async handlePunishP(@ConnectedSocket() socket: AuthenticatedSocket) {
-    // this.logger.log(` ${payload.Punishment}`);
-    // if (
-    //   this.vote.length <= this.gamePlayerNum &&
-    //   typeof payload.Punishment === 'boolean'
-    // )
-    // this.punis.push(payload.Punishment);
-
     const { roomId } = socket.data;
     const { user } = socket.request;
     const newNamespace = socket.nsp;
@@ -241,6 +230,8 @@ export class GameGateway
     }
 
     if (gamePlayers.length === count) {
+      await this.gameEventService.delPlayerNum(roomId);
+
       const Agreement = await this.gameEventService.getPunish(roomId);
       // const Opposition = gamePlayers.length - Agreement;
 
@@ -256,8 +247,6 @@ export class GameGateway
       //     Opposition: Opposition,
       //   },
       // });
-
-      await this.gameEventService.delPlayerNum(roomId);
     }
   }
 
