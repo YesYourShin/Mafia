@@ -7,7 +7,7 @@ export const GAME_ROOM = 'game-room';
 export const PLAYER_FIELD = 'player';
 export const PLAYERJOB_FIELD = 'player-job';
 export const VOTE_FIELD = 'vote';
-export const FINSH_VOTE_FIELD = 'finsh-vote';
+export const FINISH_VOTE_FIELD = 'finsh-vote';
 export const PUNISH_FIELD = 'punish';
 
 export const MAFIA_FIELD = 'mafia';

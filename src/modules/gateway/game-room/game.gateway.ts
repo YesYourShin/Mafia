@@ -34,28 +34,7 @@ export class GameGateway
   @WebSocketServer() public server: Server;
 
   // 가드를 통해서 플레이어인지 확인
-  // @UseGuards(GamePlayerGuard)
-  // @SubscribeMessage('game:join')
-  // async handleGameJoin(
-  //   @ConnectedSocket() socket: AuthenticatedSocket,
-  //   @MessageBody() data: { roomId: number },
-  // ) {
-  //   const { user } = socket.request;
-  //   const newNamespace = socket.nsp;
-  //   const { roomId } = data;
-  //   socket.data['roomId'] = roomId;
-
-  //   this.logger.log(`gameRoom ${roomId}`);
-
-  //   try {
-  //     await socket.join(`${newNamespace.name}-${roomId}`);
-  //     this.server.in(socket.id).emit('gamejoin', user);
-  //   } catch (error) {
-  //     this.logger.error('socket join event error', error);
-  //   }
-  // }
-    roomname = "game-3";
-  
+  @UseGuards(GamePlayerGuard)
   @SubscribeMessage('game:join')
   async handleGameJoin(
     @ConnectedSocket() socket: AuthenticatedSocket,
@@ -69,8 +48,7 @@ export class GameGateway
     this.logger.log(`gameRoom ${roomId}`);
 
     try {
-      await socket.join(this.roomname);
-      this.server.in(socket.id).emit('gamejoin', socket.id);
+      await socket.join(`${newNamespace.name}-${roomId}`);
       this.server.in(socket.id).emit('gamejoin', user);
     } catch (error) {
       this.logger.error('socket join event error', error);
@@ -108,14 +86,27 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    // default - 밤 - false
-    if (data.day === false) {
+    //능력 사용.
+
+    // 승리조건
+    const living = await this.gameEventService.livingHuman(roomId);
+    const winner = this.gameEventService.winner(living.mafia, living.citizen);
+
+      // ----------이벤트 추가 회의 한번..
+      if(winner){
+        this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.Winner, {winner:winner});
+      }
+
+    // default - 밤 = false
       const thisDay = !data.day;
       this.server
         .in(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.Day, { day: thisDay });
-    }
   }
+
+  //이겼을 시, 게임 정보 db에 저장하는 부분 로직도 짜야함.
 
   @SubscribeMessage(GameEvent.Start)
   async handleStart(@ConnectedSocket() socket: AuthenticatedSocket) {
@@ -147,17 +138,8 @@ export class GameGateway
           .emit(GameEvent.Start, Players);
       }, 1000);
     }
-    const jobData = this.getJobData(Players.length);
+    const jobData = this.gameEventService.getJobData(Players.length);
     await this.gameEventService.setPlayerJobs(roomId, jobData, Players.length);
-  }
-
-  getJobData(playerCount: number) {
-    const mafia = 1;
-    const doctor = 1;
-    const police = 1;
-    const cr = playerCount - (mafia + doctor + police);
-    const jobData = [cr, mafia, doctor, police];
-    return jobData;
   }
 
   // 각자의 직업만 제공
@@ -215,7 +197,7 @@ export class GameGateway
       await this.gameEventService.delPlayerNum(roomId);
 
       const vote = await this.gameEventService.getVote(roomId);
-      const result = await this.gameEventService.finishVote(roomId, vote);
+      const result = await this.gameEventService.sortfinishVote(roomId, vote);
 
       this.logger.log(result);
 
@@ -274,53 +256,18 @@ export class GameGateway
       // });
 
       if (gamePlayers.length / 2 < Agreement) {
-        // 죽이려는 대상 찾기
-        const humon = await this.gameEventService.votedeath(roomId);
+        const humon = await this.gameEventService.getVoteDeath(roomId);
         this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
 
+
+        //죽은 사람의 정보 제공.
         const death = await this.gameEventService.death(roomId, humon);
         this.server
           .to(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.FinishP, death); //죽음의 결과.
+          .emit(GameEvent.Death, {death: death}); 
       }
     }
   }
-
-  /**
-   * 해당 번호의 유저 찾아서 die값을 true로 변경
-   *
-   */
-
-  // 사형.death
-  // async handleDeath(roomId: number, userNum: number) {
-  // //  userNum - 1 가
-  // const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
-  // // this.server.to(this.roomName).emit('death', this.roomClient);
-  // }
-
-  // @SubscribeMessage('dayNight')
-  // async handleDayNight(
-  //   @MessageBody() data: { dayNight: string },
-  //   @ConnectedSocket() socket: Socket,
-  // ) {
-  //   // 살아있는 마피아 수,
-
-  //   const numberOfMafias = this.roomClient.filter(
-  //     (item) => item.job === this.typesOfJobs[1] && item.die === false,
-  //   ).length;
-
-  //   const numberOfCitizen = this.roomClient.filter(
-  //     (item) => item.job !== this.typesOfJobs[1] && item.die === false,
-  //   ).length;
-
-  //   this.logger.log(`살아있는 마피아 수: ${numberOfMafias}`);
-  //   // 마피아 수가 0일 시
-  //   if (!numberOfMafias)
-  //     this.server.to(socket.id).emit('dayNight', '마피아 패');
-  //   // 밤일 경우, 마피아 수가 시민수와 같을 시
-  //   if (numberOfMafias === numberOfCitizen && data.dayNight === 'night')
-  //     this.server.to(socket.id).emit('dayNight', '마피아 승');
-  // }
 
   // 능력사용 부분
   // 경찰 능력
@@ -332,32 +279,16 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
 
-    const userJob = await this.gameEventService.usePoliceState(
+    const userJob = await this.gameEventService.usePolice(
       roomId,
       data.userNum,
       user,
     );
 
-    this.server.to(socket.id).emit(GameEvent.Police, userJob);
+    this.server.to(socket.id).emit(GameEvent.Police, {userJob: userJob});
   }
 
- // 능력사용 부분
-  // 의사
-  @SubscribeMessage(GameEvent.Doctor)
-  async handleUseDoctor(
-    // @MessageBody() data: { userNum: number },
-    @MessageBody() data: { roomId: number,  },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    const { roomId } = socket.data;
-    // const { user } = socket.request;
-
-
-
-    // this.server.to(socket.id).emit(GameEvent.Doctor, userJob);
-  }
-
-   // 능력사용 부분
+  // 능력사용 부분
   // 마피아 능력
   @SubscribeMessage(GameEvent.Mafia)
   async handleUseMafia(
@@ -366,10 +297,31 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
+    const {userNum } = data;
 
-  //   this.server.to(socket.id).emit(GameEvent.Mafia, userJob);
+    const voteUserNum = await this.gameEventService.useMafia(roomId, userNum,user );
+
+    this.server.to(socket.id).emit(GameEvent.Mafia, voteUserNum);
   }
 
+
+ // 능력사용 부분
+  // 의사
+  @SubscribeMessage(GameEvent.Doctor)
+  async handleUseDoctor(
+    @MessageBody() data: { userNum: number },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    const { roomId } = socket.data;
+    const { user } = socket.request;
+    const { userNum } = data;
+
+    const voteUserNum = await this.gameEventService.useDoctor(roomId, userNum, user );
+
+    this.server.to(socket.id).emit(GameEvent.Doctor, voteUserNum);
+  }
+
+   
 
   @SubscribeMessage('myFaceLandmarks')
   handleLandmarks(@MessageBody() data: { landmarks: string; id: string }) {
@@ -385,36 +337,6 @@ export class GameGateway
       });
     }
   }
-
-  // 마피아 능력
-
-  // // 능력 사용 결과
-  // @SubscribeMessage('useState')
-  // handleUseState(
-  //   @MessageBody()
-  //   data: {
-  //     user: string;
-  //     job: string;
-  //     useNum: number;
-  //   },
-  // ) {
-  //   this.logger.log(`능력사용`);
-  //   const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
-
-  //   if (data.job !== grantJob[0] && ) {
-  //     const a = {
-  //       user: data.user,
-  //       job: data.job,
-  //       useNum: data.useNum,
-  //     };
-  //     this.userState.push(a);
-  //     limit -= 1;
-  //   }
-  // }
-
-  // -----------------------
-  // 1. 하나의 on을 받고 그 안에서  낮, 밤상태를 구분해서 게임 처리?
-  // 1. 낮이 시작할 때, 밤이 시작할 때 마다 on으로 를 따로 따로 처리..
 
   // socket이 연결됐을 때
   async handleConnection(@ConnectedSocket() socket: AuthenticatedSocket) {

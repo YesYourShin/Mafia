@@ -1,14 +1,16 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
-import { map } from 'lodash';
+import { map, sortedLastIndexBy } from 'lodash';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import {
-  FINSH_VOTE_FIELD,
+  DOCTOR_FIELD,
+  FINISH_VOTE_FIELD,
   GAME,
   INFO_FIELD,
+  MAFIA_FIELD,
   PLAYERJOB_FIELD,
   PLAYERNUM_FIELD,
   PLAYER_FIELD,
@@ -63,7 +65,7 @@ export class GameEventService {
     }
   }
 
-  async finishVote(roomId: number, vote: number[]): Promise<object> {
+  async sortfinishVote(roomId: number, vote: number[]): Promise<object> {
     let redisVote = {};
 
     // 해당 숫자값 세주기
@@ -73,29 +75,29 @@ export class GameEventService {
 
     redisVote = this.sortObject(redisVote, 'userNum', 'vote');
 
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      FINISH_VOTE_FIELD,
+      redisVote,
+    );
+
+    return redisVote;
+
     // redisVote = Object.keys(redisVote).sort(function(a,b){return redisVote[a]-redisVote[b]});
 
-//     let entries = Object.entries(redisVote);
-// // [["you",100],["me",75],["foo",116],["bar",15]]
+    //     let entries = Object.entries(redisVote);
+    // // [["you",100],["me",75],["foo",116],["bar",15]]
 
-//   let sorted = entries.sort((a, b) => a[1] - b[1]);
-// [["bar",15],["me",75],["you",100],["foo",116]]
+    //   let sorted = entries.sort((a, b) => a[1] - b[1]);
+    // [["bar",15],["me",75],["you",100],["foo",116]]
 
     // // // 정렬 내림차순으로
     // redisVote = redisVote.sort(function (a, b) {
     //   return b.vote - a.vote;
     // });
-
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      FINSH_VOTE_FIELD,
-      redisVote,
-    );
-
-    return redisVote;
   }
 
-  sortObject(obj, userNum, voteNum) {
+  sortObject(obj, userNum:string , voteNum:string) {
     var arr = [];
     for (var prop in obj) {
         if (obj.hasOwnProperty(prop)) {
@@ -110,10 +112,10 @@ export class GameEventService {
     return arr; // returns array
 }
 
-  async votedeath(roomId: number) {
+  async getVoteDeath(roomId: number) {
     const votehumon = await this.redisService.hget(
       this.makeGameKey(roomId),
-      FINSH_VOTE_FIELD,
+      FINISH_VOTE_FIELD,
     );
 
     this.logger.log(votehumon);
@@ -132,7 +134,7 @@ export class GameEventService {
       gamePlayer,
     );
 
-    return gamePlayer;
+    return gamePlayer[userNum];
   }
 
   async setPlayerJobs(roomId: number, job: number[], Num: number) {
@@ -175,15 +177,12 @@ export class GameEventService {
       strikeOut.push(job.pop());
     }
 
-    // this.logger.log(`grantjob ` + strikeOut);
-
     return strikeOut;
   }
 
   makeGameKey(roomId: number): string {
     return `${GAME}:${roomId}`;
   }
-
 
   async setPunish(roomId: number, punish: boolean): Promise<any> {
     await this.redisService.hset(
@@ -196,7 +195,7 @@ export class GameEventService {
   async getPunish(roomId: number): Promise<number> {
     const punish = await this.redisService.hget(
       this.makeGameKey(roomId),
-      VOTE_FIELD,
+      PUNISH_FIELD,
     );
 
     const punisAgreement = punish.filter((item) => {
@@ -206,7 +205,7 @@ export class GameEventService {
     return punisAgreement;
   }
 
-  async usePoliceState(
+  async usePolice(
     roomId: number,
     userNum: number,
     user: UserProfile,
@@ -228,6 +227,91 @@ export class GameEventService {
     } else {
       return userJob;
     }
+  }
+
+  async useMafia(
+    roomId: number,
+    userNum: number,
+    user: UserProfile,
+  ){
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    let mafia;
+    // let voteUser;
+
+    for (const player of gamePlayer) {
+      if (player.id === user.profile.id) {
+        mafia = player.job;
+      }
+
+      // voteUser = gamePlayer[userNum];
+    }
+
+    if (mafia !== 'MAFIA') {
+      throw new WsException('마피아가 아닙니다.');
+    } 
+
+    this.redisService.hset(this.makeGameKey(roomId), MAFIA_FIELD, userNum);
+
+    return userNum;
+  }
+
+  async useDoctor(
+    roomId: number,
+    userNum: number,
+    user: UserProfile,
+  ){
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    let doctor;
+    // let voteUser;
+
+    for (const player of gamePlayer) {
+      if (player.id === user.profile.id) {
+        doctor = player.job;
+      }
+
+      // voteUser = gamePlayer[userNum];
+    }
+
+    if (doctor !== 'DOCTOR') {
+      throw new WsException('의사가 아닙니다.');
+    } 
+
+    this.redisService.hset(this.makeGameKey(roomId), DOCTOR_FIELD, userNum);
+
+    return userNum;
+  }
+
+  getJobData(playerCount: number) {
+    const mafia = 1;
+    const doctor = 1;
+    const police = 1;
+    const cr = playerCount - (mafia + doctor + police);
+    const jobData = [cr, mafia, doctor, police];
+    return jobData;
+  }
+
+  //살아있는 각 팀멤버 수
+  async livingHuman( roomId:number){
+    const gamePlayer = await this.redisService.hget(this.makeGameKey(roomId), PLAYERJOB_FIELD);
+
+    const livingMafia = gamePlayer.filter((player)=>{
+      player.job === 'MAFIA' && player.die === false
+    }).length;
+
+    const livingCitizen = gamePlayer - livingMafia;
+
+    return {mafia : livingMafia, citizen: livingCitizen};
+  } 
+
+  winner(mafia:number, citizen:number){
+    if(!mafia){
+      return 'CITIZEN';
+    }else if(mafia === citizen){
+      return 'MAFIA'
+    }
+    return null
   }
 
   async setVote(roomId: number, vote: number): Promise<any> {
@@ -262,4 +346,22 @@ export class GameEventService {
       PLAYERNUM_FIELD,
     );
   }
+
+  // async delValue(roomId:number, value){
+  //   let filed; 
+  //   switch(value){
+  //     case 'mafia' :
+  //       filed = MAFIA_FIELD;
+  //       break;
+  //     case 'doctor' :
+  //       filed = DOCTOR_FIELD;
+  //       break;
+  //     case 'vote':
+  //       filed = FINSH_VOTE_FIELD;
+  //       break;
+  //     case 'punish':
+  //     filed = FINISH_PUNISH_FIELD;
+  //     break;
+  //   }
+  // }
 }
