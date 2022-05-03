@@ -239,13 +239,13 @@ export class GameGateway
     if (gamePlayers.length === count) {
       await this.gameEventService.delPlayerNum(roomId);
 
-      const Agreement = await this.gameEventService.getPunish(roomId);
+      const agreement = await this.gameEventService.getPunish(roomId);
       // const Opposition = gamePlayers.length - Agreement;
 
       // 버전 1 , 찬성값만 주기
       this.server
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.FinishP, Agreement);
+        .emit(GameEvent.FinishP, {Agreement: agreement});
 
       // 버전 1 , 찬성값만 주기
       // this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FinishP, {
@@ -255,7 +255,7 @@ export class GameGateway
       //   },
       // });
 
-      if (gamePlayers.length / 2 < Agreement) {
+      if (gamePlayers.length / 2 < agreement) {
         const humon = await this.gameEventService.getVoteDeath(roomId);
         this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
 
