@@ -34,7 +34,28 @@ export class GameGateway
   @WebSocketServer() public server: Server;
 
   // 가드를 통해서 플레이어인지 확인
-  @UseGuards(GamePlayerGuard)
+  // @UseGuards(GamePlayerGuard)
+  // @SubscribeMessage('game:join')
+  // async handleGameJoin(
+  //   @ConnectedSocket() socket: AuthenticatedSocket,
+  //   @MessageBody() data: { roomId: number },
+  // ) {
+  //   const { user } = socket.request;
+  //   const newNamespace = socket.nsp;
+  //   const { roomId } = data;
+  //   socket.data['roomId'] = roomId;
+
+  //   this.logger.log(`gameRoom ${roomId}`);
+
+  //   try {
+  //     await socket.join(`${newNamespace.name}-${roomId}`);
+  //     this.server.in(socket.id).emit('gamejoin', user);
+  //   } catch (error) {
+  //     this.logger.error('socket join event error', error);
+  //   }
+  // }
+    roomname = "game-3";
+  
   @SubscribeMessage('game:join')
   async handleGameJoin(
     @ConnectedSocket() socket: AuthenticatedSocket,
@@ -48,7 +69,8 @@ export class GameGateway
     this.logger.log(`gameRoom ${roomId}`);
 
     try {
-      await socket.join(`${newNamespace.name}-${roomId}`);
+      await socket.join(this.roomname);
+      this.server.in(socket.id).emit('gamejoin', socket.id);
       this.server.in(socket.id).emit('gamejoin', user);
     } catch (error) {
       this.logger.error('socket join event error', error);
@@ -161,6 +183,7 @@ export class GameGateway
     this.server.in(socket.id).emit(GameEvent.Job, Players);
   }
 
+  //투표
   @SubscribeMessage(GameEvent.Vote)
   async handleVote(
     @MessageBody() data: { vote: number },
@@ -317,6 +340,36 @@ export class GameGateway
 
     this.server.to(socket.id).emit(GameEvent.Police, userJob);
   }
+
+ // 능력사용 부분
+  // 의사
+  @SubscribeMessage(GameEvent.Doctor)
+  async handleUseDoctor(
+    // @MessageBody() data: { userNum: number },
+    @MessageBody() data: { roomId: number,  },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    const { roomId } = socket.data;
+    // const { user } = socket.request;
+
+
+
+    // this.server.to(socket.id).emit(GameEvent.Doctor, userJob);
+  }
+
+   // 능력사용 부분
+  // 마피아 능력
+  @SubscribeMessage(GameEvent.Mafia)
+  async handleUseMafia(
+    @MessageBody() data: { userNum: number },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    const { roomId } = socket.data;
+    const { user } = socket.request;
+
+  //   this.server.to(socket.id).emit(GameEvent.Mafia, userJob);
+  }
+
 
   @SubscribeMessage('myFaceLandmarks')
   handleLandmarks(@MessageBody() data: { landmarks: string; id: string }) {

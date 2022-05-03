@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
+import { map } from 'lodash';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
@@ -62,15 +63,63 @@ export class GameEventService {
     }
   }
 
+  async finishVote(roomId: number, vote: number[]): Promise<object> {
+    let redisVote = {};
+
+    // 해당 숫자값 세주기
+    vote.forEach((element) => {
+      redisVote[element] = (redisVote[element] || 0) + 1;
+    });
+
+    redisVote = this.sortObject(redisVote, 'userNum', 'vote');
+
+    // redisVote = Object.keys(redisVote).sort(function(a,b){return redisVote[a]-redisVote[b]});
+
+//     let entries = Object.entries(redisVote);
+// // [["you",100],["me",75],["foo",116],["bar",15]]
+
+//   let sorted = entries.sort((a, b) => a[1] - b[1]);
+// [["bar",15],["me",75],["you",100],["foo",116]]
+
+    // // // 정렬 내림차순으로
+    // redisVote = redisVote.sort(function (a, b) {
+    //   return b.vote - a.vote;
+    // });
+
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      FINSH_VOTE_FIELD,
+      redisVote,
+    );
+
+    return redisVote;
+  }
+
+  sortObject(obj, userNum, voteNum) {
+    var arr = [];
+    for (var prop in obj) {
+        if (obj.hasOwnProperty(prop)) {
+            arr.push({
+                userNum: prop,
+                voteNum: obj[prop]
+            });
+        }
+    }
+    arr.sort(function(a, b) { return b.voteNum - a.voteNum; });
+    //arr.sort(function(a, b) { a.value.toLowerCase().localeCompare(b.value.toLowerCase()); }); //use this to sort as strings
+    return arr; // returns array
+}
+
   async votedeath(roomId: number) {
     const votehumon = await this.redisService.hget(
       this.makeGameKey(roomId),
       FINSH_VOTE_FIELD,
     );
 
-    this.logger.log(`죽이려는 대상의 번호가 맞나..? ${votehumon}`);
+    this.logger.log(votehumon);
+    this.logger.log(`죽이려는 대상의 번호가 맞나..? ${votehumon[0]}`);
 
-    return votehumon.key[0];
+    return votehumon[0].userNum;
   }
 
   async death(roomId: number, userNum: number) {
@@ -135,27 +184,6 @@ export class GameEventService {
     return `${GAME}:${roomId}`;
   }
 
-  async finishVote(roomId: number, vote: number[]): Promise<any[]> {
-    let redisVote = [];
-
-    // 해당 숫자값 세주기
-    vote.forEach((element) => {
-      redisVote[element] = (redisVote[element] || 0) + 1;
-    });
-
-    // 정렬 내림차순으로
-    redisVote = redisVote.sort(function (a, b) {
-      return b.vote - a.vote;
-    });
-
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      FINSH_VOTE_FIELD,
-      redisVote,
-    );
-
-    return redisVote;
-  }
 
   async setPunish(roomId: number, punish: boolean): Promise<any> {
     await this.redisService.hset(

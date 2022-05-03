@@ -10,4 +10,7 @@ export const VOTE_FIELD = 'vote';
 export const FINSH_VOTE_FIELD = 'finsh-vote';
 export const PUNISH_FIELD = 'punish';
 
+export const MAFIA_FIELD = 'mafia';
+export const DOCTOR_FIELD = 'doctor';
+
 export const PLAYERNUM_FIELD = 'player-num';
