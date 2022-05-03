@@ -7,15 +7,15 @@ import {
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Profile } from 'src/entities';
-
-export interface ProfileFindOption {
-  nickname: string;
-}
+import { removeNilFromObject } from 'src/common/constants';
+import { ProfileFindOneOptions } from './constants/profile-find-options';
 
 @EntityRepository(Profile)
 export class ProfileRepository extends AbstractRepository<Profile> {
-  async findProfile(id: number) {
-    return await this.repository
+  async findOneWithImage(options: ProfileFindOneOptions = {}) {
+    const { id, userId } = options;
+    if (!Object.keys(removeNilFromObject(options)).length) return null;
+    const qb = this.repository
       .createQueryBuilder('profile')
       .leftJoin('profile.image', 'image')
       .select([
@@ -35,9 +35,39 @@ export class ProfileRepository extends AbstractRepository<Profile> {
         'image.location',
         'image.createdAt',
         'image.updatedAt',
-      ])
-      .where('profile.userId = :id', { id })
-      .getOne();
+      ]);
+    if (id) {
+      qb.where('profile.id = :id', { id });
+    }
+    if (userId) {
+      qb.where('profile.userId = :userId', { userId });
+    }
+    return await qb.getOne();
+  }
+
+  async findOne(options: ProfileFindOneOptions = {}) {
+    const { id, userId } = options;
+    if (!Object.keys(removeNilFromObject(options)).length) return null;
+    const qb = this.repository
+      .createQueryBuilder('profile')
+      .select([
+        'profile.id',
+        'profile.nickname',
+        'profile.selfIntroduction',
+        'profile.manner',
+        'profile.level',
+        'profile.exp',
+        'profile.userId',
+        'profile.createdAt',
+        'profile.updatedAt',
+      ]);
+    if (id) {
+      qb.where('profile.id = :id', { id });
+    }
+    if (userId) {
+      qb.where('profile.userId = :userId', { userId });
+    }
+    return await qb.getOne();
   }
 
   async create(

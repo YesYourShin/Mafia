@@ -15,6 +15,7 @@ import { UserEvent } from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
 import { NotificationService } from '../notification/notification.service';
+import { ProfileFindOneOptions } from './constants/profile-find-options';
 import {
   CreateProfileDto,
   ProfileInfo,
@@ -46,8 +47,12 @@ export class UserService {
     }
     return user;
   }
-  async findProfile(id: number): Promise<ProfileInfo> {
-    const exProfile: Profile = await this.profileRepository.findProfile(id);
+  async findProfileWithImage(
+    options: ProfileFindOneOptions,
+  ): Promise<ProfileInfo> {
+    const exProfile: Profile = await this.profileRepository.findOneWithImage(
+      options,
+    );
     if (!exProfile) {
       throw new NotFoundException('등록된 프로필이 없습니다');
     }
@@ -192,6 +197,11 @@ export class UserService {
       throw new ForbiddenException('자신의 요청이 아닙니다');
     }
 
+    const requestUser = this.profileRepository.findOne({ userId: requestId });
+    if (!requestUser) {
+      throw new NotFoundException('등록되지 않은 유저의 요청입니다');
+    }
+
     return requestFriendRequestDto.requestAction === EnumStatus.ACCEPT
       ? this.acceptFriend(profile, requestId)
       : this.rejectFriend(profile, requestId);
@@ -203,7 +213,9 @@ export class UserService {
       requestId,
     );
     await this.userRepository.acceptFriend(friendId1, friendId2);
-    const friend = await this.profileRepository.findProfile(requestId);
+    const friend = await this.profileRepository.findOneWithImage({
+      userId: requestId,
+    });
     this.userGateway.server
       .to(`/user-${requestId}`)
       .emit(UserEvent.FRIEND_REQUEST_ACCEPT, {

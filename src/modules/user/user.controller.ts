@@ -59,6 +59,7 @@ import {
 import { RankingDto, ResponseRankingDto } from './dto/response-ranking.dto';
 import { MyProfileImageGuard } from './guards/my-profile-image.guard';
 import { NumberValidationPipe } from './number-validation.pipe';
+import { FriendRequestActionValidationPipe } from './pipes/friend-request-action-validation.pipe';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
@@ -133,7 +134,7 @@ export class UserController {
   @ApiOperation({ summary: '특정 유저 정보 불러오기' })
   @Get('profile/:id')
   async getUserProfile(@Param('id') id: number): Promise<ProfileInfo> {
-    return await this.userService.findProfile(id);
+    return await this.userService.findProfileWithImage({ userId: id });
   }
 
   @ApiOkResponse({
@@ -296,12 +297,14 @@ export class UserController {
     required: true,
     description: '친구 신청 보낸 유저',
   })
+  @ApiOperation({ summary: '친구 수락 or 거절' })
   @Patch(':id/requests/friends/:requestId')
   @UseGuards(LoggedInGuard)
   async friendAction(
     @Param('id') id: number,
     @Param('requestId') requestId: number,
-    @Body() requestFriendRequestDto: RequestFriendRequestDto,
+    @Body(new FriendRequestActionValidationPipe())
+    requestFriendRequestDto: RequestFriendRequestDto,
     @UserDecorator() user: UserProfile,
   ) {
     return await this.userService.friendAction(

@@ -19,6 +19,7 @@ import {
 } from 'typeorm';
 import { GameMember } from './game-member.entity';
 import { GameMode } from '../common/constants';
+import { GameStatusTransformer } from 'src/common/constants/game-status-transformer';
 
 @Check(`"limit" > 5 AND "limit" < 11`)
 @Entity('game')
@@ -77,8 +78,12 @@ export class Game {
     example: true,
     description: '게임 진행 중 false /종료 상태 true',
   })
-  @Column({ type: 'boolean', name: 'finish' })
-  finish: boolean;
+  @Column({
+    type: 'boolean',
+    name: 'status',
+    transformer: new GameStatusTransformer(),
+  })
+  status: 'inGame' | 'finished';
 
   @IsDate()
   @CreateDateColumn()

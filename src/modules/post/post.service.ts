@@ -60,6 +60,7 @@ export class PostService {
       take,
       (page - 1) * take,
     );
+
     const totalItems = await this.postRepository.findPagesCountByCategoryName(
       categoryName,
     );
