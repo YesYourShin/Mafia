@@ -73,6 +73,13 @@ export class Game {
   @Column({ type: 'tinyint', name: 'limit' })
   limit: number;
 
+  @ApiProperty({
+    example: true,
+    description: '게임 진행 중 false /종료 상태 true',
+  })
+  @Column({ type: 'boolean', name: 'finish' })
+  finish: boolean;
+
   @IsDate()
   @CreateDateColumn()
   createdAt: Date;
