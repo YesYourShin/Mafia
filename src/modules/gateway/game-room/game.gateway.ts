@@ -124,7 +124,7 @@ export class GameGateway
     let count;
     //count
     for (const player of Players) {
-      if (player.id === user.id) {
+      if (player.id === user.profile.id) {
         count = await this.gameEventService.setPlayerNum(roomId);
       }
     }
@@ -189,7 +189,7 @@ export class GameGateway
     let count;
     //count
     for (const player of gamePlayers) {
-      if (player.id === user.id) {
+      if (player.id === user.profile.id) {
         count = await this.gameEventService.setPlayerNum(roomId);
         break;
       }
@@ -232,7 +232,7 @@ export class GameGateway
     let count;
     //count
     for (const player of gamePlayers) {
-      if (player.id === user.id) {
+      if (player.id === user.profile.id) {
         count = await this.gameEventService.setPlayerNum(roomId);
         break;
       }
