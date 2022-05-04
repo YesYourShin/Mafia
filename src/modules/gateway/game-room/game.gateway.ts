@@ -33,7 +33,7 @@ export class GameGateway
   ) {}
   @WebSocketServer() public server: Server;
 
- // 가드를 통해서 플레이어인지 확인
+  // 가드를 통해서 플레이어인지 확인
   @UseGuards(GamePlayerGuard)
   @SubscribeMessage('game:join')
   async handleGameJoin(
@@ -92,18 +92,18 @@ export class GameGateway
     const living = await this.gameEventService.livingHuman(roomId);
     const winner = this.gameEventService.winner(living.mafia, living.citizen);
 
-      // ----------이벤트 추가 회의 한번..
-      if(winner){
-        this.server
-        .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.Winner, {winner:winner});
-      }
-
-    // default - 밤 = false
-      const thisDay = !data.day;
+    // ----------이벤트 추가 회의 한번..
+    if (winner) {
       this.server
         .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.Day, { day: thisDay });
+        .emit(GameEvent.Winner, { winner: winner });
+    }
+
+    // default - 밤 = false
+    const thisDay = !data.day;
+    this.server
+      .in(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.Day, { day: thisDay });
   }
 
   //이겼을 시, 게임 정보 db에 저장하는 부분 로직도 짜야함.
@@ -119,7 +119,7 @@ export class GameGateway
     //   //  throw new ForbiddenException()
     //   throw new ForbiddenException('인원이 부족합니다.');
 
-    this.logger.log(Players)
+    this.logger.log(Players);
 
     let count;
     //count
@@ -247,7 +247,7 @@ export class GameGateway
       // 버전 1 , 찬성값만 주기
       this.server
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.FinishP, {Agreement: agreement});
+        .emit(GameEvent.FinishP, { Agreement: agreement });
 
       // 버전 1 , 찬성값만 주기
       // this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FinishP, {
@@ -261,12 +261,11 @@ export class GameGateway
         const humon = await this.gameEventService.getVoteDeath(roomId);
         this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
 
-
         //죽은 사람의 정보 제공.
         const death = await this.gameEventService.death(roomId, humon);
         this.server
           .to(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.Death, {death: death}); 
+          .emit(GameEvent.Death, { death: death });
       }
     }
   }
@@ -287,7 +286,7 @@ export class GameGateway
       user,
     );
 
-    this.server.to(socket.id).emit(GameEvent.Police, {userJob: userJob});
+    this.server.to(socket.id).emit(GameEvent.Police, { userJob: userJob });
   }
 
   // 능력사용 부분
@@ -299,15 +298,18 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
-    const {userNum } = data;
+    const { userNum } = data;
 
-    const voteUserNum = await this.gameEventService.useMafia(roomId, userNum,user );
+    const voteUserNum = await this.gameEventService.useMafia(
+      roomId,
+      userNum,
+      user,
+    );
 
     this.server.to(socket.id).emit(GameEvent.Mafia, voteUserNum);
   }
 
-
- // 능력사용 부분
+  // 능력사용 부분
   // 의사
   @SubscribeMessage(GameEvent.Doctor)
   async handleUseDoctor(
@@ -318,12 +320,14 @@ export class GameGateway
     const { user } = socket.request;
     const { userNum } = data;
 
-    const voteUserNum = await this.gameEventService.useDoctor(roomId, userNum, user );
+    const voteUserNum = await this.gameEventService.useDoctor(
+      roomId,
+      userNum,
+      user,
+    );
 
     this.server.to(socket.id).emit(GameEvent.Doctor, voteUserNum);
   }
-
-   
 
   @SubscribeMessage('myFaceLandmarks')
   handleLandmarks(@MessageBody() data: { landmarks: string; id: string }) {

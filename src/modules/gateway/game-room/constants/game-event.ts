@@ -11,5 +11,5 @@ export const GameEvent = {
   Mafia: 'game:mafia',
   Timer: 'game:timer',
   Death: 'game:death',
-  Winner: 'game:winner'
+  Winner: 'game:winner',
 };

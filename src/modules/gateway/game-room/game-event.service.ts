@@ -97,20 +97,22 @@ export class GameEventService {
     // });
   }
 
-  sortObject(obj, userNum:string , voteNum:string) {
-    var arr = [];
-    for (var prop in obj) {
-        if (obj.hasOwnProperty(prop)) {
-            arr.push({
-                userNum: prop,
-                voteNum: obj[prop]
-            });
-        }
+  sortObject(obj, userNum: string, voteNum: string) {
+    const arr = [];
+    for (const prop in obj) {
+      if (obj.hasOwnProperty(prop)) {
+        arr.push({
+          userNum: prop,
+          voteNum: obj[prop],
+        });
+      }
     }
-    arr.sort(function(a, b) { return b.voteNum - a.voteNum; });
+    arr.sort(function (a, b) {
+      return b.voteNum - a.voteNum;
+    });
     //arr.sort(function(a, b) { a.value.toLowerCase().localeCompare(b.value.toLowerCase()); }); //use this to sort as strings
     return arr; // returns array
-}
+  }
 
   async getVoteDeath(roomId: number) {
     const votehumon = await this.redisService.hget(
@@ -229,11 +231,7 @@ export class GameEventService {
     }
   }
 
-  async useMafia(
-    roomId: number,
-    userNum: number,
-    user: UserProfile,
-  ){
+  async useMafia(roomId: number, userNum: number, user: UserProfile) {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
     let mafia;
@@ -249,18 +247,14 @@ export class GameEventService {
 
     if (mafia !== 'MAFIA') {
       throw new WsException('마피아가 아닙니다.');
-    } 
+    }
 
     this.redisService.hset(this.makeGameKey(roomId), MAFIA_FIELD, userNum);
 
     return userNum;
   }
 
-  async useDoctor(
-    roomId: number,
-    userNum: number,
-    user: UserProfile,
-  ){
+  async useDoctor(roomId: number, userNum: number, user: UserProfile) {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
     let doctor;
@@ -276,7 +270,7 @@ export class GameEventService {
 
     if (doctor !== 'DOCTOR') {
       throw new WsException('의사가 아닙니다.');
-    } 
+    }
 
     this.redisService.hset(this.makeGameKey(roomId), DOCTOR_FIELD, userNum);
 
@@ -293,25 +287,28 @@ export class GameEventService {
   }
 
   //살아있는 각 팀멤버 수
-  async livingHuman( roomId:number){
-    const gamePlayer = await this.redisService.hget(this.makeGameKey(roomId), PLAYERJOB_FIELD);
+  async livingHuman(roomId: number) {
+    const gamePlayer = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      PLAYERJOB_FIELD,
+    );
 
-    const livingMafia = gamePlayer.filter((player)=>{
-      player.job === 'MAFIA' && player.die === false
+    const livingMafia = gamePlayer.filter((player) => {
+      player.job === 'MAFIA' && player.die === false;
     }).length;
 
     const livingCitizen = gamePlayer - livingMafia;
 
-    return {mafia : livingMafia, citizen: livingCitizen};
-  } 
+    return { mafia: livingMafia, citizen: livingCitizen };
+  }
 
-  winner(mafia:number, citizen:number){
-    if(!mafia){
+  winner(mafia: number, citizen: number) {
+    if (!mafia) {
       return 'CITIZEN';
-    }else if(mafia === citizen){
-      return 'MAFIA'
+    } else if (mafia === citizen) {
+      return 'MAFIA';
     }
-    return null
+    return null;
   }
 
   async setVote(roomId: number, vote: number): Promise<any> {
@@ -326,7 +323,7 @@ export class GameEventService {
     return await this.redisService.hget(this.makeGameKey(roomId), VOTE_FIELD);
   }
 
-  async setPlayerNum(roomId: number){
+  async setPlayerNum(roomId: number) {
     return await this.redisService.hincrby(
       this.makeGameKey(roomId),
       PLAYERNUM_FIELD,
@@ -348,7 +345,7 @@ export class GameEventService {
   }
 
   // async delValue(roomId:number, value){
-  //   let filed; 
+  //   let filed;
   //   switch(value){
   //     case 'mafia' :
   //       filed = MAFIA_FIELD;
