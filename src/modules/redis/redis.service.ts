@@ -20,7 +20,7 @@ export class RedisService {
     return await this.redis.hmget(key, fields);
   }
 
-  async hincrby(key: string, field: string){
+  async hincrby(key: string, field: string) {
     return await this.redis.hincrby(key, field, 1);
   }
 
@@ -53,6 +53,10 @@ export class RedisService {
     value: ValueType,
   ): Promise<number> {
     return await this.redis.setbit(key, offset, value);
+  }
+
+  async getbit(key: KeyType, offset: number): Promise<number> {
+    return await this.redis.getbit(key, offset);
   }
 
   async incr() {

@@ -9,6 +9,7 @@ import { ProfileMulterS3Service } from 'src/shared/profile-multer-s3.service';
 import { ImageModule } from '../image/image.module';
 import { UserEventModule } from '../gateway/user/user-event.module';
 import { NotificationModule } from '../notification/notification.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { NotificationModule } from '../notification/notification.module';
     ImageModule,
     UserEventModule,
     NotificationModule,
+    RedisModule,
   ],
   controllers: [UserController],
   providers: [UserService, Logger],

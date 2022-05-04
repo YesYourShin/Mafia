@@ -10,7 +10,7 @@ import { EnumCategoryName } from 'src/common/constants';
 export class CategoryValidationPipe implements PipeTransform {
   transform(value: EnumCategoryName, metadata: ArgumentMetadata) {
     if (!metadata || !this.toValidate(value))
-      throw new BadRequestException('잘못된 카테고리 입니다.');
+      throw new BadRequestException('잘못된 카테고리입니다');
 
     return value;
   }

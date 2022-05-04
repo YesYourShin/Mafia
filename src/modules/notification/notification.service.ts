@@ -24,7 +24,8 @@ export class NotificationService {
     return await this.notificationRepository.update(id, updatenotificationdto);
   }
 
-  async read(id: number) {
-    return await this.notificationRepository.read(id);
+  async read(uuid: string) {
+    await this.notificationRepository.read(uuid);
+    return { uuid, read: true };
   }
 }

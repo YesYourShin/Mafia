@@ -7,14 +7,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/typeorm';
+import { NotificationType } from 'src/common/constants';
 import { EnumStatus } from 'src/common/constants/enum-status';
 import { Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { Connection } from 'typeorm';
+import { ONLINE } from '../gateway/game-room/constants';
 import { UserEvent } from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
+import { CreateNotificationDto } from '../notification/dto/create-notification.dto';
 import { NotificationService } from '../notification/notification.service';
+import { RedisService } from '../redis/redis.service';
 import { ProfileFindOneOptions } from './constants/profile-find-options';
 import {
   CreateProfileDto,
@@ -31,6 +35,7 @@ import { UserRepository } from './user.repository';
 @Injectable()
 export class UserService {
   constructor(
+    private readonly redisService: RedisService,
     private readonly userRepository: UserRepository,
     private readonly imageService: ImageService,
     private readonly profileRepository: ProfileRepository,
@@ -181,11 +186,39 @@ export class UserService {
       profile.userId,
       requestId,
     );
-    await this.userRepository.requestFriend(friendId1, friendId2);
+    const queryRunner = this.connection.createQueryRunner();
+    await queryRunner.startTransaction();
 
-    this.userGateway.server
-      .to(`/user-${requestId}`)
-      .emit(UserEvent.FRIEND_REQUEST, { user: profile, message: '친구 요청' });
+    try {
+      await this.userRepository.requestFriend(friendId1, friendId2);
+
+      const notification = await this.notificationService.create(
+        new CreateNotificationDto(
+          NotificationType.REQUESTED_FRIEND,
+          { user: profile, message: '친구 요청' },
+          profile.userId,
+          id,
+        ),
+      );
+      await queryRunner.commitTransaction();
+
+      // 현재 유저가 접속해 있다면 알림을 보내준다.
+      try {
+        const online = await this.redisService.getbit(ONLINE, id);
+        if (online) {
+          this.userGateway.server
+            .to(`/user-${requestId}`)
+            .emit(UserEvent.FRIEND_REQUEST, notification);
+        }
+      } catch (e) {
+        this.logger.error('친구 신청 알림 발생 실패');
+      }
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new InternalServerErrorException('친구 추가 이벤트 시 에러 발생');
+    } finally {
+      await queryRunner.release();
+    }
   }
   async friendAction(
     profile: ProfileInfo,

@@ -126,6 +126,7 @@ export class ProfileRepository extends AbstractRepository<Profile> {
       .select([
         'profile.id',
         'profile.nickname',
+        'profile.selfIntroduction',
         'profile.level',
         'profile.userId',
       ])

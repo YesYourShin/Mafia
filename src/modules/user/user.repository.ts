@@ -20,6 +20,7 @@ export class UserRepository extends AbstractRepository<User> {
       .createQueryBuilder('user')
       .leftJoin('user.profile', 'profile')
       .leftJoin('profile.image', 'image')
+      .leftJoinAndSelect('user.receiveNotifications', 'notification')
       .select([
         'user.id',
         'user.socialId',
@@ -48,14 +49,15 @@ export class UserRepository extends AbstractRepository<User> {
       ]);
 
     if (id) {
-      qb.andWhere('user.id = :id', { id });
+      qb.where('user.id = :id', { id });
     }
     if (socialId && provider) {
-      qb.andWhere('user.socialId = :socialId', { socialId }).andWhere(
+      qb.where('user.socialId = :socialId', { socialId }).andWhere(
         'user.provider = :provider',
         { provider },
       );
     }
+    qb.andWhere('notification.read = :read', { read: false });
     return await qb.getOne();
   }
 

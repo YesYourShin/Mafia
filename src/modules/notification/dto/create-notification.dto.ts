@@ -5,6 +5,16 @@ export class CreateNotificationDto {
   data: any;
   userId: number;
   targetId: number;
-  read: boolean;
-  createdAt: Date;
+
+  constructor(
+    type: NotificationType,
+    data: any,
+    userId: number,
+    targetId: number,
+  ) {
+    this.type = type;
+    this.data = data;
+    this.userId = userId;
+    this.targetId = targetId;
+  }
 }

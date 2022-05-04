@@ -81,8 +81,8 @@ export class GameMember {
     required: false,
   })
   @IsNotEmpty()
-  @Column({ type: 'tinyint', name: 'score' })
-  score?: Score;
+  @Column({ type: 'tinyint', name: 'score', nullable: true })
+  score: Score;
 
   @IsDate()
   @CreateDateColumn()
