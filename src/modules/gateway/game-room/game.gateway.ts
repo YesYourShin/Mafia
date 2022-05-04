@@ -60,19 +60,12 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    const now = dayjs();
+    const {start , end} = this.gameEventService.timer();
 
-    //시작 신호
-    const startTime = now.format();
-    this.logger.log(`start: ${startTime}`);
-
-    //만료 신호
-    const endTime = now.add(1, 'm').format();
-    this.logger.log(`end: ${endTime}`);
     try {
       this.server
         .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.Timer, { start: startTime, end: endTime });
+        .emit(GameEvent.Timer, { start: start, end: end });
     } catch (error) {
       this.logger.error('event error', error);
     }

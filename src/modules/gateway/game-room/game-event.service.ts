@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
+import dayjs from 'dayjs';
 import { map, sortedLastIndexBy } from 'lodash';
 import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
@@ -153,6 +154,41 @@ export class GameEventService {
     );
   }
 
+  getJobData(playerCount: number) {
+    const mafia = 1;
+    const doctor = 1;
+    const police = 1;
+    let cr;
+    
+    if(playerCount < 4){
+      cr = 1;
+    }else{
+      cr = playerCount - (mafia + doctor + police);
+    }
+    
+    const jobData = [cr, mafia, doctor, police];
+
+    this.logger.log("jobData")
+    this.logger.log(jobData)
+    
+
+    return jobData;
+  }
+
+  timer(){
+    const now = dayjs();
+
+    //시작 신호
+    const startTime = now.format();
+    this.logger.log(`start: ${startTime}`);
+
+    //만료 신호
+    const endTime = now.add(1, 'm').format();
+    this.logger.log(`end: ${endTime}`);
+
+    return { start: startTime, end: endTime }
+  }
+
   grantJob(job: number[], Num: number) {
     const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
 
@@ -161,6 +197,7 @@ export class GameEventService {
     for (let jobs = 0; jobs < Num; jobs++) {
       roomJob.push(grantJob[typesOfJobs]);
       job[jobs]--;
+
       if (!job[typesOfJobs]) typesOfJobs++;
     }
 
@@ -277,14 +314,6 @@ export class GameEventService {
     return userNum;
   }
 
-  getJobData(playerCount: number) {
-    const mafia = 1;
-    const doctor = 1;
-    const police = 1;
-    const cr = playerCount - (mafia + doctor + police);
-    const jobData = [cr, mafia, doctor, police];
-    return jobData;
-  }
 
   //살아있는 각 팀멤버 수
   async livingHuman(roomId: number) {
