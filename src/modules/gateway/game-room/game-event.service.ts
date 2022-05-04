@@ -326,7 +326,7 @@ export class GameEventService {
     return await this.redisService.hget(this.makeGameKey(roomId), VOTE_FIELD);
   }
 
-  async setPlayerNum(roomId: number): Promise<number> {
+  async setPlayerNum(roomId: number){
     return await this.redisService.hincrby(
       this.makeGameKey(roomId),
       PLAYERNUM_FIELD,

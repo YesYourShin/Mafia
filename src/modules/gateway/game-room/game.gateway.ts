@@ -33,7 +33,7 @@ export class GameGateway
   ) {}
   @WebSocketServer() public server: Server;
 
-  // 가드를 통해서 플레이어인지 확인
+ // 가드를 통해서 플레이어인지 확인
   @UseGuards(GamePlayerGuard)
   @SubscribeMessage('game:join')
   async handleGameJoin(
@@ -45,7 +45,7 @@ export class GameGateway
     const { roomId } = data;
     socket.data['roomId'] = roomId;
 
-    this.logger.log(`gameRoom ${roomId}`);
+    this.logger.log(roomId);
 
     try {
       await socket.join(`${newNamespace.name}-${roomId}`);
@@ -118,6 +118,8 @@ export class GameGateway
     // if (gamePlayers.length < 6)
     //   //  throw new ForbiddenException()
     //   throw new ForbiddenException('인원이 부족합니다.');
+
+    this.logger.log(Players)
 
     let count;
     //count
@@ -350,7 +352,7 @@ export class GameGateway
     const newNamespace = socket.nsp;
     const { roomId } = socket.data;
 
-    socket.leave(`${newNamespace.name}-${roomId}`);
+    // socket.leave(`${newNamespace.name}-${roomId}`);
     this.logger.log(`socket disconnected: ${socket.id}`);
   }
 
