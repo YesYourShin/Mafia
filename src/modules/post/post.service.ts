@@ -60,7 +60,6 @@ export class PostService {
       take,
       (page - 1) * take,
     );
-
     const totalItems = await this.postRepository.findPagesCountByCategoryName(
       categoryName,
     );
@@ -70,11 +69,11 @@ export class PostService {
     const links = {};
 
     for (let i = 1; i <= 10; i++) {
-      const tPage = i + temp * take;
-      if (tPage > totalPages) break;
+      const tempPage = i + temp * take;
+      if (tempPage > totalPages) break;
       links[i] = `${this.configService.get(
         'FRONT_URL',
-      )}/community/post?category=${categoryName}&page=${tPage}`;
+      )}/community/post?category=${categoryName}&page=${tempPage}`;
     }
 
     const data = new Pagination(
