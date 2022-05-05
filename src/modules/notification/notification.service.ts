@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { Notification } from 'src/entities';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { NotificationRepository } from './notification.repository';
+import { ReadNotificationDto } from './dto/read-notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -9,23 +11,30 @@ export class NotificationService {
     private readonly notificationRepository: NotificationRepository,
   ) {}
   async create(createnotificationdto: CreateNotificationDto) {
-    return await this.notificationRepository.create(createnotificationdto);
+    const { id } = (
+      await this.notificationRepository.create(createnotificationdto)
+    ).identifiers[0];
+    return await this.findOne(id);
   }
 
   async findall() {
     return await this.notificationRepository.findall();
   }
 
-  async findone(id: number) {
-    return await this.notificationRepository.findone(id);
+  async findOne(id: string): Promise<Notification> {
+    return await this.notificationRepository.findOne(id);
   }
 
   async update(id: number, updatenotificationdto: UpdateNotificationDto) {
     return await this.notificationRepository.update(id, updatenotificationdto);
   }
 
-  async read(uuid: string) {
-    await this.notificationRepository.read(uuid);
+  async read(readNotificationDto: ReadNotificationDto) {
+    const { uuid, uuids } = readNotificationDto;
+    await this.notificationRepository.read(readNotificationDto);
+    if (uuids) {
+      return { uuids, read: true };
+    }
     return { uuid, read: true };
   }
 }
