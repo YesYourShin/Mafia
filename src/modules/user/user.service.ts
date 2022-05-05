@@ -9,7 +9,7 @@ import {
 import { InjectConnection } from '@nestjs/typeorm';
 import { NotificationType } from 'src/common/constants';
 import { EnumStatus } from 'src/common/constants/enum-status';
-import { Profile } from 'src/entities';
+import { Notification, Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { Connection } from 'typeorm';
 import { ONLINE } from '../gateway/game-room/constants';
@@ -173,10 +173,23 @@ export class UserService {
       this.logger.error(error);
     }
   }
+
   async getRanking(take: number, page: number): Promise<RankingDto> {
     const skip = (page - 1) * take;
     return await this.userRepository.getRanking(take, skip);
   }
+
+  async sendNotificationToOnlineUser(
+    id: number,
+    event: string,
+    notification: Notification,
+  ) {
+    const online = await this.redisService.getbit(ONLINE, id);
+    if (!online) {
+      this.userGateway.server.to(`/user-${id}`).emit(event, notification);
+    }
+  }
+
   async requestFriend(profile: ProfileInfo, id: number, requestId: number) {
     if (profile.userId !== requestId) {
       throw new ForbiddenException('자신의 요청이 아닙니다');
@@ -202,14 +215,12 @@ export class UserService {
       );
       await queryRunner.commitTransaction();
 
-      // 현재 유저가 접속해 있다면 알림을 보내준다.
       try {
-        const online = await this.redisService.getbit(ONLINE, id);
-        if (online) {
-          this.userGateway.server
-            .to(`/user-${requestId}`)
-            .emit(UserEvent.FRIEND_REQUEST, notification);
-        }
+        await this.sendNotificationToOnlineUser(
+          id,
+          UserEvent.FRIEND_REQUEST,
+          notification,
+        );
       } catch (e) {
         this.logger.error('친구 신청 알림 발생 실패');
       }
@@ -252,8 +263,8 @@ export class UserService {
     this.userGateway.server
       .to(`/user-${requestId}`)
       .emit(UserEvent.FRIEND_REQUEST_ACCEPT, {
+        type: EnumStatus.ACCEPT,
         user: profile,
-        message: '친구 수락',
       });
     return friend;
   }
