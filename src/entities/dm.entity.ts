@@ -1,15 +1,9 @@
-import {
-  IsDate,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDate, IsInt, IsNotEmpty, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -44,6 +38,7 @@ export class DM {
   })
   @IsInt()
   @IsNotEmpty()
+  @Index('IDX_DM_SENDER_ID')
   @Column({ type: 'int', name: 'sender_id', nullable: true })
   senderId: number | null;
 
@@ -59,12 +54,13 @@ export class DM {
     description: '받는 유저 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
+  @Index('IDX_DM_RECEIVER_ID')
   @Column({
     type: 'int',
     name: 'receiver_id',
     nullable: true,
   })
-  @IsNotEmpty()
   receiverId: number | null;
 
   @ManyToOne(() => User, (user) => user.receiveDm, {
