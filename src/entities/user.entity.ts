@@ -21,13 +21,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Like } from './like.entity';
-import { Friend } from './friend.entity';
 import { GameMember } from './game-member.entity';
-import { DM } from './dm.entity';
 import { Notification } from './notification.entity';
 import { Profile } from './profile.entity';
 import { Report } from './report.entity';
-import { VFriend } from './friend.view';
 
 @Index('UX_USER_SOCIAL_ID_PROVIDER', ['socialId', 'provider'], {
   unique: true,
@@ -93,12 +90,6 @@ export class User {
 
   @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
   gameMembers: GameMember[];
-
-  @OneToMany(() => DM, (dms) => dms.sender)
-  senderDm: DM[];
-
-  @OneToMany(() => DM, (dms) => dms.receiver)
-  receiveDm: DM[];
 
   @OneToMany(() => Notification, (notifications) => notifications.user)
   sendNotifications: Notification[];

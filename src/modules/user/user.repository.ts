@@ -20,7 +20,12 @@ export class UserRepository extends AbstractRepository<User> {
       .createQueryBuilder('user')
       .leftJoin('user.profile', 'profile')
       .leftJoin('profile.image', 'image')
-      .leftJoinAndSelect('user.receiveNotifications', 'notification')
+      .leftJoinAndSelect(
+        'user.receiveNotifications',
+        'notification',
+        'notification.read = :read',
+        { read: false },
+      )
       .select([
         'user.id',
         'user.socialId',
@@ -57,7 +62,6 @@ export class UserRepository extends AbstractRepository<User> {
         { provider },
       );
     }
-    qb.andWhere('notification.read = :read', { read: false });
     return await qb.getOne();
   }
 
@@ -66,7 +70,8 @@ export class UserRepository extends AbstractRepository<User> {
   ): Promise<UserProfile> {
     const { socialId, provider } = joinRequestUser;
     const user = await this.findOne({ socialId, provider });
-    if (!user) {
+    console.log('@@@@@@@@@@@@@@@@@', user);
+    if (!user?.id) {
       await this.repository
         .createQueryBuilder()
         .insert()

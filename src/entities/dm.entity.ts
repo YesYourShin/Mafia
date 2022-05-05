@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { Profile } from './profile.entity';
 
 @Entity('dm')
 export class DM {
@@ -42,11 +43,11 @@ export class DM {
   @Column({ type: 'int', name: 'sender_id', nullable: true })
   senderId: number | null;
 
-  @ManyToOne(() => User, (sender) => sender.senderDm, {
+  @ManyToOne(() => Profile, (sender) => sender.senderDm, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'sender_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'sender_id', referencedColumnName: 'userId' })
   sender: User;
 
   @ApiProperty({
@@ -63,11 +64,11 @@ export class DM {
   })
   receiverId: number | null;
 
-  @ManyToOne(() => User, (user) => user.receiveDm, {
+  @ManyToOne(() => Profile, (receiver) => receiver.receiverDm, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'receiver_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'receiver_id', referencedColumnName: 'userId' })
   receiver: User;
   @IsDate()
   @CreateDateColumn()
