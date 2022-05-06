@@ -13,7 +13,11 @@ import { Notification, Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { Connection } from 'typeorm';
 import { ONLINE } from '../gateway/game-room/constants';
-import { UserEvent } from '../gateway/game-room/constants/user-event';
+import {
+  FRIEND_ACCEPT_EVENT,
+  FRIEND_DELETE_EVENT,
+  FRIEND_REQUEST_EVENT,
+} from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
 import { CreateNotificationDto } from '../notification/dto/create-notification.dto';
@@ -182,7 +186,7 @@ export class UserService {
   async sendNotificationToOnlineUser(
     id: number,
     event: string,
-    notification: Notification,
+    notification: Notification | object,
   ) {
     const online = await this.redisService.getbit(ONLINE, id);
     if (!online) {
@@ -219,12 +223,13 @@ export class UserService {
       try {
         await this.sendNotificationToOnlineUser(
           targetId,
-          UserEvent.FRIEND_REQUEST,
+          FRIEND_REQUEST_EVENT,
           notification,
         );
       } catch (e) {
         this.logger.error('친구 신청 알림 발생 실패', e);
       }
+      return { userId: targetId, message: '친구 신청 성공' };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error(error);
@@ -262,12 +267,10 @@ export class UserService {
     const friend = await this.profileRepository.findOneWithImage({
       userId: requestId,
     });
-    this.userGateway.server
-      .to(`/user-${requestId}`)
-      .emit(UserEvent.FRIEND_REQUEST_ACCEPT, {
-        type: EnumStatus.ACCEPT,
-        user: profile,
-      });
+    this.userGateway.server.to(`/user-${requestId}`).emit(FRIEND_ACCEPT_EVENT, {
+      type: EnumStatus.ACCEPT,
+      user: profile,
+    });
     return friend;
   }
 
@@ -277,12 +280,18 @@ export class UserService {
       requestId,
     );
     await this.userRepository.rejectFriend(friendId1, friendId2);
-    return await this.userRepository.rejectFriend(profile.userId, requestId);
+    return { reject: true, userId: requestId };
   }
 
   async removeFriend(id: number, friendId: number) {
     const { friendId1, friendId2 } = this.checkOneWay(id, friendId);
     await this.userRepository.removeFriend(friendId1, friendId2);
+
+    await this.sendNotificationToOnlineUser(friendId, FRIEND_DELETE_EVENT, {
+      delete: true,
+      userId: id,
+      message: '친구 삭제',
+    });
     return { delete: true, friendId };
   }
 

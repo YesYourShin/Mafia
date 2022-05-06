@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DM_EVENT } from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
 import { Pagination } from '../post/paginate';
 import { DMRepository } from './dm.repository';
@@ -60,11 +61,10 @@ export class DMService {
     ).identifiers[0];
 
     const dm = await this.dmRepository.findOne(id);
-    const nsp = '/user';
 
     this.userGateway.server
-      .to([`${nsp}-${userId}`, `${nsp}-${friendId}`])
-      .emit('dm', dm);
+      .to([`/user-${userId}`, `/user-${friendId}`])
+      .emit(DM_EVENT, dm);
 
     return dm;
   }

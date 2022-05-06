@@ -13,8 +13,14 @@ export class DMRepository extends AbstractRepository<DM> {
     return await getConnection()
       .createQueryBuilder()
       .from(DM, 'dm')
-      .innerJoinAndSelect('dm.sender', 'sender')
-      .innerJoinAndSelect('dm.receiver', 'receiver')
+      .innerJoin('dm.sender', 'sender')
+      .innerJoin('dm.receiver', 'receiver')
+      .leftJoin('sender.image', 'senderImage')
+      .leftJoin('receiver.image', 'receiverImage')
+      .select(['dm.id', 'dm.message', 'dm.createdAt'])
+      .addSelect(['sender.id', 'sender.nickname'])
+      .addSelect(['receiver.id', 'receiver.nickname'])
+      .addSelect(['senderImage.location', 'receiverImage.location'])
       .where(
         '((dm.senderId = :userId AND dm.receiverId = :friendId) OR (dm.receiverId = :userId AND dm.senderId = :friendId))',
         { friendId, userId },
@@ -31,7 +37,8 @@ export class DMRepository extends AbstractRepository<DM> {
       .from(DM, 'dm')
       .leftJoin('dm.sender', 'sender')
       .leftJoin('dm.receiver', 'receiver')
-      .select('*')
+      .select(['dm.id', 'dm.message', 'dm.createdAt'])
+      .addSelect(['sender.id', 'sender.nickname', 'sender.image'])
       .where('dm.id = :id', { id })
       .getOne();
   }

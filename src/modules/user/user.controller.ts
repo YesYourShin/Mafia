@@ -245,7 +245,7 @@ export class UserController {
     description: '친구 신청 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        message: '친구 신청 완료',
+        message: '친구 신청 성공',
       }),
     },
   })
