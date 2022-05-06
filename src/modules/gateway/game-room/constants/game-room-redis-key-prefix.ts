@@ -5,6 +5,7 @@ export const ROOM_NUMBER = 'daily-room-number';
 
 export const GAME_ROOM = 'game-room';
 export const PLAYER_FIELD = 'player';
+
 export const PLAYERJOB_FIELD = 'player-job';
 export const VOTE_FIELD = 'vote';
 export const FINISH_VOTE_FIELD = 'finish-vote';
