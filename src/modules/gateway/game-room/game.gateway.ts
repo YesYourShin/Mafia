@@ -167,7 +167,7 @@ export class GameGateway
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
     const { roomId } = socket.data;
-    await this.gameEventService.setVote(roomId, data.vote);
+    return await this.gameEventService.setVote(roomId, data.vote);
   }
 
   // 투표 합.
@@ -191,8 +191,7 @@ export class GameGateway
     if (gamePlayers.length === count) {
       await this.gameEventService.delPlayerNum(roomId);
 
-      const vote = await this.gameEventService.getVote(roomId);
-      const result = await this.gameEventService.sortfinishVote(roomId, vote);
+      const result = await this.gameEventService.finishVote(roomId);
 
       this.logger.log(result);
 

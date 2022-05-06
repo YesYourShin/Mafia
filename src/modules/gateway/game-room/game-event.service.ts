@@ -66,13 +66,18 @@ export class GameEventService {
     }
   }
 
-  async sortfinishVote(roomId: number, vote: number[]): Promise<object> {
+  async finishVote(roomId: number): Promise<object> {
     let redisVote = {};
+
+    const vote = await this.getVote(roomId);
 
     // 해당 숫자값 세주기
     vote.forEach((element) => {
       redisVote[element] = (redisVote[element] || 0) + 1;
     });
+
+    this.logger.log(vote);
+    this.logger.log(redisVote);
 
     redisVote = this.sortObject(redisVote, 'userNum', 'vote');
 
