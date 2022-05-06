@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NotificationType } from 'src/common/constants';
+import { Notification } from 'src/entities';
+import { ONLINE } from '../gateway/game-room/constants';
 import { DM_EVENT } from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
+import { CreateNotificationDto } from '../notification/dto';
+import { NotificationService } from '../notification/notification.service';
 import { Pagination } from '../post/paginate';
+import { RedisService } from '../redis/redis.service';
 import { DMRepository } from './dm.repository';
 import { CreateDMDto } from './dto/create-dm-dto';
 
@@ -12,6 +18,8 @@ export class DMService {
     private readonly dmRepository: DMRepository,
     private readonly userGateway: UserGateway,
     private readonly configService: ConfigService,
+    private readonly notificationService: NotificationService,
+    private readonly redisService: RedisService,
   ) {}
 
   async findAll(
@@ -62,9 +70,23 @@ export class DMService {
 
     const dm = await this.dmRepository.findOne(id);
 
-    this.userGateway.server
-      .to([`/user-${userId}`, `/user-${friendId}`])
-      .emit(DM_EVENT, dm);
+    const createNotificationDto = new CreateNotificationDto(
+      NotificationType.DM,
+      createDMDto,
+      userId,
+      friendId,
+    );
+
+    const notification = await this.notificationService.create(
+      createNotificationDto,
+    );
+
+    const online = await this.redisService.getbit(ONLINE, friendId);
+    if (online) {
+      this.userGateway.server
+        .to([`/user-${userId}`, `/user-${friendId}`])
+        .emit(DM_EVENT, notification);
+    }
 
     return dm;
   }

@@ -8,7 +8,7 @@ export class CreateDMDto {
     name: 'message',
     description: 'DM 메시지',
     required: true,
-    example: { message: 'Hello world' },
+    example: 'Hello world',
   })
   message: string;
 }

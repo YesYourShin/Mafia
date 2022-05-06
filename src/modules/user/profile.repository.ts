@@ -134,4 +134,13 @@ export class ProfileRepository extends AbstractRepository<Profile> {
       .where('profile.nickname = :nickname', { nickname })
       .getOne();
   }
+
+  async findNicknameByUserId(userId: number) {
+    return await getConnection()
+      .createQueryBuilder()
+      .from(Profile, 'profile')
+      .select(['profile.nickname'])
+      .where('profile.userId = :userId', { userId })
+      .getOne();
+  }
 }

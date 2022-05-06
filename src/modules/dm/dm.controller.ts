@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiTags,
 } from '@nestjs/swagger';
 import { UserDecorator } from 'src/decorators';
 import { LoggedInGuard } from '../auth/guards';
@@ -21,6 +22,7 @@ import { DMService } from './dm.service';
 import { CreateDMDto } from './dto/create-dm-dto';
 import { ExistFriendGuard } from './guards/exist-friend.guard';
 
+@ApiTags('DM')
 @UseGuards(LoggedInGuard)
 @Controller('dms/friends')
 export class DMController {

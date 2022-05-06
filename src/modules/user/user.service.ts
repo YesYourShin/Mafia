@@ -189,7 +189,7 @@ export class UserService {
     notification: Notification | object,
   ) {
     const online = await this.redisService.getbit(ONLINE, id);
-    if (!online) {
+    if (online) {
       this.userGateway.server.to(`/user-${id}`).emit(event, notification);
     }
   }
@@ -213,7 +213,7 @@ export class UserService {
       const notification = await this.notificationService.create(
         new CreateNotificationDto(
           NotificationType.REQUESTED_FRIEND,
-          JSON.stringify({ user: profile, message: '친구 요청' }),
+          `${profile.nickname}님에게 친구 요청이 왔습니다`,
           profile.userId,
           targetId,
         ),
@@ -268,7 +268,7 @@ export class UserService {
       userId: requestId,
     });
     this.userGateway.server.to(`/user-${requestId}`).emit(FRIEND_ACCEPT_EVENT, {
-      type: EnumStatus.ACCEPT,
+      accept: true,
       user: profile,
     });
     return friend;
@@ -290,7 +290,6 @@ export class UserService {
     await this.sendNotificationToOnlineUser(friendId, FRIEND_DELETE_EVENT, {
       delete: true,
       userId: id,
-      message: '친구 삭제',
     });
     return { delete: true, friendId };
   }
