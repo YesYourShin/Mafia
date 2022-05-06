@@ -72,7 +72,7 @@ export class DMService {
 
     const createNotificationDto = new CreateNotificationDto(
       NotificationType.DM,
-      createDMDto,
+      createDMDto.message,
       userId,
       friendId,
     );

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Notification } from 'src/entities';
+import { Pagination } from '../post/paginate';
 import {
   CreateNotificationDto,
   ReadNotificationDto,
@@ -11,6 +13,7 @@ import { NotificationRepository } from './notification.repository';
 export class NotificationService {
   constructor(
     private readonly notificationRepository: NotificationRepository,
+    private readonly configService: ConfigService,
   ) {}
   async create(createnotificationdto: CreateNotificationDto) {
     const { id } = (
@@ -19,8 +22,37 @@ export class NotificationService {
     return await this.findOne(id);
   }
 
-  async findall() {
-    return await this.notificationRepository.findall();
+  async findAll(userId: number, page: number, perPage: number) {
+    const { items, totalItems } = await this.notificationRepository.findAll(
+      userId,
+      page,
+      perPage,
+    );
+
+    const totalPages = Math.ceil(totalItems / perPage);
+    const itemCount = items.length;
+    const links = {};
+
+    for (let i = 1; i <= 5; i++) {
+      const tempPage = page + i;
+      if (tempPage > totalPages) break;
+      links[i] = `${this.configService.get(
+        'BACKEND_URL',
+      )}/users/notifications?page=${tempPage}&perPage=${perPage}`;
+    }
+
+    const data = new Pagination(
+      items,
+      {
+        itemCount,
+        totalItems,
+        totalPages,
+        currentPage: page,
+      },
+      links,
+    );
+
+    return data;
   }
 
   async findOne(id: string): Promise<Notification> {

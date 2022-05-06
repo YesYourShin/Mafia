@@ -7,16 +7,34 @@ import { UpdateNotificationDto } from './dto/update-notification.dto';
 @EntityRepository(Notification)
 export class NotificationRepository extends AbstractRepository<Notification> {
   async create(createnotificationdto: CreateNotificationDto) {
+    const { type, data, userId, targetId } = createnotificationdto;
     return await getConnection()
       .createQueryBuilder()
       .from(Notification, 'notification')
       .insert()
       .into('notification')
-      .values(createnotificationdto)
+      .values({
+        type,
+        data,
+        userId,
+        targetId,
+      })
       .execute();
   }
 
-  async findall() {}
+  async findAll(userId: number, page: number, perPage: number) {
+    const result = await getConnection()
+      .createQueryBuilder()
+      .from(Notification, 'notification')
+      .select(['*'])
+      .where('notification.userId = :userId', { userId })
+      .take(perPage)
+      .skip(perPage * (page - 1))
+      .orderBy('notification.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return { items: result[0], totalItems: result[1] };
+  }
 
   async findOne(uuid: string) {
     return await getConnection()
