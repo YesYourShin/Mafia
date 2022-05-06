@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Notification } from 'src/entities';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import {
+  CreateNotificationDto,
+  ReadNotificationDto,
+  UpdateNotificationDto,
+} from './dto';
 import { NotificationRepository } from './notification.repository';
-import { ReadNotificationDto } from './dto/read-notification.dto';
 
 @Injectable()
 export class NotificationService {

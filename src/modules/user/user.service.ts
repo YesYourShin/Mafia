@@ -190,15 +190,16 @@ export class UserService {
     }
   }
 
-  async requestFriend(profile: ProfileInfo, id: number, requestId: number) {
+  async requestFriend(
+    profile: ProfileInfo,
+    targetId: number,
+    requestId: number,
+  ) {
     if (profile.userId !== requestId) {
       throw new ForbiddenException('자신의 요청이 아닙니다');
     }
 
-    const { friendId1, friendId2 } = this.checkOneWay(
-      profile.userId,
-      requestId,
-    );
+    const { friendId1, friendId2 } = this.checkOneWay(profile.userId, targetId);
     const queryRunner = this.connection.createQueryRunner();
     await queryRunner.startTransaction();
 
@@ -208,25 +209,26 @@ export class UserService {
       const notification = await this.notificationService.create(
         new CreateNotificationDto(
           NotificationType.REQUESTED_FRIEND,
-          { user: profile, message: '친구 요청' },
+          JSON.stringify({ user: profile, message: '친구 요청' }),
           profile.userId,
-          id,
+          targetId,
         ),
       );
       await queryRunner.commitTransaction();
 
       try {
         await this.sendNotificationToOnlineUser(
-          id,
+          targetId,
           UserEvent.FRIEND_REQUEST,
           notification,
         );
       } catch (e) {
-        this.logger.error('친구 신청 알림 발생 실패');
+        this.logger.error('친구 신청 알림 발생 실패', e);
       }
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new InternalServerErrorException('친구 추가 이벤트 시 에러 발생');
+      this.logger.error(error);
+      throw new InternalServerErrorException('Database 친구 추가 에러 발생');
     } finally {
       await queryRunner.release();
     }

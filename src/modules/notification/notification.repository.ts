@@ -13,17 +13,6 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       .insert()
       .into('notification')
       .values(createnotificationdto)
-      // .updateEntity(true)
-      // .returning([
-      //   'uuid',
-      //   'type',
-      //   'data',
-      //   'userId',
-      //   'targetId',
-      //   'read',
-      //   'createdAt',
-      //   'updatedAt',
-      // ])
       .execute();
   }
 
@@ -50,7 +39,7 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       qb.where('notification.uuid IN (:...uuids)', { uuids });
     }
     if (uuid) {
-      qb.where('notification.uuid = :uuid', {});
+      qb.where('notification.uuid = :uuid', { uuid });
     }
     return await qb.execute();
   }

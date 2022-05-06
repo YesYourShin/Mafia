@@ -19,7 +19,7 @@ export class ExistUuidValidationPipe implements PipeTransform {
   toValidate(value: ReadNotificationDto) {
     if (!Object.keys(removeNilFromObject(value)).length) return false;
 
-    if (value.uuid || value.uuids) {
+    if (value.uuid || value?.uuids.length) {
       return true;
     }
     return false;

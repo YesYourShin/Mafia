@@ -70,7 +70,6 @@ export class UserRepository extends AbstractRepository<User> {
   ): Promise<UserProfile> {
     const { socialId, provider } = joinRequestUser;
     const user = await this.findOne({ socialId, provider });
-    console.log('@@@@@@@@@@@@@@@@@', user);
     if (!user?.id) {
       await this.repository
         .createQueryBuilder()
