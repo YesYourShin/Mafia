@@ -10,12 +10,12 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { GameEventService } from './game-event.service';
-import { AuthenticatedSocket } from './constants/authenticated-socket';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
+import { GameEvent } from './constants/game-event';
+import { FINISH_VOTE_FIELD, MAFIA_FIELD } from './constants/game-redis-key-prefix';
+import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
+import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-import { FINISH_VOTE_FIELD, GameEvent, MAFIA_FIELD } from './constants';
-import dayjs from 'dayjs';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
