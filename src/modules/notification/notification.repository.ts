@@ -40,6 +40,15 @@ export class NotificationRepository extends AbstractRepository<Notification> {
     return await getConnection()
       .createQueryBuilder()
       .from(Notification, 'notification')
+      .select([
+        'notification.uuid',
+        'notification.type',
+        'notification.data',
+        'notification.read',
+        'notification.userId',
+        'notification.targetId',
+        'notification.createdAt',
+      ])
       .where('notification.uuid = :uuid', { uuid })
       .getOne();
   }

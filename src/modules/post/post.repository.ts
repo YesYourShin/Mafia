@@ -94,32 +94,8 @@ export class PostRepository extends AbstractRepository<Post> {
       });
     }
 
-    return await qb.getMany();
-  }
-  async findPagesCountByCategoryName(categoryName: EnumCategoryName) {
-    const qb = this.repository
-      .createQueryBuilder('post')
-      .select('COUNT(*) AS postCount');
-
-    if (categoryName === EnumCategoryName.POPULAR) {
-      qb.leftJoin('post.likes', 'likes')
-        .groupBy('post.id')
-        .having('COUNT(likes.id) > 5');
-    }
-
-    if (
-      categoryName === EnumCategoryName.FREEBOARD ||
-      categoryName === EnumCategoryName.INFORMATION ||
-      categoryName === EnumCategoryName.ANNOUNCEMENT
-    ) {
-      qb.where('post.categoryName= :categoryName', { categoryName });
-    } else {
-      qb.where('post.categoryName IN (:...category)', {
-        category: [EnumCategoryName.FREEBOARD, EnumCategoryName.INFORMATION],
-      });
-    }
-
-    return await qb.getCount();
+    const result = await qb.getManyAndCount();
+    return { items: result[0], totalItems: result[1] };
   }
   async create(
     userId: number,

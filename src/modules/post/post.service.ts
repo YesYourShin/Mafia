@@ -55,14 +55,12 @@ export class PostService {
     return post;
   }
   async findAll(categoryName: EnumCategoryName, take: number, page: number) {
-    const items = await this.postRepository.findAll(
+    const { items, totalItems } = await this.postRepository.findAll(
       categoryName,
       take,
       (page - 1) * take,
     );
-    const totalItems = await this.postRepository.findPagesCountByCategoryName(
-      categoryName,
-    );
+
     const totalPages = Math.ceil(totalItems / take);
     const itemCount = items.length;
     const temp = Math.floor(page / take);

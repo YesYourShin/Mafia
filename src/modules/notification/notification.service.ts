@@ -16,10 +16,11 @@ export class NotificationService {
     private readonly configService: ConfigService,
   ) {}
   async create(createnotificationdto: CreateNotificationDto) {
-    const { id } = (
+    const { uuid } = (
       await this.notificationRepository.create(createnotificationdto)
     ).identifiers[0];
-    return await this.findOne(id);
+    console.log(uuid);
+    return await this.findOne(uuid);
   }
 
   async findAll(userId: number, page: number, perPage: number) {
@@ -55,8 +56,8 @@ export class NotificationService {
     return data;
   }
 
-  async findOne(id: string): Promise<Notification> {
-    return await this.notificationRepository.findOne(id);
+  async findOne(uuid: string): Promise<Notification> {
+    return await this.notificationRepository.findOne(uuid);
   }
 
   async update(id: number, updatenotificationdto: UpdateNotificationDto) {

@@ -10,7 +10,7 @@ export class DMRepository extends AbstractRepository<DM> {
     page: number,
     perPage: number,
   ) {
-    return await getConnection()
+    const result = await getConnection()
       .createQueryBuilder()
       .from(DM, 'dm')
       .innerJoin('dm.sender', 'sender')
@@ -29,6 +29,7 @@ export class DMRepository extends AbstractRepository<DM> {
       .skip(perPage * (page - 1))
       .orderBy('dm.createdAt', 'DESC')
       .getManyAndCount();
+    return { items: result[0], totalItems: result[1] };
   }
 
   async findOne(id: number) {

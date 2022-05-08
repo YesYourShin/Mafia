@@ -9,6 +9,7 @@ export class FriendProfile {
   image: {
     location: string;
   } | null;
+  online?: boolean;
 }
 
 export class UserProfile extends PickType(User, [

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NotificationType } from 'src/common/constants';
-import { Notification } from 'src/entities';
 import { ONLINE } from '../gateway/game-room/constants';
 import { DM_EVENT } from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
@@ -28,14 +27,12 @@ export class DMService {
     page: number,
     perPage: number,
   ) {
-    const dmsInfo = await this.dmRepository.findAll(
+    const { items, totalItems } = await this.dmRepository.findAll(
       userId,
       friendId,
       page,
       perPage,
     );
-    const items = dmsInfo[0];
-    const totalItems = dmsInfo[1];
 
     const totalPages = Math.ceil(totalItems / perPage);
     const itemCount = items.length;
@@ -80,13 +77,12 @@ export class DMService {
     const notification = await this.notificationService.create(
       createNotificationDto,
     );
-
+    const nsps = [`/user-${userId}`];
     const online = await this.redisService.getbit(ONLINE, friendId);
     if (online) {
-      this.userGateway.server
-        .to([`/user-${userId}`, `/user-${friendId}`])
-        .emit(DM_EVENT, notification);
+      nsps.push(`/user-${friendId}`);
     }
+    this.userGateway.server.to(nsps).emit(DM_EVENT, notification);
 
     return dm;
   }

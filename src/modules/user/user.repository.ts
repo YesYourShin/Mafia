@@ -154,6 +154,7 @@ export class UserRepository extends AbstractRepository<User> {
       .leftJoin('profile.image', 'image')
       .select(['profile.id', 'profile.userId', 'profile.nickname'])
       .addSelect(['image.location'])
+      .orderBy('profile.nickname', 'ASC')
       .where('friend.userId = :userId', { userId });
 
     if (friendId) {
@@ -161,7 +162,8 @@ export class UserRepository extends AbstractRepository<User> {
       return await qb.getOne();
     }
 
-    return await qb.getMany();
+    const result = await qb.getMany();
+    return result.map((value) => value.vFriend);
   }
 
   async existFriendRequest(userId: number, friendId: number) {

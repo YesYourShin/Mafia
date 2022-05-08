@@ -14,7 +14,7 @@ import {
 } from 'typeorm';
 import { Profile } from './profile.entity';
 
-@Unique('UK_FRIEND_USER_ID_FRIEND_ID', ['user', 'friendId'])
+@Unique('UK_FRIEND_USER_ID_FRIEND_ID', ['userId', 'friendId'])
 @Entity('friend')
 export class Friend {
   @ApiProperty({
@@ -32,7 +32,7 @@ export class Friend {
   })
   @IsInt()
   @IsNotEmpty()
-  @Index('UX_FRIEND_USER_ID', { unique: true })
+  @Index('IDX_FRIEND_USER_ID')
   @Column({ type: 'int', name: 'user_id' })
   userId: number;
 
@@ -49,7 +49,7 @@ export class Friend {
   })
   @IsInt()
   @IsNotEmpty()
-  @Index('UX_FRIEND_FRIEND_ID', { unique: true })
+  @Index('IDX_FRIEND_FRIEND_ID')
   @Column({ type: 'int', name: 'friend_id' })
   friendId: number;
 
