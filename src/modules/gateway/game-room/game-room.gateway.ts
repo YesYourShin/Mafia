@@ -65,7 +65,8 @@ export class GameRoomGateway
   @SubscribeMessage(GameRoomEvent.SPEAK)
   async handleSpeak(
     @ConnectedSocket() socket: AuthenticatedSocket,
-    @MessageBody() data: { userId: number; speaking: boolean },
+    @MessageBody()
+    data: { userId: number; nickname: string; speaking: boolean },
   ) {
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
