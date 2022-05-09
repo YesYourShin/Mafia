@@ -72,6 +72,22 @@ export class GameGateway
     }
   }
 
+  @SubscribeMessage(GameEvent.USEJOBS)
+  async HandleUseJobs( 
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ){
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    const status = await this.gameEventService.useState(roomId);
+
+    this.server
+    .in(`${newNamespace.name}-${roomId}`)
+    .emit(GameEvent.USEJOBS, status);
+
+    await this.gameEventService.delValue(roomId, MAFIA_FIELD);
+  }
+
   @SubscribeMessage(GameEvent.DAY)
   async HandleDay(
     @ConnectedSocket() socket: AuthenticatedSocket,
@@ -79,21 +95,7 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
-
-    //능력 사용.
-    // 경찰이랑 의사 능력 사용. 
-    
-    const status = await this.gameEventService.useState(roomId);
-
-    this.logger.log(status);
-    
-    if(!status){
-      this.server
-      .in(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.USEJOBS, status);
-      await this.gameEventService.delValue(roomId, MAFIA_FIELD);
-    }
-
+   
     // 승리조건
     const living = await this.gameEventService.livingHuman(roomId);
     const winner = this.gameEventService.winner(living.mafia, living.citizen);
@@ -197,9 +199,8 @@ export class GameGateway
     if (gamePlayers.length === count) {
       await this.gameEventService.delPlayerNum(roomId);
 
-      const result = await this.gameEventService.sortfinishVote(roomId);
-
-      this.logger.log(result);
+      let result = await this.gameEventService.sortfinishVote(roomId);
+      if(!result) result = 0;
 
       this.server
         .to(`${newNamespace.name}-${roomId}`)
@@ -215,19 +216,23 @@ export class GameGateway
       @ConnectedSocket() socket: AuthenticatedSocket,
     ) {
       const { roomId } = socket.data;
-  
+      this.logger.log(`투표합 ${data.vote}`)
+
       await this.gameEventService.setVote(roomId, data.vote);
     }
 
-  @SubscribeMessage(GameEvent.PUNISH)
-  async handlePunish(
-    @MessageBody() data: { punish: boolean },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    const { roomId } = socket.data;
+    @SubscribeMessage(GameEvent.PUNISH)
+    async handlePunish(
+      @MessageBody() data: { punish: boolean },
+      @ConnectedSocket() socket: AuthenticatedSocket,
+    ) {
+      
+      this.logger.log(`handlePunish`);
+      this.logger.log(`data.punish 값 ${data.punish}`);
+      const { roomId } = socket.data;
 
-    await this.gameEventService.setPunish(roomId, data.punish);
-  }
+      await this.gameEventService.setPunish(roomId, data.punish);
+    }
 
   // punis = [];
 
@@ -311,11 +316,10 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
-    const { userNum } = data;
 
     const voteUserNum = await this.gameEventService.useMafia(
       roomId,
-      userNum,
+      data.userNum,
       user,
     );
 

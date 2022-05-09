@@ -35,7 +35,7 @@ export class GameEventService {
     this.logger.log(`start: ${startTime}`);
 
     //만료 신호
-    const endTime = now.add(1, 'm').format();
+    const endTime = now.add(1, 's').format();
     this.logger.log(`end: ${endTime}`);
 
     return { start: startTime, end: endTime }
@@ -138,10 +138,15 @@ export class GameEventService {
   }
 
 
-  async sortfinishVote(roomId: number): Promise<object> {
+  async sortfinishVote(roomId: number): Promise<any> {
     let redisVote = {};
+    let vote;
     
-    const vote = await this.getVote(roomId);
+    vote = await this.getVote(roomId);
+  
+    if(!vote){
+      return vote;
+    }
 
     // 해당 숫자값 세주기
     vote.forEach((element) => {
@@ -202,15 +207,20 @@ export class GameEventService {
   }
 
   async useState(roomId: number){
-    const mafiaNum = await this.redisService.hget(this.makeGameKey(roomId), MAFIA_FIELD);
-    const doctorNum = await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
 
+    let mafiaNum;
+    let doctorNum;
     let gamePlayer;
-    let state;
 
-    if(!mafiaNum && !doctorNum){
-      return null;
+    try{
+    mafiaNum = await this.redisService.hget(this.makeGameKey(roomId), MAFIA_FIELD);
+    doctorNum = await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
+    }catch(error){
+      this.logger.log(`useState error `, error)
     }
+    
+    this.logger.log(mafiaNum);
+    this.logger.log(doctorNum);
 
     if(mafiaNum !== doctorNum){
       // 마피아가 선택한 유저 죽음.
@@ -218,6 +228,9 @@ export class GameEventService {
       gamePlayer[mafiaNum].die = !gamePlayer[mafiaNum].die;
       await this.death(roomId, mafiaNum);
     }
+
+    this.logger.log(gamePlayer[mafiaNum].die);
+
     return {userNum: mafiaNum, die: gamePlayer[mafiaNum].die};
   }
 
@@ -335,7 +348,7 @@ export class GameEventService {
     return await this.redisService.hset(
       this.makeGameKey(roomId),
       VOTE_FIELD,
-      vote,
+      votes,
     );
   }
 
@@ -349,6 +362,8 @@ export class GameEventService {
 
   async getPunishSum(roomId: number){
     let punish = await this.getPunish(roomId);
+
+    this.logger.log(punish);
 
     const punisAgreement = punish.filter((item) => {
       item === true;
@@ -366,7 +381,7 @@ export class GameEventService {
     await this.redisService.hset(
       this.makeGameKey(roomId),
       PUNISH_FIELD,
-      punish,
+      punishs,
     );
   }
 
