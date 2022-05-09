@@ -95,18 +95,23 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
+    this.logger.log(data.day);
    
     // 승리조건
-    const living = await this.gameEventService.livingHuman(roomId);
-    const winner = this.gameEventService.winner(living.mafia, living.citizen);
+    // const living = await this.gameEventService.livingHuman(roomId);
+    const winner = this.gameEventService.winner(roomId);
 
     // ----------이벤트 추가 회의 한번..
     if (winner) {
+      this.logger.log(`if 우승 ${winner}`);
+      this.logger.log(`if day값 : ${data.day}`);
       this.server
         .in(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.WINNER, { winner: winner });
     }else{
           // default - 밤 = false
+      this.logger.log(`else 우승 ${winner}`);
+      this.logger.log(`else day값 : ${data.day}`);
     const thisDay = !data.day;
     this.server
       .in(`${newNamespace.name}-${roomId}`)

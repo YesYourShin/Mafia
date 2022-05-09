@@ -2,6 +2,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
 import e from 'express';
+import { type } from 'os';
 import { doc } from 'prettier';
 // import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
@@ -321,18 +322,30 @@ export class GameEventService {
     );
 
     const livingMafia = gamePlayer.filter((player) => {
-      player.job === 'MAFIA' && player.die === false;
-    }).length;
+     return  player.job === 'MAFIA' && player.die === false }).length;
 
-    const livingCitizen = gamePlayer - livingMafia;
+    const livingCitizen = gamePlayer.length - livingMafia;
 
     return { mafia: livingMafia, citizen: livingCitizen };
   }
 
-  winner(mafia: number, citizen: number) {
+  // winner(mafia: number, citizen: number) {
+  //   this.logger.log(`winne 마피아 ${mafia}, 시민 ${citizen}`)
+
+  //   if (!mafia) {
+  //     return 'CITIZEN';
+  //   } else if (mafia >= citizen) {
+  //     return 'MAFIA';
+  //   }
+  //   return null;
+  // }
+
+  async winner(roomId: number) {
+    const {mafia, citizen} = await this.livingHuman(roomId)
+
     if (!mafia) {
       return 'CITIZEN';
-    } else if (mafia === citizen) {
+    } else if (mafia >= citizen) {
       return 'MAFIA';
     }
     return null;
