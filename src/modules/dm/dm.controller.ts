@@ -244,6 +244,6 @@ export class DMController {
     @Param('friendId') friendId: number,
     @UserDecorator() user: UserProfile,
   ) {
-    return await this.dmService.create(user.id, friendId, createDMDto);
+    return await this.dmService.create(user.profile, friendId, createDMDto);
   }
 }

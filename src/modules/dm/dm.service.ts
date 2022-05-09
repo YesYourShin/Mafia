@@ -8,6 +8,7 @@ import { CreateNotificationDto } from '../notification/dto';
 import { NotificationService } from '../notification/notification.service';
 import { Pagination } from '../post/paginate';
 import { RedisService } from '../redis/redis.service';
+import { ProfileInfo, UserProfile } from '../user/dto';
 import { DMRepository } from './dm.repository';
 import { CreateDMDto } from './dto/create-dm-dto';
 
@@ -60,21 +61,31 @@ export class DMService {
     return data;
   }
 
-  async create(userId: number, friendId: number, createDMDto: CreateDMDto) {
+  async create(
+    sender: ProfileInfo,
+    receiverId: number,
+    createDMDto: CreateDMDto,
+  ) {
     const { id } = (
-      await this.dmRepository.create(userId, friendId, createDMDto)
+      await this.dmRepository.create(sender.userId, receiverId, createDMDto)
     ).identifiers[0];
 
     const dm = await this.dmRepository.findOne(id);
 
-    const nsps = [`/user-${userId}`];
-    const online = await this.redisService.getbit(ONLINE, friendId);
+    const nsps = [`/user-${sender.userId}`];
+
+    const online = await this.redisService.getbit(ONLINE, receiverId);
     if (online) {
-      nsps.push(`/user-${friendId}`);
+      nsps.push(`/user-${receiverId}`);
     }
     this.userGateway.server.to(nsps).emit(DM_EVENT, {
-      senderId: userId,
-      receiverId: friendId,
+      sender: {
+        userId: sender.userId,
+        nickname: sender.nickname,
+      },
+      receiver: {
+        userId: receiverId,
+      },
       message: createDMDto.message,
     });
 
