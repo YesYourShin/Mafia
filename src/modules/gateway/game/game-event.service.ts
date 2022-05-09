@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
+import e from 'express';
 import { doc } from 'prettier';
 // import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
@@ -217,16 +218,7 @@ export class GameEventService {
       gamePlayer[mafiaNum].die = !gamePlayer[mafiaNum].die;
       await this.death(roomId, mafiaNum);
     }
-
-
-    this.logger.log(mafiaNum);
-    this.logger.log(doctorNum);
-    
-
     return {userNum: mafiaNum, die: gamePlayer[mafiaNum].die};
-
- 
-
   }
 
   
@@ -234,26 +226,8 @@ export class GameEventService {
     return `${GAME}:${roomId}`;
   }
 
-  async setPunish(roomId: number, punish: boolean): Promise<any> {
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      PUNISH_FIELD,
-      punish,
-    );
-  }
 
-  async getPunish(roomId: number): Promise<number> {
-    const punish = await this.redisService.hget(
-      this.makeGameKey(roomId),
-      PUNISH_FIELD,
-    );
 
-    const punisAgreement = punish.filter((item) => {
-      item === true;
-    }).length;
-
-    return punisAgreement;
-  }
 
   async usePolice(
     roomId: number,
@@ -351,11 +325,48 @@ export class GameEventService {
     return null;
   }
 
-  async setVote(roomId: number, vote: number[]): Promise<any> {
+  async setVote(roomId: number, vote: number): Promise<any> {
+    let votes = await this.getVote(roomId);
+
+    if(!votes) votes = [];
+
+    votes.push(vote);
+
     return await this.redisService.hset(
       this.makeGameKey(roomId),
       VOTE_FIELD,
       vote,
+    );
+  }
+
+  
+  async getPunish(roomId: number): Promise<any> {
+    return await this.redisService.hget(
+      this.makeGameKey(roomId),
+      PUNISH_FIELD,
+      );
+  }
+
+  async getPunishSum(roomId: number){
+    let punish = await this.getPunish(roomId);
+
+    const punisAgreement = punish.filter((item) => {
+      item === true;
+    }).length;
+
+    return punisAgreement;
+  }
+
+  async setPunish(roomId: number, punish: boolean): Promise<any> {
+    let punishs = await this.getPunish(roomId);
+
+    if(!punishs) punishs = [];
+    punishs.push(punish);
+    
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      PUNISH_FIELD,
+      punish,
     );
   }
 

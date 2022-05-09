@@ -174,24 +174,7 @@ export class GameGateway
     this.server.in(socket.id).emit(GameEvent.JOB, Players);
   }
 
-  //투표
-  @SubscribeMessage(GameEvent.VOTE)
-  async handleVote(
-    @MessageBody() data: { vote: number },
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    const { roomId } = socket.data;
 
-    let votes = await this.gameEventService.getVote(roomId);
-
-    if(!votes){
-      votes = [];
-    }
-
-    votes.push(data.vote)
-
-    await this.gameEventService.setVote(roomId, votes);
-  }
 
   // 투표 합.
   @SubscribeMessage(GameEvent.FINISHV)
@@ -224,12 +207,25 @@ export class GameGateway
     }
   }
 
+
+    //투표
+    @SubscribeMessage(GameEvent.VOTE)
+    async handleVote(
+      @MessageBody() data: { vote: number },
+      @ConnectedSocket() socket: AuthenticatedSocket,
+    ) {
+      const { roomId } = socket.data;
+  
+      await this.gameEventService.setVote(roomId, data.vote);
+    }
+
   @SubscribeMessage(GameEvent.PUNISH)
   async handlePunish(
     @MessageBody() data: { punish: boolean },
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
     const { roomId } = socket.data;
+
     await this.gameEventService.setPunish(roomId, data.punish);
   }
 
@@ -256,7 +252,7 @@ export class GameGateway
     if (gamePlayers.length === count) {
       await this.gameEventService.delPlayerNum(roomId);
 
-      const agreement = await this.gameEventService.getPunish(roomId);
+      const agreement = await this.gameEventService.getPunishSum(roomId);
       // const Opposition = gamePlayers.length - Agreement;
 
       // 버전 1 , 찬성값만 주기
