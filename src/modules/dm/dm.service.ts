@@ -67,22 +67,16 @@ export class DMService {
 
     const dm = await this.dmRepository.findOne(id);
 
-    const createNotificationDto = new CreateNotificationDto(
-      NotificationType.DM,
-      createDMDto.message,
-      userId,
-      friendId,
-    );
-
-    const notification = await this.notificationService.create(
-      createNotificationDto,
-    );
     const nsps = [`/user-${userId}`];
     const online = await this.redisService.getbit(ONLINE, friendId);
     if (online) {
       nsps.push(`/user-${friendId}`);
     }
-    this.userGateway.server.to(nsps).emit(DM_EVENT, notification);
+    this.userGateway.server.to(nsps).emit(DM_EVENT, {
+      senderId: userId,
+      receiverId: friendId,
+      message: createDMDto.message,
+    });
 
     return dm;
   }
