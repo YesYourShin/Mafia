@@ -8,7 +8,7 @@ import { doc } from 'prettier';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
-import { 
+import {
   DOCTOR_FIELD,
   FINISH_VOTE_FIELD,
   GAME,
@@ -28,7 +28,7 @@ export class GameEventService {
     private readonly redisService: RedisService,
   ) {}
 
-  timer(){
+  timer() {
     const now = dayjs();
 
     //시작 신호
@@ -39,9 +39,9 @@ export class GameEventService {
     const endTime = now.add(1, 's').format();
     this.logger.log(`end: ${endTime}`);
 
-    return { start: startTime, end: endTime }
+    return { start: startTime, end: endTime };
   }
-  
+
   // 해당 방의 게임 플레이어 값을 찾아서 제공.
   async findPlayers(roomId: number): Promise<Player[]> {
     const players = await this.redisService.hget(
@@ -67,7 +67,6 @@ export class GameEventService {
 
   //   return game;
   // }
-
 
   async getPlayerJobs(roomId: number) {
     try {
@@ -101,7 +100,7 @@ export class GameEventService {
     const doctor = 1;
     const police = 1;
 
-    let cr = playerCount < 4 ? 1 : playerCount - (mafia + doctor + police);
+    const cr = playerCount < 4 ? 1 : playerCount - (mafia + doctor + police);
 
     const jobData = [cr, mafia, doctor, police];
 
@@ -138,14 +137,13 @@ export class GameEventService {
     return strikeOut;
   }
 
-
   async sortfinishVote(roomId: number): Promise<any> {
     let redisVote = {};
-    let vote;
-    
-    vote = await this.getVote(roomId);
-  
-    if(!vote){
+    const vote = await this.getVote(roomId);
+
+    // vote = await this.getVote(roomId);
+
+    if (!vote) {
       return vote;
     }
 
@@ -207,23 +205,28 @@ export class GameEventService {
     return userNum;
   }
 
-  async useState(roomId: number){
-
+  async useState(roomId: number) {
     let mafiaNum;
     let doctorNum;
     let gamePlayer;
 
-    try{
-    mafiaNum = await this.redisService.hget(this.makeGameKey(roomId), MAFIA_FIELD);
-    doctorNum = await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
-    }catch(error){
-      this.logger.log(`useState error `, error)
+    try {
+      mafiaNum = await this.redisService.hget(
+        this.makeGameKey(roomId),
+        MAFIA_FIELD,
+      );
+      doctorNum = await this.redisService.hget(
+        this.makeGameKey(roomId),
+        DOCTOR_FIELD,
+      );
+    } catch (error) {
+      this.logger.log(`useState error `, error);
     }
-    
+
     this.logger.log(mafiaNum);
     this.logger.log(doctorNum);
 
-    if(mafiaNum !== doctorNum){
+    if (mafiaNum !== doctorNum) {
       // 마피아가 선택한 유저 죽음.
       gamePlayer = await this.getPlayerJobs(roomId);
       gamePlayer[mafiaNum].die = !gamePlayer[mafiaNum].die;
@@ -232,16 +235,12 @@ export class GameEventService {
 
     this.logger.log(gamePlayer[mafiaNum].die);
 
-    return {userNum: mafiaNum, die: gamePlayer[mafiaNum].die};
+    return { userNum: mafiaNum, die: gamePlayer[mafiaNum].die };
   }
 
-  
   makeGameKey(roomId: number): string {
     return `${GAME}:${roomId}`;
   }
-
-
-
 
   async usePolice(
     roomId: number,
@@ -267,7 +266,11 @@ export class GameEventService {
     }
   }
 
-  async useMafia(roomId: number, userNum: number, user: UserProfile): Promise<number> {
+  async useMafia(
+    roomId: number,
+    userNum: number,
+    user: UserProfile,
+  ): Promise<number> {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
     let mafia;
@@ -290,7 +293,11 @@ export class GameEventService {
     return userNum;
   }
 
-  async useDoctor(roomId: number, userNum: number, user: UserProfile): Promise<number> {
+  async useDoctor(
+    roomId: number,
+    userNum: number,
+    user: UserProfile,
+  ): Promise<number> {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
     let doctor;
@@ -313,7 +320,6 @@ export class GameEventService {
     return userNum;
   }
 
-
   //살아있는 각 팀멤버 수
   async livingHuman(roomId: number) {
     const gamePlayer = await this.redisService.hget(
@@ -322,7 +328,8 @@ export class GameEventService {
     );
 
     const livingMafia = gamePlayer.filter((player) => {
-     return  player.job === 'MAFIA' && player.die === false }).length;
+      return player.job === 'MAFIA' && player.die === false;
+    }).length;
 
     const livingCitizen = gamePlayer.length - livingMafia;
 
@@ -341,7 +348,7 @@ export class GameEventService {
   // }
 
   async winner(roomId: number) {
-    const {mafia, citizen} = await this.livingHuman(roomId)
+    const { mafia, citizen } = await this.livingHuman(roomId);
 
     if (!mafia) {
       return 'CITIZEN';
@@ -354,7 +361,7 @@ export class GameEventService {
   async setVote(roomId: number, vote: number): Promise<any> {
     let votes = await this.getVote(roomId);
 
-    if(!votes) votes = [];
+    if (!votes) votes = [];
 
     votes.push(vote);
 
@@ -365,16 +372,12 @@ export class GameEventService {
     );
   }
 
-  
   async getPunish(roomId: number): Promise<any> {
-    return await this.redisService.hget(
-      this.makeGameKey(roomId),
-      PUNISH_FIELD,
-      );
+    return await this.redisService.hget(this.makeGameKey(roomId), PUNISH_FIELD);
   }
 
-  async getPunishSum(roomId: number){
-    let punish = await this.getPunish(roomId);
+  async getPunishSum(roomId: number) {
+    const punish = await this.getPunish(roomId);
 
     this.logger.log(punish);
 
@@ -388,9 +391,9 @@ export class GameEventService {
   async setPunish(roomId: number, punish: boolean): Promise<any> {
     let punishs = await this.getPunish(roomId);
 
-    if(!punishs) punishs = [];
+    if (!punishs) punishs = [];
     punishs.push(punish);
-    
+
     await this.redisService.hset(
       this.makeGameKey(roomId),
       PUNISH_FIELD,
@@ -416,12 +419,12 @@ export class GameEventService {
     );
   }
 
-  async delValue(roomId:number, value){
+  async delValue(roomId: number, value) {
     const key = await this.makeGameKey(roomId);
 
-    switch(value){
+    switch (value) {
       case MAFIA_FIELD:
-      case DOCTOR_FIELD: 
+      case DOCTOR_FIELD:
         await this.redisService.hdel(key, MAFIA_FIELD);
         await this.redisService.hdel(key, DOCTOR_FIELD);
         break;
@@ -433,6 +436,5 @@ export class GameEventService {
         await this.redisService.hdel(key, PUNISH_FIELD);
         break;
     }
-    
   }
 }

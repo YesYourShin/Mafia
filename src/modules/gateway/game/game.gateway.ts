@@ -12,7 +12,10 @@ import {
 import { Server } from 'socket.io';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
 import { GameEvent } from './constants/game-event';
-import { FINISH_VOTE_FIELD, MAFIA_FIELD } from './constants/game-redis-key-prefix';
+import {
+  FINISH_VOTE_FIELD,
+  MAFIA_FIELD,
+} from './constants/game-redis-key-prefix';
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
@@ -61,29 +64,27 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
-    const {start , end} = this.gameEventService.timer();
+    const { start, end } = this.gameEventService.timer();
 
     try {
       this.server
         .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.TIMER, { start: start}, {end: end });
+        .emit(GameEvent.TIMER, { start: start }, { end: end });
     } catch (error) {
       this.logger.error('event error', error);
     }
   }
 
   @SubscribeMessage(GameEvent.USEJOBS)
-  async HandleUseJobs( 
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ){
+  async HandleUseJobs(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
     const status = await this.gameEventService.useState(roomId);
 
     this.server
-    .in(`${newNamespace.name}-${roomId}`)
-    .emit(GameEvent.USEJOBS, status);
+      .in(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.USEJOBS, status);
 
     await this.gameEventService.delValue(roomId, MAFIA_FIELD);
   }
@@ -96,7 +97,7 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
     this.logger.log(data.day);
-   
+
     // 승리조건
     // const living = await this.gameEventService.livingHuman(roomId);
     const winner = this.gameEventService.winner(roomId);
@@ -108,16 +109,16 @@ export class GameGateway
       this.server
         .in(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.WINNER, { winner: winner });
-    }else{
-          // default - 밤 = false
+    } else {
+      // default - 밤 = false
       this.logger.log(`else 우승 ${winner}`);
       this.logger.log(`else day값 : ${data.day}`);
-    const thisDay = !data.day;
-    this.server
-      .in(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.DAY, { day: thisDay });
+      const thisDay = !data.day;
+      this.logger.log(thisDay);
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.DAY, { day: thisDay });
     }
-
   }
 
   //이겼을 시, 게임 정보 db에 저장하는 부분 로직도 짜야함.
@@ -181,8 +182,6 @@ export class GameGateway
     this.server.in(socket.id).emit(GameEvent.JOB, Players);
   }
 
-
-
   // 투표 합.
   @SubscribeMessage(GameEvent.FINISHV)
   async handleFinishVote(@ConnectedSocket() socket: AuthenticatedSocket) {
@@ -205,7 +204,7 @@ export class GameGateway
       await this.gameEventService.delPlayerNum(roomId);
 
       let result = await this.gameEventService.sortfinishVote(roomId);
-      if(!result) result = 0;
+      if (!result) result = 0;
 
       this.server
         .to(`${newNamespace.name}-${roomId}`)
@@ -213,31 +212,37 @@ export class GameGateway
     }
   }
 
+  //투표
+  // @SubscribeMessage(GameEvent.VOTE)
+  // async handleVote(
+  //   @MessageBody() data: { vote: number },
+  //   @ConnectedSocket() socket: AuthenticatedSocket,
+  // ) {
+  //   const { roomId } = socket.data;
 
-    //투표
-    @SubscribeMessage(GameEvent.VOTE)
-    async handleVote(
-      @MessageBody() data: { vote: number },
-      @ConnectedSocket() socket: AuthenticatedSocket,
-    ) {
-      const { roomId } = socket.data;
-      this.logger.log(`투표합 ${data.vote}`)
+  //투표
+  @SubscribeMessage(GameEvent.VOTE)
+  async handleVote(
+    @MessageBody() data: { vote: number },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    const { roomId } = socket.data;
+    this.logger.log(`투표합 ${data.vote}`);
 
-      await this.gameEventService.setVote(roomId, data.vote);
-    }
+    await this.gameEventService.setVote(roomId, data.vote);
+  }
 
-    @SubscribeMessage(GameEvent.PUNISH)
-    async handlePunish(
-      @MessageBody() data: { punish: boolean },
-      @ConnectedSocket() socket: AuthenticatedSocket,
-    ) {
-      
-      this.logger.log(`handlePunish`);
-      this.logger.log(`data.punish 값 ${data.punish}`);
-      const { roomId } = socket.data;
+  @SubscribeMessage(GameEvent.PUNISH)
+  async handlePunish(
+    @MessageBody() data: { punish: boolean },
+    @ConnectedSocket() socket: AuthenticatedSocket,
+  ) {
+    this.logger.log(`handlePunish`);
+    this.logger.log(`data.punish 값 ${data.punish}`);
+    const { roomId } = socket.data;
 
-      await this.gameEventService.setPunish(roomId, data.punish);
-    }
+    await this.gameEventService.setPunish(roomId, data.punish);
+  }
 
   // punis = [];
 
@@ -288,7 +293,7 @@ export class GameGateway
           .to(`${newNamespace.name}-${roomId}`)
           .emit(GameEvent.DEATH, { death: death });
 
-          await this.gameEventService.delValue(roomId, FINISH_VOTE_FIELD)
+        await this.gameEventService.delValue(roomId, FINISH_VOTE_FIELD);
       }
     }
   }
