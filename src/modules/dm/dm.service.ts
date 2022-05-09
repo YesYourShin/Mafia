@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NotificationType } from 'src/common/constants';
 import { ONLINE } from '../gateway/game-room/constants';
 import { DM_EVENT } from '../gateway/game-room/constants/user-event';
 import { UserGateway } from '../gateway/user/user.gateway';
-import { CreateNotificationDto } from '../notification/dto';
 import { NotificationService } from '../notification/notification.service';
 import { Pagination } from '../post/paginate';
 import { RedisService } from '../redis/redis.service';
-import { ProfileInfo, UserProfile } from '../user/dto';
+import { ProfileInfo } from '../user/dto';
+import { ProfileRepository } from '../user/profile.repository';
 import { DMRepository } from './dm.repository';
 import { CreateDMDto } from './dto/create-dm-dto';
 
@@ -20,6 +19,7 @@ export class DMService {
     private readonly configService: ConfigService,
     private readonly notificationService: NotificationService,
     private readonly redisService: RedisService,
+    private readonly profileRepository: ProfileRepository,
   ) {}
 
   async findAll(
@@ -71,6 +71,9 @@ export class DMService {
     ).identifiers[0];
 
     const dm = await this.dmRepository.findOne(id);
+    const result = await this.profileRepository.findNicknameByUserId(
+      receiverId,
+    );
 
     const nsps = [`/user-${sender.userId}`];
 
@@ -85,6 +88,7 @@ export class DMService {
       },
       receiver: {
         userId: receiverId,
+        nickname: result.nickname,
       },
       message: createDMDto.message,
     });
