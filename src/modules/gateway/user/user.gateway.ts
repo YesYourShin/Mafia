@@ -37,7 +37,7 @@ export class UserGateway
       this.logger.error('handle connection error in user gateway', error);
     }
 
-    if (!user?.friends.length) {
+    if (!user?.friends || !user?.friends.length) {
       return;
     }
 

@@ -62,6 +62,19 @@ export class GameRoomGateway
       this.logger.error('socket join event error', error);
     }
   }
+  @SubscribeMessage(GameRoomEvent.SPEAK)
+  async handleSpeak(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { userId: number; speaking: boolean },
+  ) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameRoomEvent.SPEAK, data);
+  }
+
   @SubscribeMessage(GameRoomEvent.READY)
   async handleReady(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
