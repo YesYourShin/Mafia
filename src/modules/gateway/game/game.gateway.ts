@@ -16,6 +16,7 @@ import { FINISH_VOTE_FIELD, MAFIA_FIELD } from './constants/game-redis-key-prefi
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
+import { STATUS_CODES } from 'http';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -81,12 +82,17 @@ export class GameGateway
 
     //능력 사용.
     // 경찰이랑 의사 능력 사용. 
+    
     const status = await this.gameEventService.useState(roomId);
-    this.server
-    .in(`${newNamespace.name}-${roomId}`)
-    .emit(GameEvent.USEJOBS, status);
-    await this.gameEventService.delValue(roomId, MAFIA_FIELD);
 
+    this.logger.log(status);
+    
+    if(!status){
+      this.server
+      .in(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.USEJOBS, status);
+      await this.gameEventService.delValue(roomId, MAFIA_FIELD);
+    }
 
     // 승리조건
     const living = await this.gameEventService.livingHuman(roomId);

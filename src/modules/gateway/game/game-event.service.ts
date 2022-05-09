@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
+import { doc } from 'prettier';
 // import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
@@ -204,6 +205,11 @@ export class GameEventService {
     const doctorNum = await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
 
     let gamePlayer;
+    let state;
+
+    if(!mafiaNum && !doctorNum){
+      return null;
+    }
 
     if(mafiaNum !== doctorNum){
       // 마피아가 선택한 유저 죽음.
@@ -212,7 +218,15 @@ export class GameEventService {
       await this.death(roomId, mafiaNum);
     }
 
-    return {userNum: mafiaNum, die: gamePlayer[mafiaNum].die}
+
+    this.logger.log(mafiaNum);
+    this.logger.log(doctorNum);
+    
+
+    return {userNum: mafiaNum, die: gamePlayer[mafiaNum].die};
+
+ 
+
   }
 
   
