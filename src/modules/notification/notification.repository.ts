@@ -26,7 +26,15 @@ export class NotificationRepository extends AbstractRepository<Notification> {
     const result = await getConnection()
       .createQueryBuilder()
       .from(Notification, 'notification')
-      .select(['*'])
+      .select([
+        'notification.uuid',
+        'notification.type',
+        'notification.data',
+        'notification.read',
+        'notification.userId',
+        'notification.targetId',
+        'notification.createdAt',
+      ])
       .where('notification.userId = :userId', { userId })
       .take(perPage)
       .skip(perPage * (page - 1))
