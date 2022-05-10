@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
-import { EnumStatus } from 'src/common/constants/enum-status';
+import { EnumStatus } from '../common/constants/enum-status';
 import {
   Column,
   CreateDateColumn,

@@ -4,6 +4,7 @@ import { EnumCategory, EnumGameRole } from '../../common/constants';
 import { Category } from '../../entities/category.entity';
 import { GameRole } from '../../entities/game-role.entity';
 import { ReportType } from '../../entities/report-type.entity';
+
 export class CreateInitialData implements Seeder {
   public async run(factory: Factory, connection: Connection): Promise<any> {
     const queryRunner = connection.createQueryRunner();
