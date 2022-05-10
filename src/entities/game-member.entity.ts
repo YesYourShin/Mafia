@@ -70,7 +70,7 @@ export class GameMember {
     nullable: true,
   })
   @IsNotEmpty()
-  gameRoleName: string | null;
+  gameRoleName: EnumGameRole | null;
 
   @ManyToOne(() => GameRole, (role) => role.members, {
     onUpdate: 'CASCADE',
