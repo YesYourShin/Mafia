@@ -18,10 +18,10 @@ export class CreateInitialData implements Seeder {
         .insert()
         .into(GameRole)
         .values([
-          { id: 1, role: EnumGameRole.CITIZEN },
-          { id: 2, role: EnumGameRole.MAFIA },
-          { id: 3, role: EnumGameRole.DOCTOR },
-          { id: 4, role: EnumGameRole.POLICE },
+          { id: 1, name: EnumGameRole.CITIZEN },
+          { id: 2, name: EnumGameRole.MAFIA },
+          { id: 3, name: EnumGameRole.DOCTOR },
+          { id: 4, name: EnumGameRole.POLICE },
         ])
         .execute();
 

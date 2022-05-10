@@ -54,10 +54,13 @@ export class Notification {
   })
   @IsInt()
   @IsNotEmpty()
-  @Column({ type: 'int', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id' })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.sendNotifications)
+  @ManyToOne(() => User, (user) => user.sendNotifications, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 
@@ -67,10 +70,13 @@ export class Notification {
   })
   @IsInt()
   @IsNotEmpty()
-  @Column({ type: 'int', name: 'target_id', nullable: true })
+  @Column({ type: 'int', name: 'target_id' })
   targetId: number;
 
-  @ManyToOne(() => User, (user) => user.receiveNotifications)
+  @ManyToOne(() => User, (user) => user.receiveNotifications, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'target_id', referencedColumnName: 'id' })
   target: User;
 

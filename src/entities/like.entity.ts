@@ -32,10 +32,13 @@ export class Like {
   @IsInt()
   @IsNotEmpty()
   @Index('IDX_LIKE_POST_ID')
-  @Column({ type: 'int', name: 'post_id', nullable: true })
+  @Column({ type: 'int', name: 'post_id' })
   postId: number;
 
-  @ManyToOne(() => Post, (post) => post.likes)
+  @ManyToOne(() => Post, (post) => post.likes, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'post_id', referencedColumnName: 'id' })
   post: Post;
 
@@ -46,10 +49,13 @@ export class Like {
   @IsInt()
   @IsNotEmpty()
   @Index('IDX_LIKE_USER_ID')
-  @Column({ type: 'int', name: 'user_id', nullable: true })
+  @Column({ type: 'int', name: 'user_id' })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.likes)
+  @ManyToOne(() => User, (user) => user.likes, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 

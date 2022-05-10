@@ -64,7 +64,7 @@ export class Friend {
   @IsOptional()
   @Column({
     type: 'enum',
-    enum: [EnumStatus.ACCEPT, EnumStatus.REJECT, EnumStatus.REQUEST],
+    enum: EnumStatus,
     default: EnumStatus.REQUEST,
   })
   status: EnumStatus;
