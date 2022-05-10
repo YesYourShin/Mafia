@@ -213,7 +213,7 @@ export class UserService {
       const notification = await this.notificationService.create(
         new CreateNotificationDto(
           NotificationType.REQUESTED_FRIEND,
-          `${profile.nickname}님에게 친구 요청이 왔습니다`,
+          `${profile.nickname}님으로부터 친구 요청이 왔습니다`,
           profile.userId,
           targetId,
         ),

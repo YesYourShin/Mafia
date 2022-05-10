@@ -22,7 +22,7 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       .execute();
   }
 
-  async findAll(userId: number, page: number, perPage: number) {
+  async findAll(targetId: number, page: number, perPage: number) {
     const result = await getConnection()
       .createQueryBuilder()
       .from(Notification, 'notification')
@@ -35,7 +35,7 @@ export class NotificationRepository extends AbstractRepository<Notification> {
         'notification.targetId',
         'notification.createdAt',
       ])
-      .where('notification.userId = :userId', { userId })
+      .where('notification.targetId = :targetId', { targetId })
       .andWhere('notification.read = :read', { read: false })
       .take(perPage)
       .skip(perPage * (page - 1))
