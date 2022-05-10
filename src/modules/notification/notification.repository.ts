@@ -36,6 +36,7 @@ export class NotificationRepository extends AbstractRepository<Notification> {
         'notification.createdAt',
       ])
       .where('notification.userId = :userId', { userId })
+      .andWhere('notification.read = :read', { read: false })
       .take(perPage)
       .skip(perPage * (page - 1))
       .orderBy('notification.createdAt', 'DESC')
