@@ -279,7 +279,7 @@ export class UserService {
       profile.userId,
       requestId,
     );
-    await this.userRepository.rejectFriend(friendId1, friendId2);
+    await this.userRepository.removeFriend(friendId1, friendId2);
     return { reject: true, userId: requestId };
   }
 
