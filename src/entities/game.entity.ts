@@ -13,12 +13,15 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { GameMember } from './game-member.entity';
 import { GameMode } from '../common/constants';
+import { Profile } from './profile.entity';
 
 @Check(`"limit" > 5 AND "limit" < 11`)
 @Entity('game')
