@@ -13,6 +13,7 @@ import { Score } from '../common/constants';
 import { Game } from './game.entity';
 import { GameRole } from './game-role.entity';
 import { User } from './user.entity';
+import { Profile } from './profile.entity';
 
 @Entity('game_member')
 export class GameMember {
@@ -50,12 +51,12 @@ export class GameMember {
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number | null;
 
-  @ManyToOne(() => User, (user) => user.gameMembers, {
+  @ManyToOne(() => Profile, (profile) => profile.gameMembers, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'userId' })
+  user: Profile;
 
   @ApiProperty({
     example: 1,
