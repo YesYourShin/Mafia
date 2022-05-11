@@ -19,7 +19,6 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-import { STATUS_CODES } from 'http';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -103,22 +102,22 @@ export class GameGateway
     const winner = this.gameEventService.winner(roomId);
 
     // ----------이벤트 추가 회의 한번..
-    if (winner) {
-      this.logger.log(`if 우승 ${winner}`);
-      this.logger.log(`if day값 : ${data.day}`);
-      this.server
-        .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.WINNER, { winner: winner });
-    } else {
-      // default - 밤 = false
-      this.logger.log(`else 우승 ${winner}`);
-      this.logger.log(`else day값 : ${data.day}`);
-      const thisDay = !data.day;
-      this.logger.log(thisDay);
-      this.server
-        .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.DAY, { day: thisDay });
-    }
+    // if (winner) {
+    //   this.logger.log(`if 우승 ${winner}`);
+    //   this.logger.log(`if day값 : ${data.day}`);
+    //   this.server
+    //     .in(`${newNamespace.name}-${roomId}`)
+    //     .emit(GameEvent.WINNER, { winner: winner });
+    // } else {
+    // default - 밤 = false
+    this.logger.log(`else 우승 ${winner}`);
+    this.logger.log(`else day값 : ${data.day}`);
+    const thisDay = !data.day;
+    this.logger.log(thisDay);
+    this.server
+      .in(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.DAY, { day: thisDay });
+    // }
   }
 
   //이겼을 시, 게임 정보 db에 저장하는 부분 로직도 짜야함.
@@ -287,7 +286,7 @@ export class GameGateway
         const humon = await this.gameEventService.getVoteDeath(roomId);
         this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
 
-        //죽은 사람의 정보 제공.
+        //죽은 사람의 정보 제공 (넘버)
         const death = await this.gameEventService.death(roomId, humon);
         this.server
           .to(`${newNamespace.name}-${roomId}`)

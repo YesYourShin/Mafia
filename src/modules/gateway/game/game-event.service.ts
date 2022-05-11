@@ -1,10 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
-import e from 'express';
-import { type } from 'os';
-import { doc } from 'prettier';
-// import { GameRoom } from 'src/modules/game-room/dto';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
@@ -194,7 +190,7 @@ export class GameEventService {
 
   async death(roomId: number, userNum: number) {
     const gamePlayer = await this.getPlayerJobs(roomId);
-    gamePlayer[userNum].die = !gamePlayer[userNum].die;
+    gamePlayer[userNum - 1].die = !gamePlayer[userNum - 1].die;
 
     this.redisService.hset(
       this.makeGameKey(roomId),
@@ -382,8 +378,10 @@ export class GameEventService {
     this.logger.log(punish);
 
     const punisAgreement = punish.filter((item) => {
-      item === true;
+      return item === true;
     }).length;
+
+    this.logger.log(punisAgreement);
 
     return punisAgreement;
   }
