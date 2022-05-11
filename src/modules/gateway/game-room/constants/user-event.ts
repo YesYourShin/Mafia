@@ -4,3 +4,4 @@ export const FRIEND_DELETE_EVENT = 'user:delete-friend';
 export const DM_EVENT = 'user:dm';
 export const ONLINE_EVENT = 'user:online';
 export const OFFLINE_EVENT = 'user:offline';
+export const INVITE_GAME = 'user:invite';

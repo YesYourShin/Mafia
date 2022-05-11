@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   forwardRef,
   Inject,
@@ -29,6 +30,9 @@ import { ConfigService } from '@nestjs/config';
 import { GameRoom } from 'src/modules/game-room/dto/game-room';
 import { WsException } from '@nestjs/websockets';
 import { Player } from 'src/modules/game-room/dto/player';
+import { ProfileInfo } from 'src/modules/user/dto';
+import { CreateNotificationDto } from 'src/modules/notification/dto';
+import { NotificationType } from 'src/common/constants';
 
 @Injectable()
 export class GameRoomEventService {
@@ -108,7 +112,7 @@ export class GameRoomEventService {
     const { publishers } = await this.findOneOfRoomInfo(roomId);
     const members = await this.findMembersByRoomId(roomId);
     if (publishers <= members.length)
-      throw new ForbiddenException('방이 꽉 찼습니다');
+      throw new ForbiddenException('방의 인원이 초과되었습니다');
     return { roomId, joinable: true };
   }
 
