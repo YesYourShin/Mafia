@@ -2,13 +2,13 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto';
 import { Image, Profile } from 'src/entities';
 
-export class ResponseProfileDto<ResponseProfile> extends PickType(ResponseDto, [
+export class ResponseProfileDto<T> extends PickType(ResponseDto, [
   'success',
   'status',
   'data',
 ]) {
   @ApiProperty({ type: () => ProfileInfo })
-  data: ResponseProfile;
+  data: T;
 }
 export class ImageDto extends PickType(Image, [
   'id',

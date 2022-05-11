@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserProvider } from 'src/common/constants';
 import { OauthProfile } from 'src/common/constants/oauth-provider';
 import { oauthVerifyCallback } from 'src/common/constants/oauth-verify-callback';
-import { UserProfile } from '../user/dto';
+import { FriendProfile, UserProfile } from '../user/dto';
 import { JoinRequestUserDto } from '../user/dto/join-request-user.dto';
 import { UserRepository } from '../user/user.repository';
 

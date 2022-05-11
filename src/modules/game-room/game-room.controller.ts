@@ -44,7 +44,6 @@ import {
 import { concatMap, from, interval, map, Observable } from 'rxjs';
 import { IsGameRoomMemberGuard } from './guards/is-game-room-member.guard';
 import { GameRoomEventService } from '../gateway/game-room/game-room-event.service';
-import { GameRoomWithMemberCount } from './dto/game-room-with-member-count';
 import { ExistedProfileGuard } from 'src/common/guards';
 
 @ApiCookieAuth('connect.sid')

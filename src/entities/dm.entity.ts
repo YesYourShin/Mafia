@@ -1,15 +1,9 @@
-import {
-  IsDate,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDate, IsInt, IsNotEmpty, IsString } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -17,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { Profile } from './profile.entity';
 
 @Entity('dm')
 export class DM {
@@ -44,14 +39,15 @@ export class DM {
   })
   @IsInt()
   @IsNotEmpty()
+  @Index('IDX_DM_SENDER_ID')
   @Column({ type: 'int', name: 'sender_id', nullable: true })
   senderId: number | null;
 
-  @ManyToOne(() => User, (sender) => sender.senderDm, {
+  @ManyToOne(() => Profile, (sender) => sender.senderDm, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'sender_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'sender_id', referencedColumnName: 'userId' })
   sender: User;
 
   @ApiProperty({
@@ -59,19 +55,20 @@ export class DM {
     description: '받는 유저 아이디',
   })
   @IsInt()
+  @IsNotEmpty()
+  @Index('IDX_DM_RECEIVER_ID')
   @Column({
     type: 'int',
     name: 'receiver_id',
     nullable: true,
   })
-  @IsNotEmpty()
   receiverId: number | null;
 
-  @ManyToOne(() => User, (user) => user.receiveDm, {
+  @ManyToOne(() => Profile, (receiver) => receiver.receiverDm, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'receiver_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'receiver_id', referencedColumnName: 'userId' })
   receiver: User;
   @IsDate()
   @CreateDateColumn()

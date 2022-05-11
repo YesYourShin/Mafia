@@ -12,6 +12,7 @@ export class GameRoomWithMembers {
   @Exclude() private readonly _pin: string | null;
   @Exclude() private readonly _publishers: number;
   @Exclude() private readonly _members: Member[];
+  @Exclude() private readonly _isPrivate: boolean;
 
   constructor(gameRoom: GameRoom, members: Member[]) {
     const { id, description, mode, pin, publishers, room } = gameRoom;
@@ -22,6 +23,7 @@ export class GameRoomWithMembers {
     this._publishers = publishers;
     this._pin = pin;
     this._members = members;
+    this._isPrivate = pin ? true : false;
   }
 
   @ApiProperty({
@@ -77,6 +79,15 @@ export class GameRoomWithMembers {
   @Expose()
   get pin(): string | null {
     return this._pin;
+  }
+
+  @ApiProperty({
+    description: '비밀번호가 있는 가',
+    example: false,
+  })
+  @Expose()
+  get isPrivate(): boolean {
+    return this._isPrivate;
   }
 
   @ApiProperty({ type: () => Member, isArray: true })

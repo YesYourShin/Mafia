@@ -18,7 +18,7 @@ const ormconfig: TypeOrmModuleOptions = {
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  entities: [path.join(__dirname, 'src/**/*.entity{.ts,.js}')],
+  entities: [path.join(__dirname, 'src/**/*.{entity,view}{.ts,.js}')],
   migrations: [path.join(__dirname + 'src/database/migrations/*.ts')],
   cli: { migrationsDir: 'src/migrations' },
   autoLoadEntities: true,

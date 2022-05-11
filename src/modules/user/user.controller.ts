@@ -43,7 +43,6 @@ import {
   ResponseS3ImageObject,
   S3ImageObject,
 } from '../image/dto/s3-image-object';
-import { ImageService } from '../image/image.service';
 import {
   ResponseUserProfileDto,
   UpdateProfileDto,
@@ -52,9 +51,15 @@ import {
   UserProfile,
   ProfileInfo,
 } from './dto';
+import { RequestFriendRequestDto } from './dto/request-friend-request-dto';
+import {
+  FindUserByNickname,
+  ResponseFindUserByNickname,
+} from './dto/response-find-user-by-nickname-dto';
 import { RankingDto, ResponseRankingDto } from './dto/response-ranking.dto';
 import { MyProfileImageGuard } from './guards/my-profile-image.guard';
 import { NumberValidationPipe } from './number-validation.pipe';
+import { FriendRequestActionValidationPipe } from './pipes/friend-request-action-validation.pipe';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
@@ -62,7 +67,6 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly imageService: ImageService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -130,7 +134,34 @@ export class UserController {
   @ApiOperation({ summary: '특정 유저 정보 불러오기' })
   @Get('profile/:id')
   async getUserProfile(@Param('id') id: number): Promise<ProfileInfo> {
-    return await this.userService.findProfile(id);
+    return await this.userService.findProfileWithImage({ userId: id });
+  }
+
+  @ApiOkResponse({
+    description: '해당 프로필 찾기 성공',
+    type: ResponseFindUserByNickname,
+  })
+  @ApiNotFoundResponse({
+    description: '프로필이 존재하지 않을 때',
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.NOT_FOUND,
+        '존재하지 않는 유저입니다',
+      ),
+    },
+  })
+  @ApiQuery({
+    name: 'nickname',
+    required: true,
+    description: '유저 닉네임',
+  })
+  @ApiOperation({ summary: '닉네임으로 유저 정보 조회' })
+  @Get('profile')
+  async findUserByNickname(
+    @Query('nickname') nickname: string,
+  ): Promise<FindUserByNickname> {
+    return await this.userService.findUserByNickname(nickname);
   }
 
   @ApiOkResponse({
@@ -214,7 +245,7 @@ export class UserController {
     description: '친구 신청 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        message: '친구 신청 완료',
+        message: '친구 신청 성공',
       }),
     },
   })
@@ -238,18 +269,58 @@ export class UserController {
       ),
     },
   })
-  @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
+  @ApiParam({ name: 'id', required: true, description: '친구 신청 받는 유저' })
+  @ApiParam({
+    name: 'requestId',
+    required: true,
+    description: '친구 신청 보내는 유저',
+  })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '친구 신청' })
   @UseGuards(LoggedInGuard)
-  @Patch('friend/:id')
-  async requestFriend() {}
+  @Post(':id/requests/friends/:requestId')
+  async requestFriend(
+    @Param('id') id: number,
+    @Param('requestId') requestId: number,
+    @UserDecorator() user: UserProfile,
+  ) {
+    return await this.userService.requestFriend(user.profile, id, requestId);
+  }
+
+  @ApiOkResponse({
+    description: '친구 수락',
+    type: ResponseProfileDto,
+  })
+  @ApiParam({ name: 'id', required: true, description: '친구 신청 받는 유저' })
+  @ApiParam({
+    name: 'requestId',
+    required: true,
+    description: '친구 신청 보낸 유저',
+  })
+  @ApiOperation({ summary: '친구 수락 or 거절' })
+  @Patch(':id/requests/friends/:requestId')
+  @UseGuards(LoggedInGuard)
+  async friendAction(
+    @Param('id') id: number,
+    @Param('requestId') requestId: number,
+    @Body(new FriendRequestActionValidationPipe())
+    requestFriendRequestDto: RequestFriendRequestDto,
+    @UserDecorator() user: UserProfile,
+  ) {
+    return await this.userService.friendAction(
+      user.profile,
+      id,
+      requestId,
+      requestFriendRequestDto,
+    );
+  }
 
   @ApiOkResponse({
     description: '친구 삭제 성공',
     schema: {
       example: new ResponseDto(true, HttpStatus.OK, {
-        message: '친구 삭제 완료',
+        delete: true,
+        friendId: 1,
       }),
     },
   })
@@ -273,12 +344,19 @@ export class UserController {
       ),
     },
   })
-  @ApiParam({ name: 'id', required: true, description: '친구 아이디' })
+  @ApiParam({ name: 'id', required: true, description: '요청 유저 아이디' })
+  @ApiParam({ name: 'friendId', required: true, description: '친구 아이디' })
   @ApiCookieAuth('connect.sid')
   @ApiOperation({ summary: '친구 제거' })
   @UseGuards(LoggedInGuard)
-  @Delete('friend/:id')
-  async removeFriend() {}
+  @Delete(':id/friend/:friendId')
+  async removeFriend(
+    @Param('id') id: number,
+    @Param('friendId') friendId: number,
+    @UserDecorator() user: UserProfile,
+  ) {
+    return await this.userService.removeFriend(id, friendId);
+  }
 
   @ApiResponse({
     status: HttpStatus.CREATED,

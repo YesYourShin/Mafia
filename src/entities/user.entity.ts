@@ -21,9 +21,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Like } from './like.entity';
-import { Friend } from './friend.entity';
 import { GameMember } from './game-member.entity';
-import { DM } from './dm.entity';
 import { Notification } from './notification.entity';
 import { Profile } from './profile.entity';
 import { Report } from './report.entity';
@@ -89,21 +87,6 @@ export class User {
 
   @OneToMany(() => Like, (likes) => likes.user)
   likes: Like[];
-
-  @OneToMany(() => Friend, (friends) => friends.user)
-  friend1: Friend[];
-
-  @OneToMany(() => Friend, (friends) => friends.friend)
-  friend2: Friend[];
-
-  @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
-  gameMembers: GameMember[];
-
-  @OneToMany(() => DM, (dms) => dms.sender)
-  senderDm: DM[];
-
-  @OneToMany(() => DM, (dms) => dms.receiver)
-  receiveDm: DM[];
 
   @OneToMany(() => Notification, (notifications) => notifications.user)
   sendNotifications: Notification[];

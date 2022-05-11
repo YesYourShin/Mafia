@@ -14,8 +14,6 @@ import {
   Inject,
   Logger,
   HttpStatus,
-  DefaultValuePipe,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import {
