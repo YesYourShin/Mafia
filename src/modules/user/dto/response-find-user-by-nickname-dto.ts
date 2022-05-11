@@ -27,6 +27,9 @@ export class FindUserByNickname {
   userId: number;
   @ApiProperty({ type: () => UserImage })
   image: UserImage | null;
+
+  @ApiProperty({ example: true, description: 'online' })
+  online?: boolean;
 }
 
 export class ResponseFindUserByNickname extends PickType(ResponseDto, [

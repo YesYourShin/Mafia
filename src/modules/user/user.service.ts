@@ -12,7 +12,6 @@ import { EnumStatus } from 'src/common/constants/enum-status';
 import { Notification, Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { Connection } from 'typeorm';
-import { ONLINE } from '../gateway/game-room/constants';
 import {
   FRIEND_ACCEPT_EVENT,
   FRIEND_DELETE_EVENT,
@@ -23,7 +22,6 @@ import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
 import { CreateNotificationDto } from '../notification/dto/create-notification.dto';
 import { NotificationService } from '../notification/notification.service';
-import { RedisService } from '../redis/redis.service';
 import { ProfileFindOneOptions } from './constants/profile-find-options';
 import {
   CreateProfileDto,
@@ -144,9 +142,12 @@ export class UserService {
     const user = (await this.profileRepository.findUserByNickname(
       nickname,
     )) as FindUserByNickname;
+
     if (!user) {
       throw new NotFoundException('존재하지 않는 유저입니다');
     }
+    user.online = await this.getOnline(user.userId);
+
     return user;
   }
   async checkDuplicateNickname(nickname: string) {
@@ -317,11 +318,12 @@ export class UserService {
   }
   async setOnline(friends: FriendProfile[]) {
     for (const friend of friends) {
-      friend.online = friend.online = await this.getOnline(friend);
+      friend.online = friend.online = await this.getOnline(friend.userId);
     }
+    return friends;
   }
-  async getOnline(friend: FriendProfile) {
-    const result = await this.userEventService.getOnline(friend.userId);
+  async getOnline(userId: number) {
+    const result = await this.userEventService.getOnline(userId);
     return result ? true : false;
   }
 }
