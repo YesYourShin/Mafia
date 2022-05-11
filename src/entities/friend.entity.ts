@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
-import { EnumStatus } from 'src/common/constants/enum-status';
+import { EnumStatus } from '../common/constants/enum-status';
 import {
   Column,
   CreateDateColumn,
@@ -64,7 +64,7 @@ export class Friend {
   @IsOptional()
   @Column({
     type: 'enum',
-    enum: [EnumStatus.ACCEPT, EnumStatus.REJECT, EnumStatus.REQUEST],
+    enum: EnumStatus,
     default: EnumStatus.REQUEST,
   })
   status: EnumStatus;

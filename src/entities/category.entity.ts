@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsInt, IsOptional } from 'class-validator';
+import { IsDate, IsInt } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
@@ -26,13 +26,10 @@ export class Category {
     example: 1,
     description: '게시물 카테고리 이름',
   })
+  @Index('UX_CATEGORY_NAME', { unique: true })
   @Column({
     type: 'enum',
-    enum: [
-      EnumCategory.ANNOUNCEMENT,
-      EnumCategory.FREEBOARD,
-      EnumCategory.INFORMATION,
-    ],
+    enum: EnumCategory,
     unique: true,
   })
   name: EnumCategory;

@@ -6,6 +6,8 @@ export class FriendProfile {
   id: number;
   nickname: string;
   userId: number;
+  selfIntroduction: string;
+  level: number;
   image: {
     location: string;
   } | null;

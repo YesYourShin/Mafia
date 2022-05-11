@@ -34,7 +34,10 @@ export class Report {
   })
   reportTypeId: number;
 
-  @ManyToOne(() => ReportType, (reportType) => reportType.reports)
+  @ManyToOne(() => ReportType, (reportType) => reportType.reports, {
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'report_type_id', referencedColumnName: 'id' })
   reportType: ReportType;
 
@@ -53,7 +56,10 @@ export class Report {
   @Column({ type: 'int', name: 'user_id', nullable: true })
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.reports)
+  @ManyToOne(() => User, (user) => user.reports, {
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 

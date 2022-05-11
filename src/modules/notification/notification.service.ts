@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Notification } from 'src/entities';
-import { Pagination } from '../post/paginate';
+import { IPaginationLinks, Pagination } from '../post/paginate';
 import {
   CreateNotificationDto,
   ReadNotificationDto,
@@ -32,26 +32,25 @@ export class NotificationService {
 
     const totalPages = Math.ceil(totalItems / perPage);
     const itemCount = items.length;
-    const links = {};
 
-    for (let i = 1; i <= 5; i++) {
-      const tempPage = page + i;
-      if (tempPage > totalPages) break;
-      links[i] = `${this.configService.get(
+    const links: IPaginationLinks = {
+      current: `${this.configService.get(
         'BACKEND_URL',
-      )}/users/notifications?page=${tempPage}&perPage=${perPage}`;
+      )}/users/notifications?page=${page}&perPage=${perPage}`,
+    };
+    if (page < totalPages) {
+      links.next = `${this.configService.get(
+        'BACKEND_URL',
+      )}/users/notifications?page=${page + 1}&perPage=${perPage}`;
     }
+    const meta = {
+      itemCount,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    };
 
-    const data = new Pagination(
-      items,
-      {
-        itemCount,
-        totalItems,
-        totalPages,
-        currentPage: page,
-      },
-      links,
-    );
+    const data = new Pagination(items, meta, links);
 
     return data;
   }

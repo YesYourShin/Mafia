@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsNotEmpty } from 'class-validator';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
@@ -29,8 +29,8 @@ export class GameRole {
   })
   @IsEnum(EnumGameRole)
   @IsNotEmpty()
-  @Column({ type: 'enum', enum: EnumGameRole, name: 'role' })
-  role: EnumGameRole;
+  @Column({ type: 'enum', enum: EnumGameRole, name: 'name', unique: true })
+  name: EnumGameRole;
 
   @IsDate()
   @CreateDateColumn()

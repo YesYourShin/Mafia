@@ -1,4 +1,4 @@
-import { EnumStatus } from 'src/common/constants/enum-status';
+import { EnumStatus } from '../common/constants/enum-status';
 import { JoinColumn, ManyToOne, ViewColumn, ViewEntity } from 'typeorm';
 import { Profile } from './profile.entity';
 

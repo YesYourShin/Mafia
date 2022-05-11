@@ -23,9 +23,8 @@ export class SessionSerializer extends PassportSerializer {
   async deserializeUser(id: number, done: CallableFunction) {
     try {
       const user = await this.userRepository.findOne({ id });
-      const friends: FriendProfile[] = await this.userRepository.findFriend(
-        user.id,
-      );
+      const friends: FriendProfile[] =
+        (await this.userRepository.findFriend(user.id)) || [];
 
       if (friends && friends.length) {
         user.friends = await this.setOnline(friends);

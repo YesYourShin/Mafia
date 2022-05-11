@@ -3,6 +3,7 @@ import {
   ApiBody,
   ApiCreatedResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -19,6 +20,11 @@ import { ExistUuidValidationPipe } from './pipes/exist-uuid-validation.pipe';
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: '유저 ID',
+  })
   @ApiQuery({
     name: 'page',
     required: true,

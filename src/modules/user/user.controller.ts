@@ -291,6 +291,9 @@ export class UserController {
     description: '친구 수락',
     type: ResponseProfileDto,
   })
+  @ApiBody({
+    type: RequestFriendRequestDto,
+  })
   @ApiParam({ name: 'id', required: true, description: '친구 신청 받는 유저' })
   @ApiParam({
     name: 'requestId',

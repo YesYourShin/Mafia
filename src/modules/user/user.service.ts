@@ -213,7 +213,7 @@ export class UserService {
       const notification = await this.notificationService.create(
         new CreateNotificationDto(
           NotificationType.REQUESTED_FRIEND,
-          `${profile.nickname}님에게 친구 요청이 왔습니다`,
+          `${profile.nickname}님으로부터 친구 요청이 왔습니다`,
           profile.userId,
           targetId,
         ),
@@ -279,7 +279,7 @@ export class UserService {
       profile.userId,
       requestId,
     );
-    await this.userRepository.rejectFriend(friendId1, friendId2);
+    await this.userRepository.removeFriend(friendId1, friendId2);
     return { reject: true, userId: requestId };
   }
 
