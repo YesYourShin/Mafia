@@ -50,6 +50,8 @@ import {
   CreateProfileDto,
   UserProfile,
   ProfileInfo,
+  FriendProfile,
+  ResponseFindFriendDto,
 } from './dto';
 import { RequestFriendRequestDto } from './dto/request-friend-request-dto';
 import {
@@ -183,6 +185,21 @@ export class UserController {
     @Query('item', new NumberValidationPipe()) item: number,
   ): Promise<RankingDto> {
     return await this.userService.getRanking(item, page);
+  }
+
+  @ApiOkResponse({
+    type: ResponseFindFriendDto,
+  })
+  @ApiParam({
+    name: 'id',
+    description: '유저 ID',
+  })
+  @ApiOperation({ summary: '유저 친구 찾기' })
+  @Get(':id/friends')
+  async findFriend(
+    @UserDecorator() user: UserProfile,
+  ): Promise<FriendProfile[]> {
+    return await this.userService.findFriend(user.id);
   }
 
   @ApiCreatedResponse({

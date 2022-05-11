@@ -18,6 +18,7 @@ import {
   FRIEND_DELETE_EVENT,
   FRIEND_REQUEST_EVENT,
 } from '../gateway/game-room/constants/user-event';
+import { UserEventService } from '../gateway/user/user-event.service';
 import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
 import { CreateNotificationDto } from '../notification/dto/create-notification.dto';
@@ -26,6 +27,7 @@ import { RedisService } from '../redis/redis.service';
 import { ProfileFindOneOptions } from './constants/profile-find-options';
 import {
   CreateProfileDto,
+  FriendProfile,
   ProfileInfo,
   UpdateProfileDto,
   UserProfile,
@@ -39,11 +41,11 @@ import { UserRepository } from './user.repository';
 @Injectable()
 export class UserService {
   constructor(
-    private readonly redisService: RedisService,
     private readonly userRepository: UserRepository,
     private readonly imageService: ImageService,
     private readonly profileRepository: ProfileRepository,
     private readonly userGateway: UserGateway,
+    private readonly userEventService: UserEventService,
     private readonly notificationService: NotificationService,
     @Inject(Logger) private readonly logger = new Logger('UserService'),
     @InjectConnection() private readonly connection: Connection,
@@ -188,7 +190,7 @@ export class UserService {
     event: string,
     notification: Notification | object,
   ) {
-    const online = await this.redisService.getbit(ONLINE, id);
+    const online = await this.userEventService.getOnline(id);
     if (online) {
       this.userGateway.server.to(`/user-${id}`).emit(event, notification);
     }
@@ -302,5 +304,24 @@ export class UserService {
   async existFriendRequest(userId: number, friendId: number) {
     const { friendId1, friendId2 } = this.checkOneWay(userId, friendId);
     return await this.existFriendRequest(friendId1, friendId2);
+  }
+  async findFriend(id: number): Promise<FriendProfile[]> {
+    const friends: FriendProfile[] =
+      (await this.userRepository.findFriend(id)) || [];
+
+    if (friends && friends.length) {
+      await this.setOnline(friends);
+    }
+
+    return friends;
+  }
+  async setOnline(friends: FriendProfile[]) {
+    for (const friend of friends) {
+      friend.online = friend.online = await this.getOnline(friend);
+    }
+  }
+  async getOnline(friend: FriendProfile) {
+    const result = await this.userEventService.getOnline(friend.userId);
+    return result ? true : false;
   }
 }
