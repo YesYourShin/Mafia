@@ -56,3 +56,6 @@ push.sh
 
 ormconfig.ts
 Dockerfile.dev
+
+#eslint
+.eslintrc.js
