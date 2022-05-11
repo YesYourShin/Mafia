@@ -18,7 +18,6 @@ export class FriendRequestActionValidationPipe implements PipeTransform {
   }
 
   toValidate(requestAction: EnumStatus) {
-    console.log(requestAction);
     if (
       requestAction === EnumStatus.ACCEPT ||
       requestAction === EnumStatus.REJECT

@@ -19,7 +19,6 @@ export class NotificationService {
     const { uuid } = (
       await this.notificationRepository.create(createnotificationdto)
     ).identifiers[0];
-    console.log(uuid);
     return await this.findOne(uuid);
   }
 

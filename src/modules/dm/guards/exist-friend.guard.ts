@@ -17,7 +17,6 @@ export class ExistFriendGuard implements CanActivate {
     const user = request.user as UserProfile;
 
     for (const friend of user.friends as any) {
-      console.log(friend);
       if (friend.userId === +friendId) {
         return true;
       }

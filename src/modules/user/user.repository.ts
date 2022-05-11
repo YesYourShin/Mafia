@@ -152,7 +152,8 @@ export class UserRepository extends AbstractRepository<User> {
       .from(VFriend, 'friend')
       .leftJoin('friend.vFriend', 'profile')
       .leftJoin('profile.image', 'image')
-      .select([
+      .select(['friend.id'])
+      .addSelect([
         'profile.id',
         'profile.nickname',
         'profile.selfIntroduction',
@@ -170,14 +171,13 @@ export class UserRepository extends AbstractRepository<User> {
         'image.createdAt',
         'image.updatedAt',
       ])
-      .orderBy('profile.nickname', 'ASC')
-      .where('friend.userId = :userId', { userId });
+      .where('friend.userId = :userId', { userId })
+      .orderBy('profile.nickname', 'ASC');
 
     if (friendId) {
       qb.andWhere('friend.friendId = :friendId', { friendId });
       return await qb.getOne();
     }
-
     const result = await qb.getMany();
     return result.map((value) => value.vFriend);
   }
