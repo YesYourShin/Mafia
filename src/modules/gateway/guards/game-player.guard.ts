@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
-import { GameEventService } from '../game-room/game-event.service';
+import { GameEventService } from '../game/game-event.service';
+
 
 @Injectable()
 export class GamePlayerGuard implements CanActivate {

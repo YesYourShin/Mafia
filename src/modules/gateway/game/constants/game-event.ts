@@ -1,0 +1,17 @@
+export const GameEvent = {
+  JOIN: 'game:join',
+  START: 'game:start',
+  JOB: 'game:job',
+  PUNISH: 'game:punish',
+  FINISHP: 'game:finishPunishment',
+  VOTE: 'game:vote',
+  FINISHV: 'game:finishVote',
+  DAY: 'game:day',
+  POLICE: 'game:police',
+  DOCTOR: 'game:doctor',
+  MAFIA: 'game:mafia',
+  TIMER: 'game:timer',
+  DEATH: 'game:death',
+  WINNER: 'game:winner',
+  USEJOBS: 'game:useJobs',
+};
