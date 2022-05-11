@@ -335,9 +335,8 @@ export class UserService {
   }
   async setOnline(friends: FriendProfile[]) {
     for (const friend of friends) {
-      friend.online = friend.online = await this.getOnline(friend.userId);
+      friend.online = await this.getOnline(friend.userId);
     }
-    return friends;
   }
   async getOnline(userId: number) {
     const result = await this.userEventService.getOnline(userId);

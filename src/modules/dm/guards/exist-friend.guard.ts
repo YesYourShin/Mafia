@@ -4,13 +4,13 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import { UserProfile } from 'src/modules/user/dto';
 
 @Injectable()
 export class ExistFriendGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor() {}
 
+  // Todo 아마도 친구 추가 후 friends 갱신 안됨
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const { friendId } = request.params;
