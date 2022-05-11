@@ -186,16 +186,16 @@ export class UserService {
     return await this.userRepository.getRanking(take, skip);
   }
 
-  async sendNotificationToOnlineUser(
-    id: number,
-    event: string,
-    notification: Notification | object,
-  ) {
-    const online = await this.userEventService.getOnline(id);
-    if (online) {
-      this.userGateway.server.to(`/user-${id}`).emit(event, notification);
-    }
-  }
+  // async sendNotificationToOnlineUser(
+  //   id: number,
+  //   event: string,
+  //   notification: Notification | object,
+  // ) {
+  //   const online = await this.userEventService.getOnline(id);
+  //   if (online) {
+  //     this.userGateway.server.to(`/user-${id}`).emit(event, notification);
+  //   }
+  // }
 
   async requestFriend(
     profile: ProfileInfo,
@@ -224,11 +224,12 @@ export class UserService {
       await queryRunner.commitTransaction();
 
       try {
-        await this.sendNotificationToOnlineUser(
-          targetId,
-          FRIEND_REQUEST_EVENT,
-          notification,
-        );
+        const online = await this.userEventService.getOnline(targetId);
+        if (online) {
+          this.userGateway.server
+            .to(`/user-${targetId}`)
+            .emit(FRIEND_REQUEST_EVENT, notification);
+        }
       } catch (e) {
         this.logger.error('친구 신청 알림 발생 실패', e);
       }
@@ -267,13 +268,23 @@ export class UserService {
       requestId,
     );
     await this.userRepository.acceptFriend(friendId1, friendId2);
-    const friend = await this.profileRepository.findOneWithImage({
+    const friend = (await this.profileRepository.findOneWithImage({
       userId: requestId,
-    });
-    this.userGateway.server.to(`/user-${requestId}`).emit(FRIEND_ACCEPT_EVENT, {
-      accept: true,
-      user: profile,
-    });
+    })) as FriendProfile;
+
+    const online = await this.userEventService.getOnline(requestId);
+    friend.online = online ? true : false;
+    if (online) {
+      const user = { ...profile } as FriendProfile;
+      user.online = true;
+      this.userGateway.server
+        .to(`/user-${requestId}`)
+        .emit(FRIEND_ACCEPT_EVENT, {
+          accept: true,
+          user,
+        });
+    }
+
     return friend;
   }
 
@@ -290,10 +301,16 @@ export class UserService {
     const { friendId1, friendId2 } = this.checkOneWay(id, friendId);
     await this.userRepository.removeFriend(friendId1, friendId2);
 
-    await this.sendNotificationToOnlineUser(friendId, FRIEND_DELETE_EVENT, {
-      delete: true,
-      userId: id,
-    });
+    const online = await this.userEventService.getOnline(friendId);
+    if (online) {
+      this.userGateway.server
+        .to(`/user-${friendId}`)
+        .emit(FRIEND_DELETE_EVENT, {
+          delete: true,
+          userId: id,
+        });
+    }
+
     return { delete: true, friendId };
   }
 

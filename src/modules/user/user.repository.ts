@@ -154,12 +154,22 @@ export class UserRepository extends AbstractRepository<User> {
       .leftJoin('profile.image', 'image')
       .select([
         'profile.id',
-        'profile.userId',
         'profile.nickname',
         'profile.selfIntroduction',
+        'profile.manner',
         'profile.level',
+        'profile.exp',
+        'profile.userId',
+        'profile.createdAt',
+        'profile.updatedAt',
       ])
-      .addSelect(['image.location'])
+      .addSelect([
+        'image.id',
+        'image.key',
+        'image.location',
+        'image.createdAt',
+        'image.updatedAt',
+      ])
       .orderBy('profile.nickname', 'ASC')
       .where('friend.userId = :userId', { userId });
 
