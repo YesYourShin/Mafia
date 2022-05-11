@@ -44,15 +44,18 @@ import {
 import { concatMap, from, interval, map, Observable } from 'rxjs';
 import { IsGameRoomMemberGuard } from './guards/is-game-room-member.guard';
 import { GameRoomEventService } from '../gateway/game-room/game-room-event.service';
-import { GameRoomWithMemberCount } from './dto/game-room-with-member-count';
 import { ExistedProfileGuard } from 'src/common/guards';
+import { GameRoomService } from './game-room.service';
 
 @ApiCookieAuth('connect.sid')
 @UseGuards(LoggedInGuard, ExistedProfileGuard)
 @ApiTags('Rooms')
 @Controller('games/rooms')
 export class GameRoomController {
-  constructor(private readonly gameRoomEventService: GameRoomEventService) {}
+  constructor(
+    private readonly gameRoomEventService: GameRoomEventService,
+    private readonly gameRoomService: GameRoomService,
+  ) {}
 
   @ApiResponse({
     description: '5초마다 게임 방 정보 최신화해서 보내 줌',
@@ -216,6 +219,103 @@ export class GameRoomController {
     @Body() body: { pin: string },
   ) {
     return await this.gameRoomEventService.checkPassword(roomId, body.pin);
+  }
+
+  @ApiCreatedResponse({
+    schema: { example: '게임 방 초대 완료' },
+    description:
+      '게임 방 초대 성공 / 상대방 유저에겐 소켓으로 알림 전송 user:invite',
+  })
+  @ApiBadRequestResponse({
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.BAD_REQUEST,
+        '초대를 요청한 유저가 아닙니다',
+      ),
+    },
+    description: 'Param requestId 잘못 요청',
+  })
+  @ApiForbiddenResponse({
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '상대방이 온라인이 아닙니다',
+      ),
+    },
+  })
+  @ApiParam({
+    name: 'memberId',
+    description: '초대한 유저',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: '초대 받는 유저',
+  })
+  @ApiParam({
+    name: 'roomId',
+    description: '게임 방 번호',
+  })
+  @ApiOperation({ summary: '게임 방 초대' })
+  @Post('/:roomId/providers/:memberId/users/:userId/invite')
+  async invite(
+    @UserDecorator() user: UserProfile,
+    @Param('roomId') roomId: number,
+    @Param('memberId') memberId: number,
+    @Param('userId') userId: number,
+  ) {
+    return await this.gameRoomService.invite(
+      roomId,
+      user.profile,
+      memberId,
+      userId,
+    );
+  }
+
+  @ApiCreatedResponse({
+    schema: { example: { roomId: 1, joinable: true } },
+    description: '게임 방 초대 수락',
+  })
+  @ApiParam({
+    name: 'memberId',
+    description: '초대한 유저',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: '초대 받는 유저',
+  })
+  @ApiParam({
+    name: 'roomId',
+    description: '게임 방 번호',
+  })
+  @ApiBadRequestResponse({
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.BAD_REQUEST,
+        '초대받은 유저가 아닙니다',
+      ),
+    },
+    description: 'Param userId 잘못 요청',
+  })
+  @ApiForbiddenResponse({
+    schema: {
+      example: new ResponseDto(
+        false,
+        HttpStatus.FORBIDDEN,
+        '방의 인원이 초과되었습니다',
+      ),
+    },
+  })
+  @ApiOperation({ summary: '게임 방 초대 수락' })
+  @Post('/:roomId/providers/:memberId/users/:userId/accept')
+  async accept(
+    @UserDecorator() user: UserProfile,
+    @Param('roomId') roomId: number,
+    @Param('userId') userId: number,
+  ) {
+    return await this.gameRoomService.accept(roomId, user.profile, userId);
   }
 
   @ApiCreatedResponse({

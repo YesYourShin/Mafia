@@ -19,6 +19,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { HttpModule } from '@nestjs/axios';
 import * as ormconfig from '../ormconfig';
 import { SocketApiDocumentController } from './socket-api-document.controller';
+import { DMModule } from './modules/dm/dm.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SocketApiDocumentController } from './socket-api-document.controller';
     UserEventModule,
     TerminusModule,
     HttpModule,
+    DMModule,
   ],
   controllers: [
     AppController,

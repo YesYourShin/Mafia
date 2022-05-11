@@ -55,6 +55,10 @@ export class RedisService {
     return await this.redis.setbit(key, offset, value);
   }
 
+  async getbit(key: KeyType, offset: number): Promise<number> {
+    return await this.redis.getbit(key, offset);
+  }
+
   async incr() {
     return await this.redis.incr(ROOM_NUMBER);
   }

@@ -51,7 +51,7 @@ export class SocketApiDocumentController {
   })
   @ApiForbiddenResponse({
     schema: {
-      example: '방이 꽉 찼습니다',
+      example: '방의 인원이 초과되었습니다',
     },
   })
   @Get('join')

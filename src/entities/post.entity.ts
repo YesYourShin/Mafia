@@ -65,11 +65,7 @@ export class Post {
   @Index('IDX_POST_CATEGORY_Name')
   @Column({
     type: 'enum',
-    enum: [
-      EnumCategory.ANNOUNCEMENT,
-      EnumCategory.FREEBOARD,
-      EnumCategory.INFORMATION,
-    ],
+    enum: EnumCategory,
     name: 'category_name',
     nullable: true,
   })

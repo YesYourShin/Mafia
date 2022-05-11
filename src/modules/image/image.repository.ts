@@ -35,6 +35,7 @@ export class ImageRepository extends AbstractRepository<Image> {
       .leftJoin('image.imagePosts', 'imagePosts')
       .select(['image.id', 'image.key', 'image.location'])
       .where('imagePosts.postId = :postId', { postId })
+      .orderBy('image.id', 'ASC')
       .getMany();
   }
   findByLocation<T extends string | string[]>(location: T): Promise<Image[]>;

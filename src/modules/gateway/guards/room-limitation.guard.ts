@@ -16,6 +16,9 @@ export class RoomLimitationGuard implements CanActivate {
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { roomId } = context.switchToWs().getData();
+    if (roomId === 0) {
+      return true;
+    }
 
     const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
 
@@ -27,7 +30,7 @@ export class RoomLimitationGuard implements CanActivate {
       console.log(
         `publishers: ${publishers} / members.length: ${members.length}`,
       );
-      throw new WsException('방이 꽉 찼습니다');
+      throw new WsException('방의 인원이 초과되었습니다');
     }
     return true;
   }

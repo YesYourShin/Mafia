@@ -54,26 +54,24 @@ export class PostService {
     post.isLiked = raw[0].isLiked ? true : false;
     return post;
   }
-  async findAll(categoryName: EnumCategoryName, take: number, page: number) {
-    const items = await this.postRepository.findAll(
+  async findAll(categoryName: EnumCategoryName, perPage: number, page: number) {
+    const { items, totalItems } = await this.postRepository.findAll(
       categoryName,
-      take,
-      (page - 1) * take,
+      perPage,
+      (page - 1) * perPage,
     );
-    const totalItems = await this.postRepository.findPagesCountByCategoryName(
-      categoryName,
-    );
-    const totalPages = Math.ceil(totalItems / take);
+
+    const totalPages = Math.ceil(totalItems / perPage);
     const itemCount = items.length;
-    const temp = Math.floor(page / take);
+    const temp = Math.floor(page / perPage);
     const links = {};
 
     for (let i = 1; i <= 10; i++) {
-      const tPage = i + temp * take;
-      if (tPage > totalPages) break;
+      const tempPage = i + temp * perPage;
+      if (tempPage > totalPages) break;
       links[i] = `${this.configService.get(
         'FRONT_URL',
-      )}/community/post?category=${categoryName}&page=${tPage}`;
+      )}/community/post?category=${categoryName}&page=${tempPage}&perPage=${perPage}`;
     }
 
     const data = new Pagination(

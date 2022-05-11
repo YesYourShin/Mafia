@@ -14,8 +14,6 @@ import {
   Inject,
   Logger,
   HttpStatus,
-  DefaultValuePipe,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import {
@@ -90,8 +88,8 @@ export class PostController {
   })
   @ApiQuery({
     description: '가져올 아이템 개수',
-    name: 'item',
-    example: 'api/posts?item=1',
+    name: 'perPage',
+    example: 'api/posts?perPage=1',
     schema: {
       default: 1,
     },
@@ -113,10 +111,10 @@ export class PostController {
   async findAll(
     @Query('category', new CategoryValidationPipe())
     category: EnumCategoryName,
-    @Query('item', new NumberValidationPipe()) item: number,
+    @Query('perPage', new NumberValidationPipe()) perPage: number,
     @Query('page', new NumberValidationPipe()) page: number,
   ) {
-    return await this.postService.findAll(category, item, page);
+    return await this.postService.findAll(category, perPage, page);
   }
 
   @ApiCreatedResponse({
