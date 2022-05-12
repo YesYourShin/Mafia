@@ -1,117 +1,35 @@
 import { Profile } from 'src/entities/profile.entity';
 import { Game } from 'src/entities/game.entity';
-import {
-  AbstractRepository,
-  EntityRepository,
-  getConnection,
-  QueryRunner,
-} from 'typeorm';
+import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { GameMember } from 'src/entities';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
   async findAll(userId: number | any[], page: number, item: number) {
-    // const query =
-    //   'SELECT g.name, pr.nickname, g.`mode`, gr.role, gm.score, g.updatedAt FROM game g JOIN game_member gm ON g.id = gm.game_id JOIN profile pr ON gm.user_id = pr.user_id JOIN game_role gr ON gm.game_role_id = gr.id LEFT JOIN (SELECT gm2.game_id FROM game_member gm2 WHERE gm2.user_id = 1 ) AS t ON g.id = t.game_id ORDER BY g.updatedAt DESC;';
-    // return await getConnection().query(query);
+    const query = await getConnection()
+      .createQueryBuilder()
+      .from(GameMember, 'gm2')
+      .select('gm2.gameId')
+      .where(`gm2.userId = ${userId}`)
+      .take(item)
+      .skip(item * (page - 1))
+      .orderBy('gm2.updatedAt', 'DESC');
 
-    // 유저아이디로 게임 멤버에서 참여한 게임 방을 알아냄
-    // const qb = await getConnection()
-    //   .createQueryBuilder()
-    //   .from(GameMember, 'gm')
-    //   .select(['gm.gameId'])
-    //   .where('gm.user_id = :userId', { userId })
-    //   .limit(item)
-    //   .offset(page * item);
-
-    // const qb2 = await getConnection()
-    //   .createQueryBuilder()
-    //   .from(Game, 'g')
-    //   .select('g.userId')
-    //   .where((sq) => {
-    //     const subQuery = sq
-    //       .subQuery()
-    //       .from(GameMember, 'gm')
-    //       .select(['gm.gameId'])
-    //       .where('gm.user_id = :userId', { userId })
-    //       .getQuery();
-    //     return 'g.userId IN ' + subQuery;
-    //   })
-    //   .limit(item)
-    //   .offset(page * item);
-
-    // 찾은 게임방을 기준으로 같은 게임에 참여한 사람들을 찾기
-    const qb3 = getConnection()
+    const qb = getConnection()
       .createQueryBuilder()
       .from(Game, 'g')
       .innerJoin('g.members', 'gm')
       .innerJoin('gm.user', 'pf')
-      .innerJoin('gm.gameRole', 'gr')
+      .innerJoin('(' + query.getQuery() + ')', 't', 'g.id = t.gm2_game_id')
       .select(['g.name', 'g.mode', 'g.updatedAt'])
       .addSelect(['pf.nickname'])
-      .addSelect(['gr.role'])
-      .addSelect(['gm.score'])
-      .where((sq) => {
-        const subQuery = sq
-          .subQuery()
-          .from(GameMember, 'gm')
-          .select(['gm.gameId'])
-          .where('gm.user_id = :userId', { userId })
-          .take(item)
-          .skip(item * (page - 1))
-          .getQuery();
-        return 'g.userId IN ' + subQuery;
-      })
-      .orderBy('g.updatedAt', 'DESC');
+      .addSelect(['gm.game_role_name', 'gm.score']);
+    // .orderBy('g.updatedAt', 'DESC');
 
-    const qb4 = getConnection()
-      .createQueryBuilder()
-      .from(Game, 'g')
-      .innerJoin('g.members', 'gm')
-      .innerJoin('gm.user', 'pf')
-      .innerJoin('gm.gameRole', 'gr')
-      .select(['g.name', 'g.mode', 'g.updatedAt'])
-      .addSelect(['pf.nickname'])
-      .addSelect(['gr.role'])
-      .addSelect(['gm.score'])
-      .where((sq) => {
-        const subQuery = sq
-          .subQuery()
-          .from(GameMember, 'gm')
-          .select(['gm.gameId'])
-          .where('gm.user_id = :userId', { userId })
-          .take(item)
-          .skip(item * (page - 1))
-          .getQuery();
-        return 'g.userId IN ' + subQuery;
-      })
-      .orderBy('g.updatedAt', 'DESC');
-
-    return await qb4.getRawAndEntities();
+    return await qb.getMany();
   }
 
   async findOne(nickname: string) {
-    // return await this.repository
-    //   .createQueryBuilder('profile')
-    //   //   .select('nickname')
-    //   .where('nickname = :nickname', { nickname })
-    //   .getOne();
-
-    // const qb1 = getConnection()
-    //   .createQueryBuilder(Game, 'g')
-    //   .select([
-    //     'g.name',
-    //     'u.nickname',
-    //     'g.mode',
-    //     'gr.role',
-    //     'gm.score',
-    //     'g.updatedAt',
-    //   ])
-    //   .innerJoin('g.members', 'gm')
-    //   .innerJoin('gm.user', 'u')
-    //   .innerJoin('gm.gameRole', 'gr')
-    //   .where('g.id = 1');
-
     const qb = await getConnection()
       .createQueryBuilder()
       .from(Profile, 'profile')
@@ -119,9 +37,6 @@ export class GameRepository extends AbstractRepository<Game> {
       .where('profile.nickname = :nickname', { nickname })
       .getOne();
 
-    // .where('g.id = 1');
-    // console.log(qb.getParameters().nickname === nickname);
-    // return (await qb).nickname === nickname;
     return qb ? qb.userId : false;
 
     /**
