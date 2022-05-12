@@ -4,16 +4,19 @@ import { Profile } from './profile.entity';
 
 @ViewEntity({
   expression: `
-        SELECT user_id, friend_id
+        SELECT id, user_id, friend_id
         FROM friend
         where status = '${EnumStatus.ACCEPT}'
         UNION ALL
-        SELECT friend_id, user_id
+        SELECT id, friend_id, user_id
         FROM friend
-        where status = '${EnumStatus.ACCEPT}'
+        where status= '${EnumStatus.ACCEPT}'
     `,
 })
 export class VFriend {
+  @ViewColumn({ name: 'id' })
+  id: number;
+
   @ViewColumn({ name: 'user_id' })
   userId: number;
   @ManyToOne(() => Profile, (profile) => profile.friend1)

@@ -29,10 +29,10 @@ lerna-debug.log*
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
 
 # db
 postgres
@@ -56,3 +56,6 @@ push.sh
 
 ormconfig.ts
 Dockerfile.dev
+
+#eslint
+.eslintrc.js

@@ -19,41 +19,44 @@ export class NotificationService {
     const { uuid } = (
       await this.notificationRepository.create(createnotificationdto)
     ).identifiers[0];
-    console.log(uuid);
     return await this.findOne(uuid);
   }
 
-  async findAll(userId: number, page: number, perPage: number) {
-    const { items, totalItems } = await this.notificationRepository.findAll(
-      userId,
-      page,
-      perPage,
-    );
-
-    const totalPages = Math.ceil(totalItems / perPage);
-    const itemCount = items.length;
-
-    const links: IPaginationLinks = {
-      current: `${this.configService.get(
-        'BACKEND_URL',
-      )}/users/notifications?page=${page}&perPage=${perPage}`,
-    };
-    if (page < totalPages) {
-      links.next = `${this.configService.get(
-        'BACKEND_URL',
-      )}/users/notifications?page=${page + 1}&perPage=${perPage}`;
-    }
-    const meta = {
-      itemCount,
-      totalItems,
-      totalPages,
-      currentPage: page,
-    };
-
-    const data = new Pagination(items, meta, links);
-
-    return data;
+  async findAll(userId: number) {
+    return await this.notificationRepository.findAll(userId);
   }
+
+  // async findAll(userId: number, page: number, perPage: number) {
+  //   const { items, totalItems } = await this.notificationRepository.findAll(
+  //     userId,
+  //     page,
+  //     perPage,
+  //   );
+
+  //   const totalPages = Math.ceil(totalItems / perPage);
+  //   const itemCount = items.length;
+
+  //   const links: IPaginationLinks = {
+  //     current: `${this.configService.get(
+  //       'BACKEND_URL',
+  //     )}/users/notifications?page=${page}&perPage=${perPage}`,
+  //   };
+  //   if (page < totalPages) {
+  //     links.next = `${this.configService.get(
+  //       'BACKEND_URL',
+  //     )}/users/notifications?page=${page + 1}&perPage=${perPage}`;
+  //   }
+  //   const meta = {
+  //     itemCount,
+  //     totalItems,
+  //     totalPages,
+  //     currentPage: page,
+  //   };
+
+  //   const data = new Pagination(items, meta, links);
+
+  //   return data;
+  // }
 
   async findOne(uuid: string): Promise<Notification> {
     return await this.notificationRepository.findOne(uuid);

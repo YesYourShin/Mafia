@@ -1,9 +1,7 @@
-export const GAME = 'game';
 export const GAME_ROOM = 'game-room';
 export const INFO_FIELD = 'info';
 export const MEMBER_FIELD = 'member';
-export const PLAYER_FIELD = 'player';
-export const PLAYERNUM_FIELD = 'player-num';
-export const PLAYERJOB_FIELD = 'player-job';
 export const ROOM_NUMBER = 'daily-room-number';
 export const ONLINE = 'online';
+export const GAME = 'game';
+export const PLAYER_FIELD = 'player';

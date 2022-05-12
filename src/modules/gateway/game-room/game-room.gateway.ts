@@ -135,8 +135,6 @@ export class GameRoomGateway
 
     const newNamespace = socket.nsp;
 
-    this.logger.log(`${user.profile.nickname}님이 ${message}를 보냈습니다.`);
-
     try {
       this.server
         .to(`${newNamespace.name}-${roomId}`)

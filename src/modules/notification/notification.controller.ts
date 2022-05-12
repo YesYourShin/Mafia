@@ -1,10 +1,9 @@
-import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { UserDecorator } from 'src/decorators';
@@ -20,30 +19,39 @@ import { ExistUuidValidationPipe } from './pipes/exist-uuid-validation.pipe';
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
+  // @ApiParam({
+  //   name: 'id',
+  //   required: true,
+  //   description: '유저 ID',
+  // })
+  // @ApiQuery({
+  //   name: 'page',
+  //   required: true,
+  //   example: '?page=1',
+  //   description: '불러올 페이지',
+  // })
+  // @ApiQuery({
+  //   name: 'perPage',
+  //   required: true,
+  //   example: '?perPage=10',
+  //   description: 'notification 불러올 개수',
+  // })
+  // @Get()
+  // async findAll(
+  //   @UserDecorator() user: UserProfile,
+  //   @Query('page') page: number,
+  //   @Query('perPage') perPage: number,
+  // ) {
+  //   return await this.notificationService.findAll(user.id, page, perPage);
+  // }
   @ApiParam({
     name: 'id',
     required: true,
     description: '유저 ID',
   })
-  @ApiQuery({
-    name: 'page',
-    required: true,
-    example: '?page=1',
-    description: '불러올 페이지',
-  })
-  @ApiQuery({
-    name: 'perPage',
-    required: true,
-    example: '?perPage=10',
-    description: 'notification 불러올 개수',
-  })
   @Get()
-  async findAll(
-    @UserDecorator() user: UserProfile,
-    @Query('page') page: number,
-    @Query('perPage') perPage: number,
-  ) {
-    return await this.notificationService.findAll(user.id, page, perPage);
+  async findAll(@UserDecorator() user: UserProfile) {
+    return await this.notificationService.findAll(user.id);
   }
 
   @ApiCreatedResponse({

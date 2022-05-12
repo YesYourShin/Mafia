@@ -57,7 +57,6 @@ export class PostRepository extends AbstractRepository<Post> {
     return await qb.getRawAndEntities();
   }
   async findAll(categoryName: EnumCategoryName, take: number, skip: number) {
-    console.log(categoryName);
     const qb = this.repository
       .createQueryBuilder('post')
       .leftJoin('post.profile', 'profile')
