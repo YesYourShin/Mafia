@@ -24,8 +24,10 @@ export class SessionSerializer extends PassportSerializer {
         (await this.userRepository.findFriend(user.id)) || [];
 
       if (friends && friends.length) {
-        user.friends = await this.userService.setOnline(friends);
+        await this.userService.setOnline(friends);
       }
+
+      user.friends = friends;
       done(null, user);
     } catch (error) {
       done(error);

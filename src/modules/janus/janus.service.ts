@@ -60,7 +60,6 @@ export class JanusService {
       this.configService.get('JANUS_ADMIN_KEY'),
     );
     try {
-      console.log(janusRoomListParticipantsDto);
       const response = await this.requestJanus(janusRoomListParticipantsDto);
       return response.data;
     } catch (error) {
