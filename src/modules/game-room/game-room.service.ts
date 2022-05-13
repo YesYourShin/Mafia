@@ -40,10 +40,10 @@ export class GameRoomService {
 
     const createNotificationDto = new CreateNotificationDto(
       NotificationType.INVITED_GAME,
-      {
+      JSON.stringify({
         roomId,
         message: `${profile.nickname}님으로부터 「${game.description}」방 초대받았습니다`,
-      },
+      }),
       userId,
       targetId,
     );
@@ -51,6 +51,9 @@ export class GameRoomService {
     const notification = await this.notificationService.create(
       createNotificationDto,
     );
+
+    notification.data = JSON.parse(notification.data);
+
     this.userGateway.server
       .to(`/user-${targetId}`)
       .emit(INVITE_GAME, notification);
