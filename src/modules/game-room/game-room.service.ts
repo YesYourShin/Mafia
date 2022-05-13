@@ -82,6 +82,10 @@ export class GameRoomService {
     }
 
     const room = await this.gameRoomEventService.findOneOfRoomInfo(roomId);
+    if (!room) {
+      throw new ForbiddenException('존재하지 않는 게임 방입니다');
+    }
+
     const members = await this.gameRoomEventService.findMembersByRoomId(roomId);
     if (room.publishers <= members.length) {
       throw new ForbiddenException('방의 인원이 초과되었습니다');
