@@ -42,7 +42,7 @@ export class GameRoomService {
       NotificationType.INVITED_GAME,
       JSON.stringify({
         roomId,
-        message: `${profile.nickname}님으로부터 「${game.description}」방 초대받았습니다`,
+        message: `${profile.nickname}님으로부터 「${game.description}」방으로 초대받았습니다`,
       }),
       userId,
       targetId,
