@@ -369,6 +369,19 @@ export class GameGateway
       });
     }
   }
+  @SubscribeMessage(GameEvent.SPEAK)
+  async handleSpeak(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody()
+    data: { userId: number; nickname: string; speaking: boolean },
+  ) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.SPEAK, data);
+  }
 
   // socket이 연결됐을 때
   async handleConnection(@ConnectedSocket() socket: AuthenticatedSocket) {
