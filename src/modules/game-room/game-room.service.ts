@@ -61,9 +61,24 @@ export class GameRoomService {
     return '게임 방 초대 완료';
   }
 
-  async accept(roomId: number, profile: ProfileInfo, targetId: number) {
+  async accept(
+    roomId: number,
+    profile: ProfileInfo,
+    targetId: number,
+    uuid: string,
+  ) {
     if (profile.userId !== targetId) {
       throw new BadRequestException('초대받은 유저가 아닙니다');
+    }
+
+    const notification = await this.notificationService.findOne(uuid);
+
+    if (notification.type !== NotificationType.INVITED_GAME) {
+      throw new ForbiddenException('게임 초대 요청이 아닙니다');
+    }
+
+    if (notification.targetId !== targetId) {
+      throw new ForbiddenException('게임 초대 대상자가 아닙니다');
     }
 
     const room = await this.gameRoomEventService.findOneOfRoomInfo(roomId);
