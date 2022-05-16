@@ -1,13 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
-<<<<<<< HEAD
-import e from 'express';
-import { type } from 'os';
-import { doc } from 'prettier';
-// import { GameRoom } from 'src/modules/game-room/dto';
-=======
->>>>>>> seon
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
@@ -228,18 +221,17 @@ export class GameEventService {
 
     this.logger.log(mafiaNum);
     this.logger.log(doctorNum);
-<<<<<<< HEAD
-
-    if (mafiaNum !== doctorNum) {
-=======
-    if (!doctorNum) {
-      return 0;
-    } else if (mafiaNum !== doctorNum || mafiaNum) {
->>>>>>> seon
+    if (mafiaNum && mafiaNum !== doctorNum) {
       // 마피아가 선택한 유저 죽음.
       gamePlayer = await this.getPlayerJobs(roomId);
       gamePlayer[mafiaNum].die = !gamePlayer[mafiaNum].die;
       await this.death(roomId, mafiaNum);
+    } else if (!doctorNum) {
+      this.logger.log('의사한테 값이 없어요.');
+      return 0;
+    } else if (!mafiaNum) {
+      this.logger.log('마피아 한테 값이 없어요.');
+      return 0;
     }
 
     this.logger.log(gamePlayer[mafiaNum].die);
@@ -448,8 +440,4 @@ export class GameEventService {
         break;
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> seon
