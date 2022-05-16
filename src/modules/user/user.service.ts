@@ -12,20 +12,20 @@ import { EnumStatus } from 'src/common/constants/enum-status';
 import { Notification, Profile } from 'src/entities';
 import { promiseAllSetteldResult } from 'src/shared/promise-all-settled-result';
 import { Connection } from 'typeorm';
-import { ONLINE } from '../gateway/game-room/constants';
 import {
   FRIEND_ACCEPT_EVENT,
   FRIEND_DELETE_EVENT,
   FRIEND_REQUEST_EVENT,
 } from '../gateway/game-room/constants/user-event';
+import { UserEventService } from '../gateway/user/user-event.service';
 import { UserGateway } from '../gateway/user/user.gateway';
 import { ImageService } from '../image/image.service';
 import { CreateNotificationDto } from '../notification/dto/create-notification.dto';
 import { NotificationService } from '../notification/notification.service';
-import { RedisService } from '../redis/redis.service';
 import { ProfileFindOneOptions } from './constants/profile-find-options';
 import {
   CreateProfileDto,
+  FriendProfile,
   ProfileInfo,
   UpdateProfileDto,
   UserProfile,
@@ -39,11 +39,11 @@ import { UserRepository } from './user.repository';
 @Injectable()
 export class UserService {
   constructor(
-    private readonly redisService: RedisService,
     private readonly userRepository: UserRepository,
     private readonly imageService: ImageService,
     private readonly profileRepository: ProfileRepository,
     private readonly userGateway: UserGateway,
+    private readonly userEventService: UserEventService,
     private readonly notificationService: NotificationService,
     @Inject(Logger) private readonly logger = new Logger('UserService'),
     @InjectConnection() private readonly connection: Connection,
@@ -142,9 +142,12 @@ export class UserService {
     const user = (await this.profileRepository.findUserByNickname(
       nickname,
     )) as FindUserByNickname;
+
     if (!user) {
       throw new NotFoundException('존재하지 않는 유저입니다');
     }
+    user.online = await this.getOnline(user.userId);
+
     return user;
   }
   async checkDuplicateNickname(nickname: string) {
@@ -183,16 +186,16 @@ export class UserService {
     return await this.userRepository.getRanking(take, skip);
   }
 
-  async sendNotificationToOnlineUser(
-    id: number,
-    event: string,
-    notification: Notification | object,
-  ) {
-    const online = await this.redisService.getbit(ONLINE, id);
-    if (online) {
-      this.userGateway.server.to(`/user-${id}`).emit(event, notification);
-    }
-  }
+  // async sendNotificationToOnlineUser(
+  //   id: number,
+  //   event: string,
+  //   notification: Notification | object,
+  // ) {
+  //   const online = await this.userEventService.getOnline(id);
+  //   if (online) {
+  //     this.userGateway.server.to(`/user-${id}`).emit(event, notification);
+  //   }
+  // }
 
   async requestFriend(
     profile: ProfileInfo,
@@ -213,7 +216,7 @@ export class UserService {
       const notification = await this.notificationService.create(
         new CreateNotificationDto(
           NotificationType.REQUESTED_FRIEND,
-          `${profile.nickname}님에게 친구 요청이 왔습니다`,
+          `${profile.nickname}님으로부터 친구 요청이 왔습니다`,
           profile.userId,
           targetId,
         ),
@@ -221,11 +224,12 @@ export class UserService {
       await queryRunner.commitTransaction();
 
       try {
-        await this.sendNotificationToOnlineUser(
-          targetId,
-          FRIEND_REQUEST_EVENT,
-          notification,
-        );
+        const online = await this.userEventService.getOnline(targetId);
+        if (online) {
+          this.userGateway.server
+            .to(`/user-${targetId}`)
+            .emit(FRIEND_REQUEST_EVENT, notification);
+        }
       } catch (e) {
         this.logger.error('친구 신청 알림 발생 실패', e);
       }
@@ -264,13 +268,23 @@ export class UserService {
       requestId,
     );
     await this.userRepository.acceptFriend(friendId1, friendId2);
-    const friend = await this.profileRepository.findOneWithImage({
+    const friend = (await this.profileRepository.findOneWithImage({
       userId: requestId,
-    });
-    this.userGateway.server.to(`/user-${requestId}`).emit(FRIEND_ACCEPT_EVENT, {
-      accept: true,
-      user: profile,
-    });
+    })) as FriendProfile;
+
+    const online = await this.userEventService.getOnline(requestId);
+    friend.online = online ? true : false;
+    if (online) {
+      const user = { ...profile } as FriendProfile;
+      user.online = true;
+      this.userGateway.server
+        .to(`/user-${requestId}`)
+        .emit(FRIEND_ACCEPT_EVENT, {
+          accept: true,
+          user,
+        });
+    }
+
     return friend;
   }
 
@@ -279,7 +293,7 @@ export class UserService {
       profile.userId,
       requestId,
     );
-    await this.userRepository.rejectFriend(friendId1, friendId2);
+    await this.userRepository.removeFriend(friendId1, friendId2);
     return { reject: true, userId: requestId };
   }
 
@@ -287,10 +301,16 @@ export class UserService {
     const { friendId1, friendId2 } = this.checkOneWay(id, friendId);
     await this.userRepository.removeFriend(friendId1, friendId2);
 
-    await this.sendNotificationToOnlineUser(friendId, FRIEND_DELETE_EVENT, {
-      delete: true,
-      userId: id,
-    });
+    const online = await this.userEventService.getOnline(friendId);
+    if (online) {
+      this.userGateway.server
+        .to(`/user-${friendId}`)
+        .emit(FRIEND_DELETE_EVENT, {
+          delete: true,
+          userId: id,
+        });
+    }
+
     return { delete: true, friendId };
   }
 
@@ -302,5 +322,24 @@ export class UserService {
   async existFriendRequest(userId: number, friendId: number) {
     const { friendId1, friendId2 } = this.checkOneWay(userId, friendId);
     return await this.existFriendRequest(friendId1, friendId2);
+  }
+  async findFriend(id: number): Promise<FriendProfile[]> {
+    const friends: FriendProfile[] =
+      (await this.userRepository.findFriend(id)) || [];
+
+    if (friends && friends.length) {
+      await this.setOnline(friends);
+    }
+
+    return friends;
+  }
+  async setOnline(friends: FriendProfile[]) {
+    for (const friend of friends) {
+      friend.online = await this.getOnline(friend.userId);
+    }
+  }
+  async getOnline(userId: number) {
+    const result = await this.userEventService.getOnline(userId);
+    return result ? true : false;
   }
 }

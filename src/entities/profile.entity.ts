@@ -23,6 +23,7 @@ import { Comment } from './comment.entity';
 import { DM } from './dm.entity';
 import { Friend } from './friend.entity';
 import { VFriend } from './friend.view';
+import { GameMember } from './game-member.entity';
 import { Post } from './post.entity';
 import { User } from './user.entity';
 
@@ -151,4 +152,7 @@ export class Profile {
 
   @OneToMany(() => DM, (dms) => dms.receiver)
   receiverDm: DM[];
+
+  @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
+  gameMembers: GameMember[];
 }

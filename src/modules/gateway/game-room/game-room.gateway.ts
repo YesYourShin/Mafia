@@ -62,6 +62,20 @@ export class GameRoomGateway
       this.logger.error('socket join event error', error);
     }
   }
+  @SubscribeMessage(GameRoomEvent.SPEAK)
+  async handleSpeak(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody()
+    data: { userId: number; nickname: string; speaking: boolean },
+  ) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameRoomEvent.SPEAK, data);
+  }
+
   @SubscribeMessage(GameRoomEvent.READY)
   async handleReady(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { user } = socket.request;
@@ -120,8 +134,6 @@ export class GameRoomGateway
     const { message } = data;
 
     const newNamespace = socket.nsp;
-
-    this.logger.log(`${user.profile.nickname}님이 ${message}를 보냈습니다.`);
 
     try {
       this.server

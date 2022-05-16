@@ -2,8 +2,7 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEventModule } from '../gateway/user/user-event.module';
-import { RedisModule } from '../redis/redis.module';
+import { UserModule } from '../user/user.module';
 import { UserRepository } from '../user/user.repository';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -16,8 +15,7 @@ import { SessionSerializer } from './session.serializer';
   imports: [
     PassportModule.register({ session: true }),
     TypeOrmModule.forFeature([UserRepository]),
-    RedisModule,
-    UserEventModule,
+    UserModule,
   ],
   controllers: [AuthController],
   providers: [

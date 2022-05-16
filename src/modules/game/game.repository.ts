@@ -9,7 +9,10 @@ export class GameRepository extends AbstractRepository<Game> {
     //   .into(Game)
     // //   .values()
     //   .execute();
+<<<<<<< HEAD
     return this.createQueryBuilder("game")
     .where(Game.)
+=======
+>>>>>>> seon
   }
 }

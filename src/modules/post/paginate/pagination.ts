@@ -1,4 +1,5 @@
 import { IPaginationMeta, ObjectLiteral } from '.';
+import { IPaginationLinks } from './constants';
 
 export class Pagination<
   PaginationObject,
@@ -7,6 +8,6 @@ export class Pagination<
   constructor(
     public readonly items: PaginationObject[],
     public readonly meta: T,
-    public readonly links?: T,
+    public readonly links?: IPaginationLinks | T,
   ) {}
 }

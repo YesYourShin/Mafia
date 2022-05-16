@@ -50,6 +50,8 @@ import {
   CreateProfileDto,
   UserProfile,
   ProfileInfo,
+  FriendProfile,
+  ResponseFindFriendDto,
 } from './dto';
 import { RequestFriendRequestDto } from './dto/request-friend-request-dto';
 import {
@@ -185,6 +187,21 @@ export class UserController {
     return await this.userService.getRanking(item, page);
   }
 
+  @ApiOkResponse({
+    type: ResponseFindFriendDto,
+  })
+  @ApiParam({
+    name: 'id',
+    description: '유저 ID',
+  })
+  @ApiOperation({ summary: '유저 친구 찾기' })
+  @Get(':id/friends')
+  async findFriend(
+    @UserDecorator() user: UserProfile,
+  ): Promise<FriendProfile[]> {
+    return await this.userService.findFriend(user.id);
+  }
+
   @ApiCreatedResponse({
     description: '프로필 이미지 저장 성공',
     type: ResponseS3ImageObject,
@@ -290,6 +307,9 @@ export class UserController {
   @ApiOkResponse({
     description: '친구 수락',
     type: ResponseProfileDto,
+  })
+  @ApiBody({
+    type: RequestFriendRequestDto,
   })
   @ApiParam({ name: 'id', required: true, description: '친구 신청 받는 유저' })
   @ApiParam({

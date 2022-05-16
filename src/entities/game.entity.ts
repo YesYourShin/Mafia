@@ -19,7 +19,7 @@ import {
 } from 'typeorm';
 import { GameMember } from './game-member.entity';
 import { GameMode } from '../common/constants';
-import { GameStatusTransformer } from 'src/common/constants/game-status-transformer';
+import { GameStatusTransformer } from '../common/constants/game-status-transformer';
 
 @Check(`"limit" > 5 AND "limit" < 11`)
 @Entity('game')

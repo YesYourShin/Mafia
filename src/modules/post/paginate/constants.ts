@@ -22,17 +22,6 @@ export interface IPaginationMeta extends ObjectLiteral {
 }
 
 export interface IPaginationLinks {
-  /**
-   * 상대적인 것
-   * 현재 13페이지여도 아래 형식으로 나옴
-   */
-  first?: string;
-  second?: string;
-  third?: string;
-  fourth?: string;
-  fifth?: string;
-  sixth?: string;
-  seventh?: string;
-  eighth?: string;
-  ninth?: string;
+  current?: string;
+  next?: string;
 }

@@ -7,4 +7,5 @@ export const GameRoomEvent = {
   START: 'room:start',
   READY: 'room:ready',
   UNREADY: 'room:unready',
+  SPEAK: 'room:speak',
 };

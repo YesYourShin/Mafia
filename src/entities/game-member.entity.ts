@@ -4,15 +4,16 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Score } from '../common/constants';
+import { EnumGameRole, GameStatus } from '../common/constants';
 import { Game } from './game.entity';
 import { GameRole } from './game-role.entity';
-import { User } from './user.entity';
+import { Profile } from './profile.entity';
 
 @Entity('game_member')
 export class GameMember {
@@ -31,12 +32,13 @@ export class GameMember {
   })
   @IsInt()
   @IsNotEmpty()
-  @Column({ type: 'int', name: 'game_id', nullable: true })
-  gameId: number | null;
+  @Index('IDX_GAME_MEMBER_GAME_ID')
+  @Column({ type: 'int', name: 'game_id' })
+  gameId: number;
 
   @ManyToOne(() => Game, (game) => game.members, {
     onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'game_id', referencedColumnName: 'id' })
   game: Game;
@@ -47,42 +49,49 @@ export class GameMember {
   })
   @IsInt()
   @IsNotEmpty()
-  @Column({ type: 'int', name: 'user_id', nullable: true })
-  userId: number | null;
+  @Index('IDX_GAME_MEMBER_USER_ID')
+  @Column({ type: 'int', name: 'user_id' })
+  userId: number;
 
-  @ManyToOne(() => User, (user) => user.gameMembers, {
+  @ManyToOne(() => Profile, (profile) => profile.gameMembers, {
     onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'userId' })
+  user: Profile;
 
   @ApiProperty({
-    example: 1,
-    description: '게임 역할',
+    example: 'mafia',
+    description: '게임 역할 이름',
   })
   @Column({
-    name: 'game_role_id',
+    enum: EnumGameRole,
+    name: 'game_role_name',
     nullable: true,
   })
   @IsNotEmpty()
-  gameRoleId: number | null;
+  gameRoleName: EnumGameRole | null;
 
   @ManyToOne(() => GameRole, (role) => role.members, {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'game_role_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'game_role_name', referencedColumnName: 'name' })
   gameRole: GameRole;
 
   @ApiProperty({
-    example: 1,
-    description: '1 - 승/0 - 패',
+    example: 'win',
+    description: 'win | lose | pending | escape',
     required: false,
   })
   @IsNotEmpty()
-  @Column({ type: 'tinyint', name: 'score', nullable: true })
-  score: Score;
+  @Column({
+    type: 'enum',
+    enum: GameStatus,
+    name: 'score',
+    default: GameStatus.PENDING,
+  })
+  score: GameStatus;
 
   @IsDate()
   @CreateDateColumn()

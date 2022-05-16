@@ -7,7 +7,6 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { FriendProfile } from 'src/modules/user/dto';
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { OFFLINE_EVENT, ONLINE_EVENT } from '../game-room/constants/user-event';
 import { WsAuthenticatedGuard } from '../guards/ws.authenticated.guard';
@@ -37,6 +36,11 @@ export class UserGateway
     } catch (error) {
       this.logger.error('handle connection error in user gateway', error);
     }
+
+    if (!user?.friends || !user?.friends.length) {
+      return;
+    }
+
     const nsps = await this.userEventService.getNsps(user.friends);
 
     if (nsps.length) {
@@ -53,6 +57,10 @@ export class UserGateway
       await this.userEventService.setOffline(user.id);
     } catch (error) {
       this.logger.error('handle disconnect error in user gateway', error);
+    }
+
+    if (!user?.friends || !user?.friends.length) {
+      return;
     }
 
     const nsps = await this.userEventService.getNsps(user.friends);

@@ -21,7 +21,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Like } from './like.entity';
-import { GameMember } from './game-member.entity';
 import { Notification } from './notification.entity';
 import { Profile } from './profile.entity';
 import { Report } from './report.entity';
@@ -87,9 +86,6 @@ export class User {
 
   @OneToMany(() => Like, (likes) => likes.user)
   likes: Like[];
-
-  @OneToMany(() => GameMember, (gameMembers) => gameMembers.user)
-  gameMembers: GameMember[];
 
   @OneToMany(() => Notification, (notifications) => notifications.user)
   sendNotifications: Notification[];

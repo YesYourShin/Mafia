@@ -22,12 +22,21 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       .execute();
   }
 
-  async findAll(userId: number, page: number, perPage: number) {
+  async findAll(targetId: number, page: number, perPage: number) {
     const result = await getConnection()
       .createQueryBuilder()
       .from(Notification, 'notification')
-      .select(['*'])
-      .where('notification.userId = :userId', { userId })
+      .select([
+        'notification.uuid',
+        'notification.type',
+        'notification.data',
+        'notification.read',
+        'notification.userId',
+        'notification.targetId',
+        'notification.createdAt',
+      ])
+      .where('notification.targetId = :targetId', { targetId })
+      .andWhere('notification.read = :read', { read: false })
       .take(perPage)
       .skip(perPage * (page - 1))
       .orderBy('notification.createdAt', 'DESC')

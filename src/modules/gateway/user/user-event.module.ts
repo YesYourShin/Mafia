@@ -6,6 +6,6 @@ import { UserGateway } from './user.gateway';
 @Module({
   imports: [RedisModule],
   providers: [UserGateway, Logger, UserEventService],
-  exports: [UserGateway],
+  exports: [UserGateway, UserEventService],
 })
 export class UserEventModule {}

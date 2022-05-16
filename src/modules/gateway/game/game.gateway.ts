@@ -19,7 +19,6 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-import { STATUS_CODES } from 'http';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
