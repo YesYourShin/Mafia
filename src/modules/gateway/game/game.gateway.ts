@@ -272,7 +272,7 @@ export class GameGateway
       // 버전 1 , 찬성값만 주기
       this.server
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.FINISHP, { Agreement: agreement });
+        .emit(GameEvent.FINISHP, agreement);
 
       // 버전 1 , 찬성값만 주기
       // this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FinishP, {
