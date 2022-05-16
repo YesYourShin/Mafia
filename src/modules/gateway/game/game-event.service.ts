@@ -221,8 +221,9 @@ export class GameEventService {
 
     this.logger.log(mafiaNum);
     this.logger.log(doctorNum);
-
-    if (mafiaNum !== doctorNum) {
+    if (!doctorNum) {
+      return 0;
+    } else if (mafiaNum !== doctorNum || mafiaNum) {
       // 마피아가 선택한 유저 죽음.
       gamePlayer = await this.getPlayerJobs(roomId);
       gamePlayer[mafiaNum].die = !gamePlayer[mafiaNum].die;
