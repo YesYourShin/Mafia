@@ -21,10 +21,10 @@ export class PostRepository extends AbstractRepository<Post> {
     const qb = getConnection()
       .createQueryBuilder(Post, 'post')
       .leftJoin('post.profile', 'postProfile')
-      .leftJoin('postProfile.image', 'postProfileImage')
-      .leftJoin('post.comments', 'comment')
-      .leftJoin('comment.profile', 'commentProfile')
-      .leftJoin('commentProfile.image', 'commentProfileImage')
+      // .leftJoin('postProfile.image', 'postProfileImage')
+      // .leftJoin('post.comments', 'comment')
+      // .leftJoin('comment.profile', 'commentProfile')
+      // .leftJoin('commentProfile.image', 'commentProfileImage')
       .select([
         'post.id',
         'post.title',
@@ -33,15 +33,15 @@ export class PostRepository extends AbstractRepository<Post> {
         'post.updatedAt',
       ])
       .addSelect(['postProfile.id', 'postProfile.nickname'])
-      .addSelect(['postProfileImage.id', 'postProfileImage.location'])
-      .addSelect(['comment.id', 'comment.content', 'comment.updatedAt'])
-      .addSelect(['commentProfile.id', 'commentProfile.nickname'])
-      .addSelect(['commentProfileImage.id', 'commentProfileImage.location'])
-      .orderBy('comment.updatedAt')
-      .loadRelationCountAndMap('post.likeCount', 'post.likes')
-      .loadRelationCountAndMap('comment.replyCount', 'comment.children')
-      .where('post.id = :id', { id })
-      .andWhere('comment.parentId IS NULL');
+      // .addSelect(['postProfileImage.id', 'postProfileImage.location'])
+      // .addSelect(['comment.id', 'comment.content', 'comment.updatedAt'])
+      // .addSelect(['commentProfile.id', 'commentProfile.nickname'])
+      // .addSelect(['commentProfileImage.id', 'commentProfileImage.location'])
+      // .orderBy('comment.updatedAt')
+      // .loadRelationCountAndMap('post.likeCount', 'post.likes')
+      // .loadRelationCountAndMap('comment.replyCount', 'comment.children')
+      .where('post.id = :id', { id });
+    // .andWhere('comment.parentId IS NULL');
 
     if (userId) {
       qb.addSelect((subQuery) => {

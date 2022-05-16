@@ -61,6 +61,15 @@ export class GameMember {
   user: Profile;
 
   @ApiProperty({
+    example: '1',
+    description: '게임 플레이 번호',
+  })
+  @IsInt()
+  @IsNotEmpty()
+  @Column({ type: 'int', name: 'play_number' })
+  playNumber: number;
+
+  @ApiProperty({
     example: 'mafia',
     description: '게임 역할 이름',
   })

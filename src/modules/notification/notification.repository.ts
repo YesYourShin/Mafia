@@ -1,3 +1,4 @@
+import { NotificationType } from 'src/common/constants';
 import { Notification } from 'src/entities';
 import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -22,7 +23,7 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       .execute();
   }
 
-  async findAll(targetId: number, page: number, perPage: number) {
+  async findAll(targetId: number) {
     const result = await getConnection()
       .createQueryBuilder()
       .from(Notification, 'notification')
@@ -37,13 +38,39 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       ])
       .where('notification.targetId = :targetId', { targetId })
       .andWhere('notification.read = :read', { read: false })
-      .take(perPage)
-      .skip(perPage * (page - 1))
       .orderBy('notification.createdAt', 'DESC')
-      .getManyAndCount();
+      .getMany();
 
-    return { items: result[0], totalItems: result[1] };
+    return result.map((notification) => {
+      if (notification.type === NotificationType.INVITED_GAME) {
+        notification.data = JSON.parse(notification.data);
+      }
+      return notification;
+    });
   }
+
+  // async findAll(targetId: number, page: number, perPage: number) {
+  //   const result = await getConnection()
+  //     .createQueryBuilder()
+  //     .from(Notification, 'notification')
+  //     .select([
+  //       'notification.uuid',
+  //       'notification.type',
+  //       'notification.data',
+  //       'notification.read',
+  //       'notification.userId',
+  //       'notification.targetId',
+  //       'notification.createdAt',
+  //     ])
+  //     .where('notification.targetId = :targetId', { targetId })
+  //     .andWhere('notification.read = :read', { read: false })
+  //     .take(perPage)
+  //     .skip(perPage * (page - 1))
+  //     .orderBy('notification.createdAt', 'DESC')
+  //     .getManyAndCount();
+
+  //   return { items: result[0], totalItems: result[1] };
+  // }
 
   async findOne(uuid: string) {
     return await getConnection()
