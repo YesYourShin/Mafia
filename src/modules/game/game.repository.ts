@@ -2,6 +2,7 @@ import { Profile } from 'src/entities/profile.entity';
 import { Game } from 'src/entities/game.entity';
 import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { GameMember } from 'src/entities';
+import { RemoteCredentials } from 'aws-sdk';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
@@ -15,18 +16,19 @@ export class GameRepository extends AbstractRepository<Game> {
       .skip(item * (page - 1))
       .orderBy('gm2.updatedAt', 'DESC');
 
-    const qb = getConnection()
+    const qb = await getConnection()
       .createQueryBuilder()
       .from(Game, 'g')
       .innerJoin('g.members', 'gm')
       .innerJoin('gm.user', 'pf')
       .innerJoin('(' + query.getQuery() + ')', 't', 'g.id = t.gm2_game_id')
-      .select(['g.name', 'g.mode', 'g.updatedAt'])
-      .addSelect(['pf.nickname'])
-      .addSelect(['gm.game_role_name', 'gm.score']);
-    // .orderBy('g.updatedAt', 'DESC');
+      .select(['g.id', 'g.mode', 'g.updatedAt'])
+      .addSelect(['pf.nickname', 'pf.userId'])
+      .addSelect(['gm.playNumber', 'gm.gameRoleName', 'gm.score'])
+      .orderBy('g.updatedAt', 'DESC')
+      .addOrderBy('gm.playNumber', 'ASC');
 
-    return await qb.getMany();
+    return qb.getMany();
   }
 
   async findOne(nickname: string) {
