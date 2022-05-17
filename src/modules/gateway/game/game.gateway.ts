@@ -77,15 +77,28 @@ export class GameGateway
   @SubscribeMessage(GameEvent.USEJOBS)
   async HandleUseJobs(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
+    const { user } = socket.request;
     const newNamespace = socket.nsp;
 
     const status = await this.gameEventService.useState(roomId);
 
-    this.server
-      .in(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.USEJOBS, status);
+    const Players = await this.gameEventService.findPlayers(roomId);
+    let count;
+    //count
+    for (const player of Players) {
+      if (player.id === user.profile.id) {
+        count = await this.gameEventService.setPlayerNum(roomId);
+      }
+    }
 
-    await this.gameEventService.delValue(roomId, MAFIA_FIELD);
+    if (Players.length === count) {
+      await this.gameEventService.delPlayerNum(roomId);
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.USEJOBS, status);
+
+      await this.gameEventService.delValue(roomId, MAFIA_FIELD);
+    }
   }
 
   @SubscribeMessage(GameEvent.DAY)
