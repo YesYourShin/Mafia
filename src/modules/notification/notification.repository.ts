@@ -1,3 +1,4 @@
+import { NotificationType } from 'src/common/constants';
 import { Notification } from 'src/entities';
 import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -40,7 +41,12 @@ export class NotificationRepository extends AbstractRepository<Notification> {
       .orderBy('notification.createdAt', 'DESC')
       .getMany();
 
-    return result;
+    return result.map((notification) => {
+      if (notification.type === NotificationType.INVITED_GAME) {
+        notification.data = JSON.parse(notification.data);
+      }
+      return notification;
+    });
   }
 
   // async findAll(targetId: number, page: number, perPage: number) {

@@ -11,7 +11,8 @@ export class GameController {
     @Query('page') page: number,
     @Query('item') item: number,
   ) {
-    return await this.gameService.findAll(nickname, page, item);
+    const record = await this.gameService.findAll(nickname, page, item);
+    return record;
   }
 
   // @Get()

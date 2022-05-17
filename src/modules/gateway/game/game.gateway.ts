@@ -81,30 +81,48 @@ export class GameGateway
     @MessageBody() data: { day: boolean },
   ) {
     const { roomId } = socket.data;
+    const { user } = socket.request;
     const newNamespace = socket.nsp;
     this.logger.log(data.day);
 
     // 승리조건
-    // const living = await this.gameEventService.livingHuman(roomId);
     const winner = this.gameEventService.winner(roomId);
 
-    // ----------이벤트 추가 회의 한번..
-    // if (winner) {
-    //   this.logger.log(`if 우승 ${winner}`);
-    //   this.logger.log(`if day값 : ${data.day}`);
-    //   this.server
-    //     .in(`${newNamespace.name}-${roomId}`)
-    //     .emit(GameEvent.WINNER, { winner: winner });
-    // } else {
-    // default - 밤 = false
-    this.logger.log(`else 우승 ${winner}`);
-    this.logger.log(`else day값 : ${data.day}`);
-    const thisDay = !data.day;
-    this.logger.log(thisDay);
-    this.server
-      .in(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.DAY, { day: thisDay });
-    // }
+    const Players = await this.gameEventService.findPlayers(roomId);
+    // if (gamePlayers.length < 6)
+    //   //  throw new ForbiddenException()
+    //   throw new ForbiddenException('인원이 부족합니다.');
+
+    this.logger.log(Players);
+
+    let count;
+    //count
+    for (const player of Players) {
+      if (player.id === user.profile.id) {
+        count = await this.gameEventService.setPlayerNum(roomId);
+      }
+    }
+
+    if (Players.length === count) {
+      await this.gameEventService.delPlayerNum(roomId);
+      // ----------이벤트 추가 회의 한번..
+      // if (winner) {
+      //   this.logger.log(`if 우승 ${winner}`);
+      //   this.logger.log(`if day값 : ${data.day}`);
+      //   this.server
+      //     .in(`${newNamespace.name}-${roomId}`)
+      //     .emit(GameEvent.WINNER, { winner: winner });
+      // } else {
+      // default - 밤 = false
+      this.logger.log(`else 우승 ${winner}`);
+      this.logger.log(`else day값 : ${data.day}`);
+      const thisDay = !data.day;
+      this.logger.log(thisDay);
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.DAY, { day: thisDay });
+      // }
+    }
   }
 
   //이겼을 시, 게임 정보 db에 저장하는 부분 로직도 짜야함.
@@ -281,7 +299,7 @@ export class GameGateway
       // 버전 1 , 찬성값만 주기
       this.server
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.FINISHP, { Agreement: agreement });
+        .emit(GameEvent.FINISHP, agreement);
 
       // 버전 1 , 찬성값만 주기
       // this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FinishP, {
@@ -377,6 +395,19 @@ export class GameGateway
         id: data.id,
       });
     }
+  }
+  @SubscribeMessage(GameEvent.SPEAK)
+  async handleSpeak(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody()
+    data: { userId: number; nickname: string; speaking: boolean },
+  ) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.SPEAK, data);
   }
 
   // socket이 연결됐을 때

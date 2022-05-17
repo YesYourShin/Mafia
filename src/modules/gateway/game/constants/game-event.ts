@@ -14,4 +14,5 @@ export const GameEvent = {
   DEATH: 'game:death',
   WINNER: 'game:winner',
   USEJOBS: 'game:useJobs',
+  SPEAK: 'game:speak',
 };

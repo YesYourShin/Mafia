@@ -278,6 +278,10 @@ export class GameRoomController {
     description: '게임 방 초대 수락',
   })
   @ApiParam({
+    name: 'uuid',
+    description: '초대 알림 ID',
+  })
+  @ApiParam({
     name: 'memberId',
     description: '초대한 유저',
   })
@@ -309,13 +313,19 @@ export class GameRoomController {
     },
   })
   @ApiOperation({ summary: '게임 방 초대 수락' })
-  @Post('/:roomId/providers/:memberId/users/:userId/accept')
+  @Post('/:roomId/providers/:memberId/users/:userId/accept/:uuid')
   async accept(
     @UserDecorator() user: UserProfile,
     @Param('roomId') roomId: number,
     @Param('userId') userId: number,
+    @Param('uuid') uuid: string,
   ) {
-    return await this.gameRoomService.accept(roomId, user.profile, userId);
+    return await this.gameRoomService.accept(
+      roomId,
+      user.profile,
+      userId,
+      uuid,
+    );
   }
 
   @ApiCreatedResponse({

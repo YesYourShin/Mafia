@@ -220,14 +220,13 @@ export class GameEventService {
       this.logger.log(`useState error `, error);
     }
 
-    this.logger.log(mafiaNum);
-    this.logger.log(doctorNum);
-
-    if (mafiaNum !== doctorNum) {
-      // 마피아가 선택한 유저 죽음.
-      gamePlayer = await this.getPlayerJobs(roomId);
-      gamePlayer[mafiaNum].die = !gamePlayer[mafiaNum].die;
-      await this.death(roomId, mafiaNum);
+    if (mafiaNum) {
+      if (!doctorNum || mafiaNum !== doctorNum) {
+        await this.death(roomId, mafiaNum);
+        gamePlayer = await this.getPlayerJobs(roomId);
+      }
+    } else {
+      return 0;
     }
 
     this.logger.log(gamePlayer[mafiaNum].die);
