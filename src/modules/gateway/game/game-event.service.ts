@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
+import { LoggedInGuard } from '../../auth/guards/logged-in.guard';
 import {
   DOCTOR_FIELD,
   FINISH_VOTE_FIELD,
@@ -245,20 +246,19 @@ export class GameEventService {
   ): Promise<string> {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
-    let userJob, police;
+    let police;
 
     for (const player of gamePlayer) {
       if (player.id === user.profile.id) {
         police = player.job;
+        break;
       }
-
-      userJob = gamePlayer[userNum].job;
     }
 
     if (police !== 'POLICE') {
       throw new WsException('경찰이 아닙니다.');
     } else {
-      return userJob;
+      return gamePlayer[userNum].job;
     }
   }
 
@@ -269,22 +269,17 @@ export class GameEventService {
   ): Promise<number> {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
-    let mafia;
-    // let voteUser;
-
     for (const player of gamePlayer) {
-      if (player.id === user.profile.id) {
-        mafia = player.job;
+      if (player.id === user.profile.id && player.job !== 'MAFIA') {
+        throw new WsException('마피아가 아닙니다.');
       }
-
-      // voteUser = gamePlayer[userNum];
     }
 
-    if (mafia !== 'MAFIA') {
-      throw new WsException('마피아가 아닙니다.');
-    }
-
-    this.redisService.hset(this.makeGameKey(roomId), MAFIA_FIELD, userNum);
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      MAFIA_FIELD,
+      userNum,
+    );
 
     return userNum;
   }
@@ -332,16 +327,19 @@ export class GameEventService {
     return { mafia: livingMafia, citizen: livingCitizen };
   }
 
-  // winner(mafia: number, citizen: number) {
-  //   this.logger.log(`winne 마피아 ${mafia}, 시민 ${citizen}`)
+  async playerCheckNum(roomId: number, user) {
+    const gamePlayers = await this.getPlayerJobs(roomId);
 
-  //   if (!mafia) {
-  //     return 'CITIZEN';
-  //   } else if (mafia >= citizen) {
-  //     return 'MAFIA';
-  //   }
-  //   return null;
-  // }
+    let count;
+    for (const player of gamePlayers) {
+      if (player.id === user.profile.id) {
+        count = await this.setPlayerNum(roomId);
+        break;
+      }
+    }
+
+    return { playerSum: gamePlayers.length, count: count };
+  }
 
   async winner(roomId: number) {
     const { mafia, citizen } = await this.livingHuman(roomId);
@@ -418,7 +416,7 @@ export class GameEventService {
   }
 
   async delValue(roomId: number, value) {
-    const key = await this.makeGameKey(roomId);
+    const key = this.makeGameKey(roomId);
 
     switch (value) {
       case MAFIA_FIELD:

@@ -5,6 +5,8 @@ import { GameMember } from 'src/entities';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
+  async insertGame(userId: num) {}
+
   async findAll(userId: number | any[], page: number, item: number) {
     const query = await getConnection()
       .createQueryBuilder()
