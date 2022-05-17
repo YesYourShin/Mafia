@@ -90,6 +90,6 @@ export class GameRoomService {
     if (room.publishers <= members.length) {
       throw new ForbiddenException('방의 인원이 초과되었습니다');
     }
-    return { roomId, joinable: true };
+    return { roomId, joinable: true, pin: room?.pin ? room.pin : null };
   }
 }
