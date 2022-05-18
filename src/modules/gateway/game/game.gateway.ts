@@ -20,6 +20,7 @@ import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
 import { Player } from '../../game-room/dto/player';
+import { hasIn } from 'lodash';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -226,15 +227,16 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
-    this.logger.log(`소켓투표 ${data.vote}`);
+    this.logger.log(`1. 소켓투표 ${data.vote}`);
 
-    const { playerSum, count } = await this.gameEventService.playerCheckNum(
+    const { playerSum, count } = await this.gameEventService.CheckNum(
       roomId,
       user,
     );
 
     if (count <= playerSum) {
-      if (socket.data) {
+      if (data.vote) {
+        this.logger.log(`1. 소켓투표값 ${data.vote}`);
         await this.gameEventService.setVote(roomId, data.vote);
       }
     }
@@ -247,16 +249,21 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
+    this.logger.log(`여기 값 왜 안 되냐`);
+
     const { playerSum, count } = await this.gameEventService.playerCheckNum(
       roomId,
       user,
     );
 
+    this.logger.log(`${playerSum} ${count}`);
+
     if (playerSum === count) {
+      this.logger.log(`${playerSum} ${count}`);
       await this.gameEventService.delPlayerNum(roomId);
+      await this.gameEventService.delNum(roomId);
 
       const result = await this.gameEventService.sortfinishVote(roomId);
-      // if (!result) result = 0;
 
       this.server
         .to(`${newNamespace.name}-${roomId}`)
@@ -264,6 +271,7 @@ export class GameGateway
     }
   }
 
+  // 무효표는 false로 받음.
   @SubscribeMessage(GameEvent.PUNISH)
   async handlePunish(
     @MessageBody() data: { punish: boolean },
@@ -309,7 +317,7 @@ export class GameGateway
       //   },
       // });
 
-      if (playerSum.length / 2 < agreement) {
+      if (playerSum / 2 < agreement) {
         const humon = await this.gameEventService.getVoteDeath(roomId);
         this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
 

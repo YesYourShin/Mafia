@@ -5,6 +5,7 @@ import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
 import { LoggedInGuard } from '../../auth/guards/logged-in.guard';
+import { NUM_FIELD } from './constants/game-redis-key-prefix';
 import {
   DOCTOR_FIELD,
   FINISH_VOTE_FIELD,
@@ -71,7 +72,6 @@ export class GameEventService {
         this.makeGameKey(roomId),
         PLAYERJOB_FIELD,
       );
-      this.logger.log(2);
       return playerJobs;
     } catch (err) {
       console.log(err);
@@ -134,14 +134,14 @@ export class GameEventService {
     return strikeOut;
   }
 
-  async sortfinishVote(roomId: number): Promise<any> {
+  async sortfinishVote(roomId: number) {
     let redisVote = {};
     const vote = await this.getVote(roomId);
 
     // vote = await this.getVote(roomId);
 
     if (!vote) {
-      return vote;
+      return null;
     }
 
     // 해당 숫자값 세주기
@@ -217,7 +217,7 @@ export class GameEventService {
         DOCTOR_FIELD,
       );
     } catch (error) {
-      this.logger.log(`useState error `, error);
+      this.logger.error(`useState error `, error);
     }
 
     if (mafiaNum) {
@@ -226,12 +226,12 @@ export class GameEventService {
         gamePlayer = await this.getPlayerJobs(roomId);
       }
     } else {
-      return 0;
+      return null;
     }
 
-    this.logger.log(gamePlayer[mafiaNum].die);
+    this.logger.log(gamePlayer[mafiaNum - 1].die);
 
-    return { userNum: mafiaNum, die: gamePlayer[mafiaNum].die };
+    return { userNum: mafiaNum, die: gamePlayer[mafiaNum - 1].die };
   }
 
   makeGameKey(roomId: number): string {
@@ -338,6 +338,28 @@ export class GameEventService {
     }
 
     return { playerSum: gamePlayers.length, count: count };
+  }
+
+  async CheckNum(roomId: number, user) {
+    const gamePlayers = await this.getPlayerJobs(roomId);
+
+    let count;
+    for (const player of gamePlayers) {
+      if (player.id === user.profile.id) {
+        count = await this.setNum(roomId);
+        break;
+      }
+    }
+
+    return { playerSum: gamePlayers.length, count: count };
+  }
+
+  async setNum(roomId: number) {
+    return await this.redisService.hincrby(this.makeGameKey(roomId), NUM_FIELD);
+  }
+
+  async delNum(roomId: number) {
+    return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
   }
 
   async winner(roomId: number) {

@@ -6,7 +6,7 @@ import { RemoteCredentials } from 'aws-sdk';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
-  async insertGame(userId: num) {}
+  async insertGame(userId: number) {}
 
   async findAll(userId: number | any[], page: number, item: number) {
     const query = await getConnection()
