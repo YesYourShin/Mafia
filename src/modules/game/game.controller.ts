@@ -14,13 +14,4 @@ export class GameController {
     const record = await this.gameService.findAll(nickname, page, item);
     return record;
   }
-
-  // @Get()
-  // async hi() {
-  //   return 'hi';
-  // }
-
-  // async findOne(id: number) {
-  //   return await this.gameService.findOne(id);
-  // }
 }

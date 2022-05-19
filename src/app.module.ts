@@ -12,7 +12,7 @@ import { GameRoomModule } from './modules/game-room/game-room.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { GameModule } from './modules/game/game.module';
 import { RedisModule } from './modules/redis/redis.module';
-import { GameEventModule } from './modules/gateway/game-room/game-event.module';
+import { GameEventModule } from './modules/gateway/game/game-event.module';
 import { UserEventModule } from './modules/gateway/user/user-event.module';
 import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';

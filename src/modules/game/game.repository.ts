@@ -2,7 +2,8 @@ import { Profile } from 'src/entities/profile.entity';
 import { Game } from 'src/entities/game.entity';
 import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { GameMember } from 'src/entities';
-import { RemoteCredentials } from 'aws-sdk';
+import { CreateGameDto } from '../gateway/create-game.dto';
+import { Player } from '../game-room/dto/player';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
@@ -54,5 +55,62 @@ export class GameRepository extends AbstractRepository<Game> {
      * 안나오던 데이터들이 raw data에 있으므로 자기가 직접 매핑해주면 됨
      * 이런 경우가 있다...
      */
+  }
+
+  async create(createGameDto: CreateGameDto, players: Player[]) {
+    const queryRunner = getConnection().createQueryRunner();
+    const queryBuilder = getConnection().createQueryBuilder(queryRunner);
+    await queryRunner.connect();
+
+    await queryRunner.startTransaction();
+
+    try {
+      const gameId = (
+        await queryBuilder
+          .insert()
+          .into(Game)
+          .values({
+            mode: createGameDto.mode,
+            name: createGameDto.name,
+            password: createGameDto.password,
+            limit: createGameDto.limit,
+          })
+          .execute()
+      ).identifiers[0].id;
+      await queryBuilder
+        .insert()
+        .into(GameMember)
+        .values(
+          players.map((player, idx) => ({
+            gameId,
+            playNumber: idx + 1, // 카메라 번호
+            gameRoleName: player.job,
+            userId: player.userId,
+          })),
+        )
+        .execute();
+      await queryRunner.commitTransaction();
+      return gameId;
+    } catch (error) {
+      console.error(error);
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async setRole(players: Player[]) {
+    const qb = getConnection().createQueryBuilder();
+
+    return await Promise.all(
+      players.map((player) =>
+        qb
+          .update(GameMember)
+          .set({ gameRoleName: player.job })
+          .where('gameId = :gameId', { gameId: player.gameId })
+          .andWhere('userId = :userId', { userId: player.userId })
+          .execute(),
+      ),
+    );
   }
 }

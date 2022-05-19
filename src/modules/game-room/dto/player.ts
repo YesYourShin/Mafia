@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { EnumGameRole } from 'src/common/constants';
 import { ImageDto } from 'src/modules/user/dto';
 import { Member } from './member';
 
@@ -34,13 +35,15 @@ export class Player {
     example: 'citizen',
     description: '직업',
   })
-  job: string;
+  job: EnumGameRole | null;
 
   @ApiProperty({
     example: false,
     description: '생존 상태',
   })
   die: boolean;
+
+  gameId: number | null;
 
   constructor(member: Member) {
     this.id = member.id;
@@ -50,5 +53,6 @@ export class Player {
     this.userId = member.userId;
     this.job = null;
     this.die = false;
+    this.gameId = null;
   }
 }

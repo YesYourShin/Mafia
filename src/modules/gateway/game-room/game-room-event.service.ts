@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   forwardRef,
   Inject,
@@ -30,9 +29,8 @@ import { ConfigService } from '@nestjs/config';
 import { GameRoom } from 'src/modules/game-room/dto/game-room';
 import { WsException } from '@nestjs/websockets';
 import { Player } from 'src/modules/game-room/dto/player';
-import { ProfileInfo } from 'src/modules/user/dto';
-import { CreateNotificationDto } from 'src/modules/notification/dto';
-import { NotificationType } from 'src/common/constants';
+import { GameRepository } from 'src/modules/game/game.repository';
+import { CreateGameDto } from '../create-game.dto';
 
 @Injectable()
 export class GameRoomEventService {
@@ -44,6 +42,7 @@ export class GameRoomEventService {
     private readonly logger = new Logger('GameRoomEventService'),
     private readonly janusService: JanusService,
     private readonly configService: ConfigService,
+    private readonly gameRepository: GameRepository,
   ) {}
 
   async checkPassword(roomId: number, pin: string) {
@@ -252,10 +251,17 @@ export class GameRoomEventService {
   }
 
   async setGame(roomId: number) {
-    const room = await this.findOneOfRoomInfo(roomId);
+    const room: GameRoom = await this.findOneOfRoomInfo(roomId);
     const members = await this.findMembersByRoomId(roomId);
 
-    const players = members.map((member) => new Player(member));
+    const players: Player[] = members.map((member) => new Player(member));
+    const gameId = await this.gameRepository.create(
+      new CreateGameDto(room),
+      players,
+    );
+
+    // player gameId 저장
+    players.forEach((player) => (player.gameId = gameId));
 
     await this.redisService.hset(this.makeGameKey(roomId), INFO_FIELD, room);
     await this.redisService.hset(
@@ -265,7 +271,7 @@ export class GameRoomEventService {
     );
   }
 
-  //Todo 미구현
+  //Todo 시연 시 Length 제한 다시 적용
   async startGame(roomId: number, memberId: number) {
     const members = await this.findMembersByRoomId(roomId);
     const room = await this.findOneOfRoomInfo(roomId);

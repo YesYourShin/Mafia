@@ -4,7 +4,6 @@ import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
-import { LoggedInGuard } from '../../auth/guards/logged-in.guard';
 import { NUM_FIELD } from './constants/game-redis-key-prefix';
 import {
   DOCTOR_FIELD,
@@ -17,6 +16,8 @@ import {
   PUNISH_FIELD,
   VOTE_FIELD,
 } from './constants/game-redis-key-prefix';
+import { EnumGameRole } from 'src/common/constants';
+import { GameRepository } from 'src/modules/game/game.repository';
 
 // 직업 부여 분리
 @Injectable()
@@ -24,6 +25,7 @@ export class GameEventService {
   constructor(
     @Inject(Logger) private readonly logger: Logger,
     private readonly redisService: RedisService,
+    private readonly gameRepository: GameRepository,
   ) {}
 
   timer() {
@@ -85,11 +87,13 @@ export class GameEventService {
     for (let i = 0; i < Num; i++) {
       playerJobs[i].job = jobs[i];
     }
-    return await this.redisService.hset(
+    await this.redisService.hset(
       this.makeGameKey(roomId),
       PLAYERJOB_FIELD,
       playerJobs,
     );
+
+    await this.gameRepository.setRole(playerJobs);
   }
 
   getJobData(playerCount: number) {
@@ -105,7 +109,12 @@ export class GameEventService {
   }
 
   grantJob(job: number[], Num: number) {
-    const grantJob = ['CITIZEN', 'MAFIA', 'DOCTOR', 'POLICE']; // 직업
+    const grantJob = [
+      EnumGameRole.CITIZEN,
+      EnumGameRole.MAFIA,
+      EnumGameRole.DOCTOR,
+      EnumGameRole.POLICE,
+    ]; // 직업
 
     const roomJob = []; //해당 방의 직업
     let typesOfJobs = 0;
@@ -254,7 +263,7 @@ export class GameEventService {
       }
     }
 
-    if (police !== 'POLICE') {
+    if (police !== EnumGameRole.POLICE) {
       throw new WsException('경찰이 아닙니다.');
     } else {
       return gamePlayer[userNum].job;
@@ -269,7 +278,7 @@ export class GameEventService {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
     for (const player of gamePlayer) {
-      if (player.id === user.profile.id && player.job !== 'MAFIA') {
+      if (player.id === user.profile.id && player.job !== EnumGameRole.MAFIA) {
         throw new WsException('마피아가 아닙니다.');
       }
     }
@@ -301,7 +310,7 @@ export class GameEventService {
       // voteUser = gamePlayer[userNum];
     }
 
-    if (doctor !== 'DOCTOR') {
+    if (doctor !== EnumGameRole.DOCTOR) {
       throw new WsException('의사가 아닙니다.');
     }
 
@@ -318,7 +327,7 @@ export class GameEventService {
     );
 
     const livingMafia = gamePlayer.filter((player) => {
-      return player.job === 'MAFIA' && player.die === false;
+      return player.job === EnumGameRole.MAFIA && player.die === false;
     }).length;
 
     const livingCitizen = gamePlayer.length - livingMafia;
@@ -366,9 +375,9 @@ export class GameEventService {
     const { mafia, citizen } = await this.livingHuman(roomId);
 
     if (!mafia) {
-      return 'CITIZEN';
+      return EnumGameRole.CITIZEN;
     } else if (mafia >= citizen) {
-      return 'MAFIA';
+      return EnumGameRole.MAFIA;
     }
     return null;
   }
