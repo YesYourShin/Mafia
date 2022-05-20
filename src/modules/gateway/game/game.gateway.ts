@@ -322,11 +322,11 @@ export class GameGateway
         const humon = await this.gameEventService.getVoteDeath(roomId);
         this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
 
-        //죽은 사람의 정보 제공 (넘버)
+        //죽은 사람의 정보 제공
         const death = await this.gameEventService.death(roomId, humon);
         this.server
           .to(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.DEATH, { death: death });
+          .emit(GameEvent.DEATH, death);
 
         await this.gameEventService.delValue(roomId, FINISH_VOTE_FIELD);
       }

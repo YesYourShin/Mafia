@@ -260,7 +260,7 @@ export class GameEventService {
       gamePlayer,
     );
 
-    return userNum;
+    return gamePlayer[userNum - 1];
   }
 
   async useState(roomId: number) {
