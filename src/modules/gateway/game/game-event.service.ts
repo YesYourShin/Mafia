@@ -1,10 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { WsException } from '@nestjs/websockets';
+import { MessageBody, WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
-import { NUM_FIELD } from './constants/game-redis-key-prefix';
+import { MAFIAS_FIELD, NUM_FIELD } from './constants/game-redis-key-prefix';
 import {
   DOCTOR_FIELD,
   FINISH_VOTE_FIELD,
@@ -79,14 +79,32 @@ export class GameEventService {
       console.log(err);
     }
   }
+  async setMafiaSerach(roomId: number, player: Player[]) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      MAFIAS_FIELD,
+      player,
+    );
+  }
+
+  async getMafiaSerach(roomId: number): Promise<Player[]> {
+    return await this.redisService.hget(this.makeGameKey(roomId), MAFIAS_FIELD);
+  }
 
   async setPlayerJobs(roomId: number, job: number[], Num: number) {
     const jobs = this.grantJob(job, Num);
     const playerJobs = await this.findPlayers(roomId);
+    const mafias = [];
 
     for (let i = 0; i < Num; i++) {
       playerJobs[i].job = jobs[i];
+      if (playerJobs[i].job === EnumGameRole.MAFIA) {
+        mafias.push(playerJobs[i]);
+      }
     }
+
+    this.setMafiaSerach(roomId, mafias);
+
     await this.redisService.hset(
       this.makeGameKey(roomId),
       PLAYERJOB_FIELD,
@@ -269,6 +287,17 @@ export class GameEventService {
       return gamePlayer[userNum].job;
     }
   }
+  // async MafiaSerach(roomId: number) {
+  //   const gmaePlayer = await this.getPlayerJobs(roomId);
+
+  //   for( const player of gmaePlayer){
+  //     if(player.job === EnumGameRole.MAFIA)
+  //   }
+  // }
+
+  // async mafia(roomId: number, user: userProfile): Promise{
+  //   MAFIAS_FIELD
+  // }
 
   async useMafia(
     roomId: number,

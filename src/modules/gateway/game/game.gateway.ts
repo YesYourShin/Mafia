@@ -351,6 +351,15 @@ export class GameGateway
     this.server.to(socket.id).emit(GameEvent.POLICE, { userJob: userJob });
   }
 
+  @SubscribeMessage(GameEvent.MAFIASERACH)
+  async handleMafiaSerach(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = socket.data;
+
+    const maifas = await this.gameEventService.getMafiaSerach(roomId);
+
+    return { mafia: maifas };
+  }
+
   // 능력사용 부분
   // 마피아 능력
   @SubscribeMessage(GameEvent.MAFIA)
@@ -430,7 +439,7 @@ export class GameGateway
     const newNamespace = socket.nsp;
     const { roomId } = socket.data;
 
-    // socket.leave(`${newNamespace.name}-${roomId}`);
+    socket.leave(`${newNamespace.name}-${roomId}`);
     this.logger.log(`socket disconnected: ${socket.id}`);
   }
 

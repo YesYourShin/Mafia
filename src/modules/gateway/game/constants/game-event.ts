@@ -10,6 +10,7 @@ export const GameEvent = {
   POLICE: 'game:police',
   DOCTOR: 'game:doctor',
   MAFIA: 'game:mafia',
+  MAFIASERACH: 'game:mafiaSerach',
   TIMER: 'game:timer',
   DEATH: 'game:death',
   WINNER: 'game:winner',

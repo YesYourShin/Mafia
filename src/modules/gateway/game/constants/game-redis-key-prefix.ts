@@ -6,6 +6,8 @@ export const VOTE_FIELD = 'vote';
 export const FINISH_VOTE_FIELD = 'finish-vote';
 export const PUNISH_FIELD = 'punish';
 
+export const MAFIAS_FIELD = 'mafias';
+
 export const MAFIA_FIELD = 'mafia';
 export const DOCTOR_FIELD = 'doctor';
 
