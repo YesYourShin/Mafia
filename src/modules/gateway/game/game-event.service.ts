@@ -4,7 +4,11 @@ import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
-import { MAFIAS_FIELD, NUM_FIELD } from './constants/game-redis-key-prefix';
+import {
+  MAFIAS_FIELD,
+  NUM_FIELD,
+  PLAYERLELEAVE_FIELD,
+} from './constants/game-redis-key-prefix';
 import {
   DOCTOR_FIELD,
   FINISH_VOTE_FIELD,
@@ -18,6 +22,7 @@ import {
 } from './constants/game-redis-key-prefix';
 import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
+import { User } from '../../../entities/user.entity';
 
 // 직업 부여 분리
 @Injectable()
@@ -68,7 +73,7 @@ export class GameEventService {
   //   return game;
   // }
 
-  async getPlayerJobs(roomId: number) {
+  async getPlayerJobs(roomId: number): Promise<Player[]> {
     try {
       const playerJobs = await this.redisService.hget(
         this.makeGameKey(roomId),
@@ -89,6 +94,35 @@ export class GameEventService {
 
   async getMafiaSerach(roomId: number): Promise<Player[]> {
     return await this.redisService.hget(this.makeGameKey(roomId), MAFIAS_FIELD);
+  }
+
+  async leaveUser(roomId: number, user: UserProfile) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+    let leaveUser;
+
+    for (const player in gamePlayer) {
+      if (gamePlayer[player].id === user.profile.id) {
+        leaveUser = await this.setLeaveUser(roomId, gamePlayer[player]);
+        gamePlayer.splice(+player, 1);
+        break;
+      }
+    }
+
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERJOB_FIELD,
+      gamePlayer,
+    );
+
+    return leaveUser;
+  }
+
+  async setLeaveUser(roomId: number, player: Player) {
+    return this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERLELEAVE_FIELD,
+      player,
+    );
   }
 
   async setPlayerJobs(roomId: number, job: number[], Num: number) {
@@ -115,7 +149,7 @@ export class GameEventService {
   }
 
   getJobData(playerCount: number) {
-    const mafia = 1;
+    const mafia = playerCount > 6 ? 2 : 1;
     const doctor = 1;
     const police = 1;
 

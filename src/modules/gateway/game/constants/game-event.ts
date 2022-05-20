@@ -1,5 +1,6 @@
 export const GameEvent = {
   JOIN: 'game:join',
+  LEAVE: 'game:leave',
   START: 'game:start',
   JOB: 'game:job',
   PUNISH: 'game:punish',

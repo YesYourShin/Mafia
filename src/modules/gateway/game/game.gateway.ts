@@ -21,6 +21,7 @@ import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
 import { Player } from '../../game-room/dto/player';
 import { hasIn } from 'lodash';
+import { User } from '../../../entities/user.entity';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -438,8 +439,14 @@ export class GameGateway
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
     const newNamespace = socket.nsp;
     const { roomId } = socket.data;
+    const { user } = socket.request;
 
     socket.leave(`${newNamespace.name}-${roomId}`);
+    // 서비스 제공.
+    const leaveUser = await this.gameEventService.leaveUser(roomId, user);
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.LEAVE, leaveUser);
     this.logger.log(`socket disconnected: ${socket.id}`);
   }
 
