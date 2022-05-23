@@ -84,7 +84,7 @@ export class GameEventService {
       console.log(err);
     }
   }
-  async setMafiaSerach(roomId: number, player: Player[]) {
+  async setMafiaSearch(roomId: number, player: Player[]) {
     await this.redisService.hset(
       this.makeGameKey(roomId),
       MAFIAS_FIELD,
@@ -92,7 +92,7 @@ export class GameEventService {
     );
   }
 
-  async getMafiaSerach(roomId: number): Promise<Player[]> {
+  async getMafiaSearch(roomId: number): Promise<Player[]> {
     return await this.redisService.hget(this.makeGameKey(roomId), MAFIAS_FIELD);
   }
 
@@ -137,7 +137,7 @@ export class GameEventService {
       }
     }
 
-    this.setMafiaSerach(roomId, mafias);
+    this.setMafiaSearch(roomId, mafias);
 
     await this.redisService.hset(
       this.makeGameKey(roomId),
@@ -321,17 +321,6 @@ export class GameEventService {
       return gamePlayer[userNum].job;
     }
   }
-  // async MafiaSerach(roomId: number) {
-  //   const gmaePlayer = await this.getPlayerJobs(roomId);
-
-  //   for( const player of gmaePlayer){
-  //     if(player.job === EnumGameRole.MAFIA)
-  //   }
-  // }
-
-  // async mafia(roomId: number, user: userProfile): Promise{
-  //   MAFIAS_FIELD
-  // }
 
   async useMafia(
     roomId: number,
@@ -483,7 +472,7 @@ export class GameEventService {
     if (!punishs) punishs = [];
     punishs.push(punish);
 
-    await this.redisService.hset(
+    return await this.redisService.hset(
       this.makeGameKey(roomId),
       PUNISH_FIELD,
       punishs,

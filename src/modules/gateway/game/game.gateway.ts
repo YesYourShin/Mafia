@@ -188,14 +188,6 @@ export class GameGateway
     this.server.in(socket.id).emit(GameEvent.JOB, Players);
   }
 
-  //투표
-  // @SubscribeMessage(GameEvent.VOTE)
-  // async handleVote(
-  //   @MessageBody() data: { vote: number },
-  //   @ConnectedSocket() socket: AuthenticatedSocket,
-  // ) {
-  //   const { roomId } = socket.data;
-
   @SubscribeMessage(GameEvent.USEJOBS)
   async HandleUseJobs(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
@@ -228,7 +220,6 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
-    this.logger.log(`1. 소켓투표 ${data.vote}`);
 
     const { playerSum, count } = await this.gameEventService.CheckNum(
       roomId,
@@ -250,17 +241,13 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    this.logger.log(`여기 값 왜 안 되냐`);
-
     const { playerSum, count } = await this.gameEventService.playerCheckNum(
       roomId,
       user,
     );
 
-    this.logger.log(`${playerSum} ${count}`);
-
     if (playerSum === count) {
-      this.logger.log(`${playerSum} ${count}`);
+      this.logger.log(`투표 합, 총 인원 ${playerSum}, count ${count}`);
       await this.gameEventService.delPlayerNum(roomId);
       await this.gameEventService.delNum(roomId);
 
@@ -284,8 +271,6 @@ export class GameGateway
 
     await this.gameEventService.setPunish(roomId, data.punish);
   }
-
-  // punis = [];
 
   // 찬반투표
   @SubscribeMessage(GameEvent.FINISHP)
@@ -327,9 +312,9 @@ export class GameGateway
         this.server
           .to(`${newNamespace.name}-${roomId}`)
           .emit(GameEvent.DEATH, death);
-
-        await this.gameEventService.delValue(roomId, FINISH_VOTE_FIELD);
       }
+
+      await this.gameEventService.delValue(roomId, FINISH_VOTE_FIELD);
     }
   }
 
@@ -352,13 +337,13 @@ export class GameGateway
     this.server.to(socket.id).emit(GameEvent.POLICE, { userJob: userJob });
   }
 
-  @SubscribeMessage(GameEvent.MAFIASERACH)
+  @SubscribeMessage(GameEvent.MAFIASEARCH)
   async handleMafiaSerach(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
 
-    const maifas = await this.gameEventService.getMafiaSerach(roomId);
+    const mafias = await this.gameEventService.getMafiaSearch(roomId);
 
-    return { mafia: maifas };
+    return { mafia: mafias };
   }
 
   // 능력사용 부분
