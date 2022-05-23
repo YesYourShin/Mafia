@@ -10,7 +10,7 @@ export class GameRepository extends AbstractRepository<Game> {
   async insertGame(userId: number) {}
 
   async findAll(userId: number | any[], page: number, item: number) {
-    const query = await getConnection()
+    const query = getConnection()
       .createQueryBuilder()
       .from(GameMember, 'gm2')
       .select('gm2.gameId')
@@ -19,7 +19,7 @@ export class GameRepository extends AbstractRepository<Game> {
       .skip(item * (page - 1))
       .orderBy('gm2.updatedAt', 'DESC');
 
-    const qb = await getConnection()
+    const qb = getConnection()
       .createQueryBuilder()
       .from(Game, 'g')
       .innerJoin('g.members', 'gm')
@@ -31,7 +31,7 @@ export class GameRepository extends AbstractRepository<Game> {
       .orderBy('g.updatedAt', 'DESC')
       .addOrderBy('gm.playNumber', 'ASC');
 
-    return qb.getMany();
+    return await qb.getMany();
   }
 
   async findOne(nickname: string) {
