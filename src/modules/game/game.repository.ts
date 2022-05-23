@@ -4,10 +4,11 @@ import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { GameMember } from 'src/entities';
 import { CreateGameDto } from '../gateway/create-game.dto';
 import { Player } from '../game-room/dto/player';
+import { User } from '../../entities/user.entity';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
-  async insertGame(userId: number) {}
+  
 
   async findAll(userId: number | any[], page: number, item: number) {
     const query = getConnection()
@@ -57,6 +58,7 @@ export class GameRepository extends AbstractRepository<Game> {
      */
   }
 
+  
   async create(createGameDto: CreateGameDto, players: Player[]) {
     const queryRunner = getConnection().createQueryRunner();
     const queryBuilder = getConnection().createQueryBuilder(queryRunner);
@@ -97,6 +99,14 @@ export class GameRepository extends AbstractRepository<Game> {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async leave(player: Player) {
+    const qb = getConnection().createQueryBuilder();
+
+    
+
+    return await 
   }
 
   async setRole(players: Player[]) {

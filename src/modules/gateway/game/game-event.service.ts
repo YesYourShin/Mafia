@@ -115,6 +115,8 @@ export class GameEventService {
       gamePlayer,
     );
 
+    await this.gameRepository.leave(leaveUser);
+
     return leaveUser;
   }
 
