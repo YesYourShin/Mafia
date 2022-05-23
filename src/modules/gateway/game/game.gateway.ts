@@ -343,7 +343,7 @@ export class GameGateway
 
     const mafias = await this.gameEventService.getMafiaSearch(roomId);
 
-    return { mafia: mafias };
+    this.server.to(socket.id).emit(GameEvent.MAFIASEARCH, { mafia: mafias });
   }
 
   // 능력사용 부분
