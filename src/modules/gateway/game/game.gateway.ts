@@ -194,7 +194,7 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    const { playerSum, count } = await this.gameEventService.playerCheckNum(
+    const { playerSum, count } = await this.gameEventService.setPlayerCheckNum(
       roomId,
       user,
     );
@@ -241,7 +241,7 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    const { playerSum, count } = await this.gameEventService.playerCheckNum(
+    const { playerSum, count } = await this.gameEventService.setPlayerCheckNum(
       roomId,
       user,
     );
@@ -279,7 +279,7 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    const { playerSum, count } = await this.gameEventService.playerCheckNum(
+    const { playerSum, count } = await this.gameEventService.setPlayerCheckNum(
       roomId,
       user,
     );
@@ -340,6 +340,7 @@ export class GameGateway
   @SubscribeMessage(GameEvent.MAFIASEARCH)
   async handleMafiaSerach(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
+    this.logger.log(`MAFIASEARCH 실행`);
 
     const mafias = await this.gameEventService.getMafiaSearch(roomId);
 

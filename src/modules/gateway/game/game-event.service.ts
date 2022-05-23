@@ -97,6 +97,7 @@ export class GameEventService {
   }
 
   async leaveUser(roomId: number, user: UserProfile) {
+    this.logger.log(`leaveUser event`);
     const gamePlayer = await this.getPlayerJobs(roomId);
     let leaveUser;
 
@@ -387,7 +388,7 @@ export class GameEventService {
     return { mafia: livingMafia, citizen: livingCitizen };
   }
 
-  async playerCheckNum(roomId: number, user) {
+  async setPlayerCheckNum(roomId: number, user) {
     const gamePlayers = await this.getPlayerJobs(roomId);
 
     let count;
