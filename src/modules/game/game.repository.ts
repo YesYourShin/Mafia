@@ -8,8 +8,6 @@ import { User } from '../../entities/user.entity';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
-  
-
   async findAll(userId: number | any[], page: number, item: number) {
     const query = getConnection()
       .createQueryBuilder()
@@ -58,7 +56,6 @@ export class GameRepository extends AbstractRepository<Game> {
      */
   }
 
-  
   async create(createGameDto: CreateGameDto, players: Player[]) {
     const queryRunner = getConnection().createQueryRunner();
     const queryBuilder = getConnection().createQueryBuilder(queryRunner);
@@ -101,13 +98,11 @@ export class GameRepository extends AbstractRepository<Game> {
     }
   }
 
-  async leave(player: Player) {
-    const qb = getConnection().createQueryBuilder();
+  // async leave(player: Player) {
+  //   const qb = getConnection().createQueryBuilder();
 
-    
-
-    return await 
-  }
+  //   return
+  // }
 
   async setRole(players: Player[]) {
     const qb = getConnection().createQueryBuilder();
