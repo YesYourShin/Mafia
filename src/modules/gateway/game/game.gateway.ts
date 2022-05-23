@@ -64,16 +64,29 @@ export class GameGateway
   @SubscribeMessage(GameEvent.TIMER)
   async handleTimer(@ConnectedSocket() socket: AuthenticatedSocket) {
     const { roomId } = socket.data;
+    const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    const { start, end } = this.gameEventService.timer();
+    const Players = await this.gameEventService.findPlayers(roomId);
 
-    try {
-      this.server
-        .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.TIMER, { start: start }, { end: end });
-    } catch (error) {
-      this.logger.error('event error', error);
+    let count;
+    for (const player of Players) {
+      if (player.id === user.profile.id) {
+        count = await this.gameEventService.setPlayerNum(roomId);
+      }
+    }
+
+    if (Players.length === count) {
+      await this.gameEventService.delPlayerNum(roomId);
+      const { start, end } = this.gameEventService.timer();
+
+      try {
+        this.server
+          .in(`${newNamespace.name}-${roomId}`)
+          .emit(GameEvent.TIMER, { start: start }, { end: end });
+      } catch (error) {
+        this.logger.error('event error', error);
+      }
     }
   }
 
