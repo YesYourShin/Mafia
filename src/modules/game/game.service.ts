@@ -16,4 +16,8 @@ export class GameService {
 
     return await this.gameRepository.findAll(userId, page, item);
   }
+
+  async getScore(userId: number) {
+    return await this.gameRepository.getScore(userId);
+  }
 }

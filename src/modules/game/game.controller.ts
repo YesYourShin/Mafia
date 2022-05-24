@@ -14,4 +14,9 @@ export class GameController {
     const record = await this.gameService.findAll(nickname, page, item);
     return record;
   }
+
+  @Get(':userId')
+  async getScore(@Param('userId') userId: number) {
+    return await this.gameService.getScore(userId);
+  }
 }
