@@ -19,9 +19,6 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-import { Player } from '../../game-room/dto/player';
-import { hasIn } from 'lodash';
-import { User } from '../../../entities/user.entity';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -101,7 +98,7 @@ export class GameGateway
     this.logger.log(data.day);
 
     // 승리조건
-    const winner = this.gameEventService.winner(roomId);
+    const winner = await this.gameEventService.winner(roomId);
 
     const Players = await this.gameEventService.findPlayers(roomId);
     // if (gamePlayers.length < 6)
@@ -119,24 +116,24 @@ export class GameGateway
     }
 
     if (Players.length === count) {
+      this.logger.log(`현재 day값 : ${data.day}`);
       await this.gameEventService.delPlayerNum(roomId);
-      // ----------이벤트 추가 회의 한번..
-      // if (winner) {
-      //   this.logger.log(`if 우승 ${winner}`);
-      //   this.logger.log(`if day값 : ${data.day}`);
-      //   this.server
-      //     .in(`${newNamespace.name}-${roomId}`)
-      //     .emit(GameEvent.WINNER, { winner: winner });
-      // } else {
-      // default - 밤 = false
-      this.logger.log(`else 우승 ${winner}`);
-      this.logger.log(`else day값 : ${data.day}`);
-      const thisDay = !data.day;
-      this.logger.log(thisDay);
-      this.server
-        .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.DAY, { day: thisDay });
-      // }
+      if (winner) {
+        this.logger.log(`우승 ${winner}`);
+        this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
+
+        await this.gameEventService.SaveTheEntireGame(roomId, winner);
+        this.server
+          .in(`${newNamespace.name}-${roomId}`)
+          .emit(GameEvent.WINNER, { winner: winner });
+      } else {
+        // default - 밤 = false
+        const thisDay = !data.day;
+        this.logger.log(`바뀐 day값 : ${thisDay}`);
+        this.server
+          .in(`${newNamespace.name}-${roomId}`)
+          .emit(GameEvent.DAY, { day: thisDay });
+      }
     }
   }
 

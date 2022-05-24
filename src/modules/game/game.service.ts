@@ -15,6 +15,4 @@ export class GameService {
 
     return await this.gameRepository.findAll(userId, page, item);
   }
-
-  async;
 }

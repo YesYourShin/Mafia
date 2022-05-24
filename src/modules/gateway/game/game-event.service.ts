@@ -22,7 +22,6 @@ import {
 } from './constants/game-redis-key-prefix';
 import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
-import { User } from '../../../entities/user.entity';
 
 // 직업 부여 분리
 @Injectable()
@@ -99,15 +98,16 @@ export class GameEventService {
   async leaveUser(roomId: number, user: UserProfile) {
     this.logger.log(`leaveUser event`);
     const gamePlayer = await this.getPlayerJobs(roomId);
-    let leaveUser;
+    let leaveplayer;
 
     for (const player in gamePlayer) {
       if (gamePlayer[player].id === user.profile.id) {
-        leaveUser = await this.setLeaveUser(roomId, gamePlayer[player]);
+        leaveplayer = await this.setLeaveUser(roomId, gamePlayer[player]);
         gamePlayer.splice(+player, 1);
         break;
       }
     }
+    await this.gameRepository.leave(leaveplayer);
 
     await this.redisService.hset(
       this.makeGameKey(roomId),
@@ -115,9 +115,7 @@ export class GameEventService {
       gamePlayer,
     );
 
-    // await this.gameRepository.leave(leaveUser);
-
-    return leaveUser;
+    return leaveplayer;
   }
 
   async setLeaveUser(roomId: number, player: Player) {
@@ -134,10 +132,12 @@ export class GameEventService {
     const mafias = [];
 
     for (let i = 0; i < Num; i++) {
-      playerJobs[i].job = jobs[i];
       if (playerJobs[i].job === EnumGameRole.MAFIA) {
+        playerJobs[i].team = EnumGameRole.MAFIA;
         mafias.push(playerJobs[i]);
       }
+      playerJobs[i].job = jobs[i];
+      playerJobs[i].team = EnumGameRole.CITIZEN;
     }
 
     this.setMafiaSearch(roomId, mafias);
@@ -201,8 +201,6 @@ export class GameEventService {
   async sortfinishVote(roomId: number) {
     let redisVote = {};
     const vote = await this.getVote(roomId);
-
-    // vote = await this.getVote(roomId);
 
     if (!vote) {
       return null;
@@ -426,7 +424,7 @@ export class GameEventService {
     return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
   }
 
-  async winner(roomId: number) {
+  async winner(roomId: number): Promise<EnumGameRole> | null {
     const { mafia, citizen } = await this.livingHuman(roomId);
 
     if (!mafia) {
@@ -517,5 +515,11 @@ export class GameEventService {
         await this.redisService.hdel(key, PUNISH_FIELD);
         break;
     }
+  }
+
+  async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    return await this.gameRepository.saveGameScore(gamePlayer, winner);
   }
 }

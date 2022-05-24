@@ -4,7 +4,7 @@ import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { GameMember } from 'src/entities';
 import { CreateGameDto } from '../gateway/create-game.dto';
 import { Player } from '../game-room/dto/player';
-import { User } from '../../entities/user.entity';
+import { GameStatus } from 'src/common/constants';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
@@ -98,11 +98,33 @@ export class GameRepository extends AbstractRepository<Game> {
     }
   }
 
-  // async leave(player: Player) {
-  //   const qb = getConnection().createQueryBuilder();
+  async leave(player: Player) {
+    const qb = getConnection().createQueryBuilder();
 
-  //   return
-  // }
+    return await qb
+      .update(GameMember)
+      .set({ score: GameStatus.ESCAPE })
+      .where('gameId = :gameId', { gameId: player.gameId })
+      .andWhere('userId = :userId', { userId: player.userId })
+      .execute();
+  }
+
+  async saveGameScore(players: Player[], winner: string) {
+    const qb = getConnection().createQueryBuilder();
+
+    return await Promise.all(
+      players.map((player) =>
+        qb
+          .update(GameMember)
+          .set({
+            score: player.team === winner ? GameStatus.WIN : GameStatus.LOSE,
+          })
+          .where('gameId = :gameId', { gameId: player.gameId })
+          .andWhere('userId = :userId', { userId: player.userId })
+          .execute(),
+      ),
+    );
+  }
 
   async setRole(players: Player[]) {
     const qb = getConnection().createQueryBuilder();
