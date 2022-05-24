@@ -2,11 +2,11 @@ import { ViewColumn, ViewEntity } from 'typeorm';
 
 @ViewEntity({
   expression: `
-    SELECT COUNT(CASE WHEN score='win' THEN 1 END) AS win,
-    	COUNT(CASE WHEN score='lose' THEN 0 END) AS lose,
+    select count(case when score='win' then 1 end) as win,
+      count(case when score='lose' then 0 WHEN score='escape' THEN 0 end) as lose,
     	user_id
-    FROM game_member
-    GROUP BY user_id;
+    from game_member
+    group by user_id;
     `,
 })
 export class VScore {
