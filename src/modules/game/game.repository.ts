@@ -4,6 +4,7 @@ import { AbstractRepository, EntityRepository, getConnection } from 'typeorm';
 import { GameMember } from 'src/entities';
 import { CreateGameDto } from '../gateway/create-game.dto';
 import { Player } from '../game-room/dto/player';
+import { VScore } from 'src/entities/score.view';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
@@ -112,5 +113,14 @@ export class GameRepository extends AbstractRepository<Game> {
           .execute(),
       ),
     );
+  }
+
+  async getScore(userId: number) {
+    return await getConnection()
+      .createQueryBuilder()
+      .from(VScore, 'score')
+      .select(['score.win', 'score.lose'])
+      .where('score.userId = :userId', { userId })
+      .getOne();
   }
 }
