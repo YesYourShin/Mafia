@@ -5,13 +5,12 @@ import { GameMember } from 'src/entities';
 import { CreateGameDto } from '../gateway/create-game.dto';
 import { Player } from '../game-room/dto/player';
 import { VScore } from 'src/entities/score.view';
+import { GameStatus } from 'src/common/constants';
 
 @EntityRepository(Game)
 export class GameRepository extends AbstractRepository<Game> {
-  async insertGame(userId: number) {}
-
   async findAll(userId: number | any[], page: number, item: number) {
-    const query = await getConnection()
+    const query = getConnection()
       .createQueryBuilder()
       .from(GameMember, 'gm2')
       .select('gm2.gameId')
@@ -20,7 +19,7 @@ export class GameRepository extends AbstractRepository<Game> {
       .skip(item * (page - 1))
       .orderBy('gm2.updatedAt', 'DESC');
 
-    const qb = await getConnection()
+    const qb = getConnection()
       .createQueryBuilder()
       .from(Game, 'g')
       .innerJoin('g.members', 'gm')
@@ -32,7 +31,7 @@ export class GameRepository extends AbstractRepository<Game> {
       .orderBy('g.updatedAt', 'DESC')
       .addOrderBy('gm.playNumber', 'ASC');
 
-    return qb.getMany();
+    return await qb.getMany();
   }
 
   async findOne(nickname: string) {
@@ -98,6 +97,34 @@ export class GameRepository extends AbstractRepository<Game> {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async leave(player: Player) {
+    const qb = getConnection().createQueryBuilder();
+
+    return await qb
+      .update(GameMember)
+      .set({ score: GameStatus.ESCAPE })
+      .where('gameId = :gameId', { gameId: player.gameId })
+      .andWhere('userId = :userId', { userId: player.userId })
+      .execute();
+  }
+
+  async saveGameScore(players: Player[], winner: string) {
+    const qb = getConnection().createQueryBuilder();
+
+    return await Promise.all(
+      players.map((player) =>
+        qb
+          .update(GameMember)
+          .set({
+            score: player.team === winner ? GameStatus.WIN : GameStatus.LOSE,
+          })
+          .where('gameId = :gameId', { gameId: player.gameId })
+          .andWhere('userId = :userId', { userId: player.userId })
+          .execute(),
+      ),
+    );
   }
 
   async setRole(players: Player[]) {

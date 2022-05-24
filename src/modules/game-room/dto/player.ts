@@ -43,6 +43,12 @@ export class Player {
   })
   die: boolean;
 
+  @ApiProperty({
+    example: 'maifa',
+    description: '팀 상태',
+  })
+  team: EnumGameRole | null;
+
   gameId: number | null;
 
   constructor(member: Member) {
@@ -53,6 +59,7 @@ export class Player {
     this.userId = member.userId;
     this.job = null;
     this.die = false;
+    this.team = null;
     this.gameId = null;
   }
 }

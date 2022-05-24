@@ -1,10 +1,14 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { WsException } from '@nestjs/websockets';
+import { MessageBody, WsException } from '@nestjs/websockets';
 import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
-import { NUM_FIELD } from './constants/game-redis-key-prefix';
+import {
+  MAFIAS_FIELD,
+  NUM_FIELD,
+  PLAYERLELEAVE_FIELD,
+} from './constants/game-redis-key-prefix';
 import {
   DOCTOR_FIELD,
   FINISH_VOTE_FIELD,
@@ -36,7 +40,7 @@ export class GameEventService {
     this.logger.log(`start: ${startTime}`);
 
     //만료 신호
-    const endTime = now.add(1, 's').format();
+    const endTime = now.add(33, 's').format();
     this.logger.log(`end: ${endTime}`);
 
     return { start: startTime, end: endTime };
@@ -68,7 +72,7 @@ export class GameEventService {
   //   return game;
   // }
 
-  async getPlayerJobs(roomId: number) {
+  async getPlayerJobs(roomId: number): Promise<Player[]> {
     try {
       const playerJobs = await this.redisService.hget(
         this.makeGameKey(roomId),
@@ -79,14 +83,65 @@ export class GameEventService {
       console.log(err);
     }
   }
+  async setMafiaSearch(roomId: number, player: Player[]) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      MAFIAS_FIELD,
+      player,
+    );
+  }
+
+  async getMafiaSearch(roomId: number): Promise<Player[]> {
+    return await this.redisService.hget(this.makeGameKey(roomId), MAFIAS_FIELD);
+  }
+
+  async leaveUser(roomId: number, user: UserProfile) {
+    this.logger.log(`leaveUser event`);
+    const gamePlayer = await this.getPlayerJobs(roomId);
+    let leaveplayer;
+
+    for (const player in gamePlayer) {
+      if (gamePlayer[player].id === user.profile.id) {
+        leaveplayer = await this.setLeaveUser(roomId, gamePlayer[player]);
+        gamePlayer.splice(+player, 1);
+        break;
+      }
+    }
+    await this.gameRepository.leave(leaveplayer);
+
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERJOB_FIELD,
+      gamePlayer,
+    );
+
+    return leaveplayer;
+  }
+
+  async setLeaveUser(roomId: number, player: Player) {
+    return this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERLELEAVE_FIELD,
+      player,
+    );
+  }
 
   async setPlayerJobs(roomId: number, job: number[], Num: number) {
     const jobs = this.grantJob(job, Num);
     const playerJobs = await this.findPlayers(roomId);
+    const mafias = [];
 
     for (let i = 0; i < Num; i++) {
+      if (playerJobs[i].job === EnumGameRole.MAFIA) {
+        playerJobs[i].team = EnumGameRole.MAFIA;
+        mafias.push(playerJobs[i]);
+      }
       playerJobs[i].job = jobs[i];
+      playerJobs[i].team = EnumGameRole.CITIZEN;
     }
+
+    this.setMafiaSearch(roomId, mafias);
+
     await this.redisService.hset(
       this.makeGameKey(roomId),
       PLAYERJOB_FIELD,
@@ -97,7 +152,7 @@ export class GameEventService {
   }
 
   getJobData(playerCount: number) {
-    const mafia = 1;
+    const mafia = playerCount > 6 ? 2 : 1;
     const doctor = 1;
     const police = 1;
 
@@ -146,8 +201,6 @@ export class GameEventService {
   async sortfinishVote(roomId: number) {
     let redisVote = {};
     const vote = await this.getVote(roomId);
-
-    // vote = await this.getVote(roomId);
 
     if (!vote) {
       return null;
@@ -208,7 +261,7 @@ export class GameEventService {
       gamePlayer,
     );
 
-    return userNum;
+    return gamePlayer[userNum - 1];
   }
 
   async useState(roomId: number) {
@@ -335,7 +388,7 @@ export class GameEventService {
     return { mafia: livingMafia, citizen: livingCitizen };
   }
 
-  async playerCheckNum(roomId: number, user) {
+  async setPlayerCheckNum(roomId: number, user) {
     const gamePlayers = await this.getPlayerJobs(roomId);
 
     let count;
@@ -371,7 +424,7 @@ export class GameEventService {
     return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
   }
 
-  async winner(roomId: number) {
+  async winner(roomId: number): Promise<EnumGameRole> | null {
     const { mafia, citizen } = await this.livingHuman(roomId);
 
     if (!mafia) {
@@ -420,7 +473,7 @@ export class GameEventService {
     if (!punishs) punishs = [];
     punishs.push(punish);
 
-    await this.redisService.hset(
+    return await this.redisService.hset(
       this.makeGameKey(roomId),
       PUNISH_FIELD,
       punishs,
@@ -462,5 +515,11 @@ export class GameEventService {
         await this.redisService.hdel(key, PUNISH_FIELD);
         break;
     }
+  }
+
+  async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    return await this.gameRepository.saveGameScore(gamePlayer, winner);
   }
 }

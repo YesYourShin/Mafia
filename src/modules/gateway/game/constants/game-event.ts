@@ -1,5 +1,6 @@
 export const GameEvent = {
   JOIN: 'game:join',
+  LEAVE: 'game:leave',
   START: 'game:start',
   JOB: 'game:job',
   PUNISH: 'game:punish',
@@ -10,6 +11,7 @@ export const GameEvent = {
   POLICE: 'game:police',
   DOCTOR: 'game:doctor',
   MAFIA: 'game:mafia',
+  MAFIASEARCH: 'game:mafiaSearch',
   TIMER: 'game:timer',
   DEATH: 'game:death',
   WINNER: 'game:winner',
