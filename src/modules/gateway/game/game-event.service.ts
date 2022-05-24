@@ -160,24 +160,33 @@ export class GameEventService {
 
     const jobData = [cr, mafia, doctor, police];
 
+    this.logger.log('jobData');
+    this.logger.log(jobData);
     return jobData;
   }
 
   grantJob(job: number[], Num: number) {
     const grantJob = [
-      EnumGameRole.CITIZEN,
-      EnumGameRole.MAFIA,
-      EnumGameRole.DOCTOR,
-      EnumGameRole.POLICE,
+      EnumGameRole.CITIZEN, //0
+      EnumGameRole.MAFIA, //1
+      EnumGameRole.DOCTOR, //2
+      EnumGameRole.POLICE, //3
     ]; // 직업
+
+    //시민 3 , 마피아1, 의사1, 경찰1
 
     const roomJob = []; //해당 방의 직업
     let typesOfJobs = 0;
     for (let jobs = 0; jobs < Num; jobs++) {
+      this.logger.log('grantJob');
       roomJob.push(grantJob[typesOfJobs]);
-      job[jobs]--;
+      this.logger.log(`직업 배분 배열에 넣기 ${jobs} ${grantJob[typesOfJobs]}`);
+      job[typesOfJobs]--;
+      this.logger.log(`직업 배분 값 빼기 ${jobs} ${job[jobs]}`);
 
       if (!job[typesOfJobs]) typesOfJobs++;
+
+      this.logger.log(`현재 직업 배분 typesOfjobs ${jobs} ${typesOfJobs}`);
     }
 
     return this.shuffle(roomJob);
