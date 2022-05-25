@@ -265,6 +265,7 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
+    const newNamespace = socket.nsp;
 
     const { playerSum, count } = await this.gameEventService.CheckNum(
       roomId,
@@ -281,6 +282,21 @@ export class GameGateway
         await this.gameEventService.setVote(roomId, vote);
       }
     }
+    const redisVote = {};
+    const result = await this.gameEventService.getVote(roomId);
+
+    if (!vote) {
+      return null;
+    }
+
+    // 해당 숫자값 세주기
+    result.forEach((element) => {
+      redisVote[element] = (redisVote[element] || 0) + 1;
+    });
+
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.CURRENT_VOTE, result);
   }
 
   // 투표 합.
