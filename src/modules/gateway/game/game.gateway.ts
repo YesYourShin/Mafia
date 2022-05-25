@@ -414,7 +414,7 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
 
-    // Todo 여러명의 마피아의 동일한 값일 경우만, 체크
+    // Todo 여러명의 마피아의 동일한 값일 경우만, 체크 -> ok 일단 다 받은 후, usejobs에서 능력사용할 때, 확인.
     const voteUserNum = await this.gameEventService.useMafia(
       roomId,
       data.userNum,

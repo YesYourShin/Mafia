@@ -23,7 +23,7 @@ import {
 } from './constants/game-redis-key-prefix';
 import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
-import { NumberValidationPipe } from 'src/modules/user/number-validation.pipe';
+import { LessThan } from 'typeorm';
 
 // 직업 부여 분리
 @Injectable()
@@ -314,22 +314,29 @@ export class GameEventService {
   }
 
   async useState(roomId: number) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+    const mafias = await this.getMafiaSearch(roomId);
+
+    const mafiavotes = await this.getMafia(roomId);
+    const set = Array.from(new Set(mafiavotes));
+
     try {
-      const mafiaNum = await this.redisService.hget(
-        this.makeGameKey(roomId),
-        MAFIA_FIELD,
-      );
-      const doctorNum = await this.redisService.hget(
-        this.makeGameKey(roomId),
-        DOCTOR_FIELD,
-      );
+      const mafiaNum = mafias.length === set.length ? +set[0] : null;
+
+      const doctorNum = await this.getDoctor(roomId);
+
+      // 아무 이벤트도 안 일어날 시,
       if (!mafiaNum) return null;
 
+      // 마피아가 죽일 때
       if (mafiaNum !== doctorNum) {
+        this.logger.log(`마피아가 ${mafiaNum} 을 살해하였습니다.`);
         await this.death(roomId, mafiaNum);
       }
 
-      const gamePlayer = await this.getPlayerJobs(roomId);
+      if (mafiaNum === doctorNum) {
+        this.logger.log(`의사가 ${mafiaNum} 을 살렸습니다.`);
+      }
 
       // Todo 메세지를 주도록, 살해했습니다.
       this.logger.log(gamePlayer[mafiaNum - 1].die);
@@ -372,20 +379,53 @@ export class GameEventService {
     user: UserProfile,
   ): Promise<number> {
     const gamePlayer = await this.getPlayerJobs(roomId);
+    const maifas = await this.getMafiaSearch(roomId);
+    const mafiavotes = (await this.getMafia(roomId)) || [];
+
+    // let mafia;
+
+    // 마피아일 경우에만 값 넣기
+    // for (const player of maifas) {
+    //   if (player.userId === user.id) {
+    //     mafiavotes.push(userNum);
+    //     break;
+    //   }
+    // }
 
     for (const player of gamePlayer) {
-      if (player.id === user.profile.id && player.job !== EnumGameRole.MAFIA) {
+      if (player.userId === user.id && player.job !== EnumGameRole.MAFIA) {
         throw new WsException('마피아가 아닙니다.');
       }
     }
 
+    mafiavotes.push(userNum);
+
+    await this.setMafia(roomId, mafiavotes);
+
+    return userNum;
+  }
+  async getMafia(roomId: number) {
+    return await this.redisService.hget(this.makeGameKey(roomId), MAFIA_FIELD);
+  }
+
+  async setMafia(roomId: number, userNum: number) {
     await this.redisService.hset(
       this.makeGameKey(roomId),
       MAFIA_FIELD,
       userNum,
     );
+  }
 
-    return userNum;
+  async getDoctor(roomId: number) {
+    return await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
+  }
+
+  async setDoctor(roomId: number, userNum: number) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      DOCTOR_FIELD,
+      userNum,
+    );
   }
 
   async useDoctor(
@@ -395,26 +435,13 @@ export class GameEventService {
   ): Promise<number> {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
-    let doctor;
-    // let voteUser;
-
     for (const player of gamePlayer) {
-      if (player.id === user.profile.id) {
-        doctor = player.job;
+      if (player.userId === user.id && player.job !== EnumGameRole.DOCTOR) {
+        throw new WsException('의사가 아닙니다.');
       }
-
-      // voteUser = gamePlayer[userNum];
     }
 
-    if (doctor !== EnumGameRole.DOCTOR) {
-      throw new WsException('의사가 아닙니다.');
-    }
-
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      DOCTOR_FIELD,
-      userNum,
-    );
+    await this.setDoctor(roomId, userNum);
 
     return userNum;
   }
@@ -452,8 +479,8 @@ export class GameEventService {
   // Todo 죽은 사람, 탈주 유저의 수 redis로 따로 빼서 체크.
   async setPlayerCheckNum(roomId: number, user: UserProfile) {
     const players = await this.getPlayerJobs(roomId);
-    const playerDie = await this.getDie(roomId);
-    const playerLeave = await this.getLeave(roomId);
+    const playerDie = (await this.getDie(roomId)) || 0;
+    const playerLeave = (await this.getLeave(roomId)) || 0;
 
     let count;
     for (const player of players) {
@@ -472,14 +499,16 @@ export class GameEventService {
   async voteValidation(roomId: number, vote: number) {
     const players = await this.getPlayerJobs(roomId);
 
-    if (players[vote - 1] === null && players[vote - 1].die === true) return null;
-  
+    if (players[vote - 1] === null && players[vote - 1].die === true)
+      throw new WsException('투표할 수 없는 유저입니다.');
+
+    return vote;
   }
 
   async CheckNum(roomId: number, user) {
     const players = await this.getPlayerJobs(roomId);
-    const playerDie = await this.getDie(roomId);
-    const playerLeave = await this.getLeave(roomId);
+    const playerDie = (await this.getDie(roomId)) || 0;
+    const playerLeave = (await this.getLeave(roomId)) || 0;
 
     let count;
     for (const player of players) {
