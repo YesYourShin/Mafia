@@ -102,12 +102,12 @@ export class GameEventService {
 
     for (const player in gamePlayer) {
       if (gamePlayer[player].id === user.profile.id) {
-        leaveplayer = await this.setLeaveUser(roomId, gamePlayer[player]);
-        gamePlayer.splice(+player, 1);
+        leaveplayer = gamePlayer[player];
+        await this.setLeaveUser(roomId, leaveplayer);
+        gamePlayer[player] = null;
         break;
       }
     }
-    await this.gameRepository.leave(leaveplayer);
 
     await this.redisService.hset(
       this.makeGameKey(roomId),
@@ -115,14 +115,36 @@ export class GameEventService {
       gamePlayer,
     );
 
+    this.logger.log(`leaveplayer`);
+    // this.logger.log(leaveplayer);
+
+    await this.gameRepository.leave(leaveplayer);
+
     return leaveplayer;
   }
 
   async setLeaveUser(roomId: number, player: Player) {
+    let leaveusers = await this.redisService.hget(
+      this.makeGameKey(roomId),
+      PLAYERLELEAVE_FIELD,
+    );
+
+    // this.logger.log(leaveusers);
+    if (!leaveusers) leaveusers = [];
+
+    leaveusers.push(player);
+
+    if (leaveusers) {
+      this.logger.log('leaveusers reids에 넣기');
+      this.logger.log(leaveusers);
+    } else {
+      this.logger.log('값이 없어요...');
+    }
+
     return this.redisService.hset(
       this.makeGameKey(roomId),
       PLAYERLELEAVE_FIELD,
-      player,
+      leaveusers,
     );
   }
 
@@ -160,33 +182,24 @@ export class GameEventService {
 
     const jobData = [cr, mafia, doctor, police];
 
-    this.logger.log('jobData');
-    this.logger.log(jobData);
     return jobData;
   }
 
   grantJob(job: number[], Num: number) {
     const grantJob = [
-      EnumGameRole.CITIZEN, //0
-      EnumGameRole.MAFIA, //1
-      EnumGameRole.DOCTOR, //2
-      EnumGameRole.POLICE, //3
+      EnumGameRole.CITIZEN,
+      EnumGameRole.MAFIA,
+      EnumGameRole.DOCTOR,
+      EnumGameRole.POLICE,
     ]; // 직업
-
-    //시민 3 , 마피아1, 의사1, 경찰1
 
     const roomJob = []; //해당 방의 직업
     let typesOfJobs = 0;
     for (let jobs = 0; jobs < Num; jobs++) {
-      this.logger.log('grantJob');
       roomJob.push(grantJob[typesOfJobs]);
-      this.logger.log(`직업 배분 배열에 넣기 ${jobs} ${grantJob[typesOfJobs]}`);
       job[typesOfJobs]--;
-      this.logger.log(`직업 배분 값 빼기 ${jobs} ${job[jobs]}`);
 
       if (!job[typesOfJobs]) typesOfJobs++;
-
-      this.logger.log(`현재 직업 배분 typesOfjobs ${jobs} ${typesOfJobs}`);
     }
 
     return this.shuffle(roomJob);
