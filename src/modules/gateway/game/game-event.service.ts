@@ -1,6 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { MessageBody, WsException } from '@nestjs/websockets';
-import dayjs from 'dayjs';
+import { WsException } from '@nestjs/websockets';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
@@ -22,6 +21,9 @@ import {
 } from './constants/game-redis-key-prefix';
 import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
+import 'dayjs/locale/ko';
+import dayjs from 'dayjs';
+dayjs.locale('ko');
 
 // 직업 부여 분리
 @Injectable()
