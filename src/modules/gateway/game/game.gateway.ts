@@ -115,6 +115,8 @@ export class GameGateway
       }
     }
 
+    //마피아 나가는 순간 바로 게임 끝
+
     if (Players.length === count) {
       this.logger.log(`현재 day값 : ${data.day}`);
       await this.gameEventService.delPlayerNum(roomId);
@@ -170,9 +172,14 @@ export class GameGateway
           .to(`${newNamespace.name}-${roomId}`)
           .emit(GameEvent.START, Players);
       }, 1000);
+
+      const jobData = this.gameEventService.getJobData(Players.length);
+      await this.gameEventService.setPlayerJobs(
+        roomId,
+        jobData,
+        Players.length,
+      );
     }
-    const jobData = this.gameEventService.getJobData(Players.length);
-    await this.gameEventService.setPlayerJobs(roomId, jobData, Players.length);
   }
 
   // 각자의 직업만 제공
@@ -236,8 +243,10 @@ export class GameGateway
       user,
     );
 
+    const vote = data.vote <= playerSum && data.vote > 0 ? data.vote : null;
+
     if (count <= playerSum) {
-      if (data.vote) {
+      if (vote) {
         this.logger.log(`1. 소켓투표값 ${data.vote}`);
         await this.gameEventService.setVote(roomId, data.vote);
       }
@@ -424,6 +433,20 @@ export class GameGateway
       .emit(GameEvent.SPEAK, data);
   }
 
+  @SubscribeMessage(GameEvent.LEAVE)
+  async handleLeave(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+    const { user } = socket.request;
+
+    // 서비스 제공.
+    const leaveUser = await this.gameEventService.leaveUser(roomId, user);
+
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.LEAVE, leaveUser);
+  }
+
   // socket이 연결됐을 때
   async handleConnection(@ConnectedSocket() socket: AuthenticatedSocket) {
     // 생성될 때 소켓 인스턴스의 namespace,  id
@@ -435,15 +458,12 @@ export class GameGateway
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
     const newNamespace = socket.nsp;
     const { roomId } = socket.data;
-    const { user } = socket.request;
+
+    this.logger.log(`socket disconnected: ${roomId} ${newNamespace}`);
+
+    await this.handleLeave(socket);
 
     socket.leave(`${newNamespace.name}-${roomId}`);
-    // 서비스 제공.
-    const leaveUser = await this.gameEventService.leaveUser(roomId, user);
-    this.server
-      .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.LEAVE, leaveUser);
-    this.logger.log(`socket disconnected: ${socket.id}`);
   }
 
   afterInit(server: any) {
