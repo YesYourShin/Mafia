@@ -19,7 +19,6 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
-import { Game } from '../../../entities/game.entity';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -196,11 +195,7 @@ export class GameGateway
       }, 1000);
 
       const jobData = this.gameEventService.getJobData(Players.length);
-      await this.gameEventService.setPlayerJobs(
-        roomId,
-        jobData,
-        Players.length,
-      );
+      await this.gameEventService.PlayerJobs(roomId, jobData, Players.length);
     }
   }
 
@@ -272,8 +267,8 @@ export class GameGateway
     );
 
     // Todo 탈주/죽음/실존 플레이어 유효성 체크
-    // Todo 죽은 사람을 투표 / 죽은 사람이 투표 유효성 체크
-    const vote = data.vote <= playerSum && data.vote > 0 ? data.vote : null;
+    // Todo 죽은 사람을 투표 / 죽은 사람이 투표 유효성 체크 ok
+    const vote = await this.gameEventService.voteValidation(roomId, data.vote);
 
     if (count <= playerSum) {
       if (vote) {
@@ -438,7 +433,6 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
-    const { userNum } = data;
 
     const voteUserNum = await this.gameEventService.useDoctor(
       roomId,
