@@ -413,19 +413,29 @@ export class GameEventService {
       PLAYERJOB_FIELD,
     );
 
-    const playercheck = gamePlayer.filter((x): x is Player => x !== null);
+    // const playercheck = gamePlayer.filter((x): x is Player => x !== null);
 
     const livingMafia = gamePlayer.filter((player) => {
       if (
         player !== null &&
-        player.job === EnumGameRole.MAFIA &&
+        player.team === EnumGameRole.MAFIA &&
         player.die === false
       ) {
         return true;
       }
     }).length;
 
-    const livingCitizen = playercheck.length - livingMafia;
+    const livingCitizen = gamePlayer.filter((player) => {
+      if (
+        player !== null &&
+        player.team === EnumGameRole.CITIZEN &&
+        player.die === false
+      ) {
+        return true;
+      }
+    }).length;
+
+    // const livingCitizen = playercheck.length - livingMafia;
 
     return { mafia: livingMafia, citizen: livingCitizen };
   }
