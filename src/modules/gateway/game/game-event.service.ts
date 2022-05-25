@@ -1,6 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { MessageBody, WsException } from '@nestjs/websockets';
-import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
@@ -23,7 +22,9 @@ import {
 } from './constants/game-redis-key-prefix';
 import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
-import { NumberValidationPipe } from 'src/modules/user/number-validation.pipe';
+import 'dayjs/locale/ko';
+import dayjs from 'dayjs';
+dayjs.locale('ko');
 
 // 직업 부여 분리
 @Injectable()
@@ -472,8 +473,8 @@ export class GameEventService {
   async voteValidation(roomId: number, vote: number) {
     const players = await this.getPlayerJobs(roomId);
 
-    if (players[vote - 1] === null && players[vote - 1].die === true) return null;
-  
+    if (players[vote - 1] === null && players[vote - 1].die === true)
+      return null;
   }
 
   async CheckNum(roomId: number, user) {
