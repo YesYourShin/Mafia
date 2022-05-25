@@ -97,18 +97,16 @@ export class GameEventService {
 
   async leaveUser(roomId: number, user: UserProfile) {
     this.logger.log(`leaveUser event`);
-    const gamePlayer = await this.getPlayerJobs(roomId);
+    const gamePlayer: Player[] = await this.getPlayerJobs(roomId);
     let leaveplayer;
 
-    for (const player in gamePlayer) {
-      if (gamePlayer[player] === null) {
-        break;
-      } else if (gamePlayer[player].id === user.profile.id) {
-        leaveplayer = gamePlayer[player];
-        gamePlayer[player] = null;
-        break;
+    const newGamePlayer = gamePlayer.map((player) => {
+      if (player.userId === user.id) {
+        leaveplayer = player;
+        player = null;
       }
-    }
+      return player;
+    });
 
     this.logger.log(`leave 유저 gameId ${leaveplayer.gameId}`);
     // 탈주 유저  redis 처리
@@ -120,7 +118,7 @@ export class GameEventService {
     await this.redisService.hset(
       this.makeGameKey(roomId),
       PLAYERJOB_FIELD,
-      gamePlayer,
+      newGamePlayer,
     );
 
     this.logger.log(`leaveplayer`);
@@ -130,13 +128,13 @@ export class GameEventService {
   }
 
   async setLeaveUser(roomId: number, player: Player) {
-    let leaveusers = await this.redisService.hget(
-      this.makeGameKey(roomId),
-      PLAYERLELEAVE_FIELD,
-    );
+    const leaveusers =
+      (await this.redisService.hget(
+        this.makeGameKey(roomId),
+        PLAYERLELEAVE_FIELD,
+      )) || [];
 
     // this.logger.log(leaveusers);
-    if (!leaveusers) leaveusers = [];
 
     leaveusers.push(player);
 
@@ -160,11 +158,12 @@ export class GameEventService {
     const mafias = [];
 
     for (let i = 0; i < Num; i++) {
+      playerJobs[i].job = jobs[i];
       if (playerJobs[i].job === EnumGameRole.MAFIA) {
         playerJobs[i].team = EnumGameRole.MAFIA;
         mafias.push(playerJobs[i]);
+        continue;
       }
-      playerJobs[i].job = jobs[i];
       playerJobs[i].team = EnumGameRole.CITIZEN;
     }
 
@@ -302,35 +301,29 @@ export class GameEventService {
   }
 
   async useState(roomId: number) {
-    let mafiaNum;
-    let doctorNum;
-    let gamePlayer;
-
     try {
-      mafiaNum = await this.redisService.hget(
+      const mafiaNum = await this.redisService.hget(
         this.makeGameKey(roomId),
         MAFIA_FIELD,
       );
-      doctorNum = await this.redisService.hget(
+      const doctorNum = await this.redisService.hget(
         this.makeGameKey(roomId),
         DOCTOR_FIELD,
       );
+      if (!mafiaNum) return null;
+
+      if (mafiaNum !== doctorNum) {
+        await this.death(roomId, mafiaNum);
+      }
+
+      const gamePlayer = await this.getPlayerJobs(roomId);
+
+      // Todo 메세지를 주도록, 살해했습니다.
+      this.logger.log(gamePlayer[mafiaNum - 1].die);
+      return { userNum: mafiaNum, die: gamePlayer[mafiaNum - 1].die };
     } catch (error) {
       this.logger.error(`useState error `, error);
     }
-
-    if (mafiaNum) {
-      if (!doctorNum || mafiaNum !== doctorNum) {
-        await this.death(roomId, mafiaNum);
-        gamePlayer = await this.getPlayerJobs(roomId);
-      }
-    } else {
-      return null;
-    }
-
-    this.logger.log(gamePlayer[mafiaNum - 1].die);
-
-    return { userNum: mafiaNum, die: gamePlayer[mafiaNum - 1].die };
   }
 
   makeGameKey(roomId: number): string {
@@ -429,6 +422,7 @@ export class GameEventService {
     return { mafia: livingMafia, citizen: livingCitizen };
   }
 
+  // Todo 죽은 사람, 탈주 유저의 수 redis로 따로 빼서 체크.
   async setPlayerCheckNum(roomId: number, user: UserProfile) {
     const gamePlayers = await this.getPlayerJobs(roomId);
     let playerSum = gamePlayers.length;
