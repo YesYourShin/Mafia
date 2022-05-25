@@ -40,7 +40,7 @@ export class GameEventService {
     this.logger.log(`start: ${startTime}`);
 
     //만료 신호
-    const endTime = now.add(33, 's').format();
+    const endTime = now.add(1, 'm').format();
     this.logger.log(`end: ${endTime}`);
 
     return { start: startTime, end: endTime };

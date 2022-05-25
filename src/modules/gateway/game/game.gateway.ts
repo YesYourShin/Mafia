@@ -88,6 +88,24 @@ export class GameGateway
     }
   }
 
+  @SubscribeMessage(GameEvent.WINNER)
+  async handleWinner(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    const winner = await this.gameEventService.winner(roomId);
+
+    if (!winner) return null;
+
+    this.logger.log(`우승 ${winner}`);
+    this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
+
+    await this.gameEventService.SaveTheEntireGame(roomId, winner);
+    this.server
+      .in(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.WINNER, { winner: winner });
+  }
+
   @SubscribeMessage(GameEvent.DAY)
   async HandleDay(
     @ConnectedSocket() socket: AuthenticatedSocket,
@@ -100,7 +118,7 @@ export class GameGateway
 
     // Todo 나갈 때, 승리 조건을 체크,
     // 승리조건
-    const winner = await this.gameEventService.winner(roomId);
+    // const winner = await this.gameEventService.winner(roomId);
 
     const Players = await this.gameEventService.findPlayers(roomId);
     // if (gamePlayers.length < 6)
@@ -120,22 +138,26 @@ export class GameGateway
     if (Players.length === count) {
       this.logger.log(`현재 day값 : ${data.day}`);
       await this.gameEventService.delPlayerNum(roomId);
-      if (winner) {
-        this.logger.log(`우승 ${winner}`);
-        this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
+      // if (winner) {
+      //   this.logger.log(`우승 ${winner}`);
+      //   this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
 
-        await this.gameEventService.SaveTheEntireGame(roomId, winner);
-        this.server
-          .in(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.WINNER, { winner: winner });
-      } else {
-        // default - 밤 = false
+      //   await this.gameEventService.SaveTheEntireGame(roomId, winner);
+      //   this.server
+      //     .in(`${newNamespace.name}-${roomId}`)
+      //     .emit(GameEvent.WINNER, { winner: winner });
+      // } else {
+      // default - 밤 = false
+      const winner = await this.handleWinner(socket);
+
+      if (!winner) {
         const thisDay = !data.day;
         this.logger.log(`바뀐 day값 : ${thisDay}`);
         this.server
           .in(`${newNamespace.name}-${roomId}`)
           .emit(GameEvent.DAY, { day: thisDay });
       }
+      // }
     }
   }
 
@@ -480,12 +502,14 @@ export class GameGateway
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
     const newNamespace = socket.nsp;
     const { roomId } = socket.data;
+    const { user } = socket.request;
 
     this.logger.log(`socket disconnected: ${roomId} ${newNamespace}`);
 
     await this.handleLeave(socket);
 
     // Todo 나갈 때, 승리 조건을 체크,
+    this.handleWinner(socket);
 
     socket.leave(`${newNamespace.name}-${roomId}`);
   }
