@@ -101,7 +101,7 @@ export class GameEventService {
     let leaveplayer;
 
     const newGamePlayer = gamePlayer.map((player) => {
-      if (player.userId === user.id) {
+      if (player !== null && player.userId === user.id) {
         leaveplayer = player;
         player = null;
       }
@@ -413,11 +413,19 @@ export class GameEventService {
       PLAYERJOB_FIELD,
     );
 
+    const playercheck = gamePlayer.filter((x): x is Player => x !== null);
+
     const livingMafia = gamePlayer.filter((player) => {
-      return player.job === EnumGameRole.MAFIA && player.die === false;
+      if (
+        player !== null &&
+        player.job === EnumGameRole.MAFIA &&
+        player.die === false
+      ) {
+        return true;
+      }
     }).length;
 
-    const livingCitizen = gamePlayer.length - livingMafia;
+    const livingCitizen = playercheck.length - livingMafia;
 
     return { mafia: livingMafia, citizen: livingCitizen };
   }
@@ -561,6 +569,12 @@ export class GameEventService {
   async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
-    return await this.gameRepository.saveGameScore(gamePlayer, winner);
+    // const saveplayer: Player[] | null = gamePlayer.filter((player) => {
+    //   player !== null;
+    // });
+
+    const saveplayer = gamePlayer.filter((x): x is Player => x !== null);
+
+    return await this.gameRepository.saveGameScore(saveplayer, winner);
   }
 }
