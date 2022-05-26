@@ -450,6 +450,10 @@ export class GameEventService {
     await this.redisService.hset(this.makeGameKey(roomId), DAY_FIELD, day);
   }
 
+  async getDay(roomId: number) {
+    return await this.redisService.hget(this.makeGameKey(roomId), DAY_FIELD);
+  }
+
   async setPunish(roomId: number, punish: boolean): Promise<any> {
     let punishs = await this.getPunish(roomId);
 
