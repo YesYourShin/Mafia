@@ -19,8 +19,12 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import 'dayjs/locale/ko';
+import dayjs from 'dayjs';
+dayjs.locale('ko');
+dayjs.extend(customParseFormat);
 import { EnumGameRole } from '../../../common/constants/enum-game-role';
-import { userInfo } from 'os';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -80,12 +84,23 @@ export class GameGateway
 
     if (playerSum === count) {
       await this.gameEventService.delPlayerNum(roomId);
-      const { start, end } = this.gameEventService.timer();
 
       try {
-        this.server
-          .in(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.TIMER, { start: start }, { end: end });
+        const end = dayjs().add(30, 's');
+        const day = await this.gameEventService.getDay(roomId);
+
+        const timeInterval = setInterval(() => {
+          const currentTime = dayjs();
+          const time = end.diff(currentTime, 's');
+
+          if (!time) {
+            clearInterval(timeInterval);
+          }
+
+          this.server
+            .in(`${newNamespace.name}-${roomId}`)
+            .emit(GameEvent.TIMER, { type: day, time });
+        }, 1000);
       } catch (error) {
         this.logger.error('event error', error);
       }
@@ -272,6 +287,8 @@ export class GameGateway
     result.forEach((val) => {
       if (val) redisVote[val] = (redisVote[val] || 0) + 1;
     });
+
+    console.log(redisVote);
 
     this.server
       .to(`${newNamespace.name}-${roomId}`)
