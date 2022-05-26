@@ -227,7 +227,7 @@ export class GameEventService {
     let police;
 
     for (const player of gamePlayer) {
-      if (player.id === user.profile.id) {
+      if (player.userId === user.id) {
         police = player.job;
         break;
       }
@@ -235,9 +235,9 @@ export class GameEventService {
 
     if (police !== EnumGameRole.POLICE) {
       throw new WsException('경찰이 아닙니다.');
-    } else {
-      return gamePlayer[userNum].job;
     }
+    // 해당 유저가 고른 유저의 직업 제공.
+    return gamePlayer[userNum - 1].job;
   }
 
   async useMafia(
