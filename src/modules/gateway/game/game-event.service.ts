@@ -291,9 +291,11 @@ export class GameEventService {
 
     const mafiavotes = await this.getMafia(roomId);
     const set = Array.from(new Set(mafiavotes));
-    let die;
+
+    let message;
 
     try {
+      //마피아 값이, 중복제거 값과 같을 시에 마피아 값 들어감. 아닐 시 null 발생
       const mafiaNum = mafias.length === set.length ? +set[0] : null;
 
       const doctorNum = await this.getDoctor(roomId);
@@ -301,22 +303,29 @@ export class GameEventService {
       // 아무 이벤트도 안 일어날 시,
       if (!mafiaNum) {
         this.logger.log(`아무도 죽지 않아요`);
-        return null;
+        // return null;
+        message = '평화로운 밤이었습니다. 아무도 죽지 않았습니다';
       }
 
       // 마피아가 죽일 때
       if (mafiaNum !== doctorNum) {
-        this.logger.log(`마피아가 ${mafiaNum} 을 살해하였습니다.`);
-        die = await this.death(roomId, mafiaNum);
+        this.logger.log(`마피아가 ${mafiaNum} 을 죽였습니다.`);
+        await this.death(roomId, mafiaNum);
+        message = `마피아가 ${gamePlayer[mafiaNum].nickname} 을/를 죽였습니다.`;
       }
 
       if (mafiaNum === doctorNum) {
         this.logger.log(`의사가 ${mafiaNum} 을 살렸습니다.`);
+        message = `의사가 ${gamePlayer[mafiaNum].nickname} 을/를 살렸습니다.`;
       }
 
-      // Todo 메세지를 주도록, 살해했습니다.
-      this.logger.log(`die :${die}`);
-      return { userNum: mafiaNum, die: die };
+      this.logger.log(
+        `${gamePlayer[mafiaNum].nickname}의 결과 메세지: ${message}`,
+      );
+
+      // Todo 마피아 값이 맞을 시, userNum : 값
+      // Todo 마피아 값이 맞지 않을 시, userNum : null
+      return { userNum: gamePlayer[mafiaNum], message: message };
     } catch (error) {
       this.logger.error(`useState error `, error);
     }

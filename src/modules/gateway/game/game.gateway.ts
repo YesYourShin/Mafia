@@ -482,6 +482,8 @@ export class GameGateway
     const newNamespace = socket.nsp;
     const { user } = socket.request;
 
+    this.logger.log(`LEAVE userID ${user.id}`);
+
     // 서비스 제공.
     const leaveUser = await this.gameEventService.leaveUser(roomId, user);
 
@@ -500,6 +502,9 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
+    const { user } = socket.request;
+
+    this.logger.log(`GAMEEND userID ${user.id}`);
 
     // 서비스 제공.
     await this.gameEventService.SaveTheEntireGame(roomId, data.winner);
@@ -521,11 +526,6 @@ export class GameGateway
     const { roomId } = socket.data;
 
     this.logger.log(`socket disconnected: ${roomId} ${newNamespace}`);
-
-    // await this.handleLeave(socket);
-
-    // Todo 나갈 때, 승리 조건을 체크,
-    // this.handleWinner(socket);
 
     socket.leave(`${newNamespace.name}-${roomId}`);
   }
