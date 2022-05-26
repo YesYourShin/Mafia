@@ -84,6 +84,7 @@ export class GameGateway
 
       try {
         const end = dayjs().add(10, 's');
+        const day = await this.gameEventService.getDay(roomId);
 
         const timeInterval = setInterval(() => {
           const currentTime = dayjs();
@@ -95,7 +96,7 @@ export class GameGateway
 
           this.server
             .in(`${newNamespace.name}-${roomId}`)
-            .emit(GameEvent.TIMER, { time });
+            .emit(GameEvent.TIMER, { type: day, time });
         }, 1000);
       } catch (error) {
         this.logger.error('event error', error);
