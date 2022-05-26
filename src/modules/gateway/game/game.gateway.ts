@@ -106,11 +106,13 @@ export class GameGateway
 
     // await this.gameEventService.SaveTheEntireGame(roomId, winner);
 
-    this.server
-      .in(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.WINNER, { winner: winner });
+    if (winner) {
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.WINNER, { winner: winner });
 
-    this.handleGameEnd(socket, { winner: winner });
+      this.handleGameEnd(socket, { winner: winner });
+    }
   }
 
   // Todo day저장,
