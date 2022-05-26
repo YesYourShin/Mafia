@@ -252,20 +252,20 @@ export class GameEventService {
     // let mafia;
 
     // 마피아일 경우에만 값 넣기
-    // for (const player of maifas) {
-    //   if (player.userId === user.id) {
-    //     mafiavotes.push(userNum);
-    //     break;
-    //   }
-    // }
-
-    for (const player of gamePlayer) {
-      if (player.userId === user.id && player.job !== EnumGameRole.MAFIA) {
-        throw new WsException('마피아가 아닙니다.');
+    for (const player of maifas) {
+      if (player.userId === user.id) {
+        mafiavotes.push(userNum);
+        break;
       }
     }
 
-    mafiavotes.push(userNum);
+    // for (const player of gamePlayer) {
+    //   if (player.userId === user.id && player.job !== EnumGameRole.MAFIA) {
+    //     throw new WsException('마피아가 아닙니다.');
+    //   }
+    // }
+
+    this.logger.log(`마피아 투표 값: ${userNum}`);
 
     await this.setMafia(roomId, mafiavotes);
 
