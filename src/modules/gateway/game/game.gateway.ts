@@ -70,6 +70,7 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
+    // 서버 타이머
     // const Players = await this.gameEventService.findPlayers(roomId);
 
     // let count;
