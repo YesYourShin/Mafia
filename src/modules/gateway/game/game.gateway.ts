@@ -122,8 +122,7 @@ export class GameGateway
       this.server
         .in(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.WINNER, { winner: winner });
-
-      this.handleGameEnd(socket, { winner: winner });
+      // this.handleGameEnd(socket, { winner: winner });
     }
 
     return winner;
