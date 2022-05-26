@@ -82,13 +82,14 @@ export class GameGateway
     const { playerSum, count } =
       await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
 
-    if (playerSum === count) {
-      await this.gameEventService.delPlayerNum(roomId);
+    if (playerSum !== count) {
+      return;
+    }
+    await this.gameEventService.delPlayerNum(roomId);
 
-      try {
+    try {
+      setTimeout(() => {
         const end = dayjs().add(30, 's');
-        const day = await this.gameEventService.getDay(roomId);
-
         const timeInterval = setInterval(() => {
           const currentTime = dayjs();
           const time = end.diff(currentTime, 's');
@@ -96,14 +97,13 @@ export class GameGateway
           if (!time) {
             clearInterval(timeInterval);
           }
-
           this.server
             .in(`${newNamespace.name}-${roomId}`)
-            .emit(GameEvent.TIMER, { type: day, time });
+            .emit(GameEvent.TIMER, { time });
         }, 1000);
-      } catch (error) {
-        this.logger.error('event error', error);
-      }
+      }, 3000);
+    } catch (error) {
+      this.logger.error('event error', error);
     }
   }
 
