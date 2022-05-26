@@ -312,7 +312,9 @@ export class GameEventService {
       if (mafiaNum !== doctorNum) {
         this.logger.log(`마피아가 ${mafiaNum} 을 죽였습니다.`);
         await this.death(roomId, mafiaNum);
-        message = `마피아가 ${gamePlayer[mafiaNum].nickname} 을/를 죽였습니다.`;
+        message = `마피아가 ${
+          gamePlayer[mafiaNum - 1].nickname
+        } 을/를 죽였습니다.`;
       } else if (!mafiaNum || !doctorNum) {
         // 아무 이벤트도 안 일어날 시,
         this.logger.log(`아무도 죽지 않아요`);
@@ -322,7 +324,9 @@ export class GameEventService {
       } else if (mafiaNum === doctorNum) {
         // 의사가 살릴 시
         this.logger.log(`의사가 ${mafiaNum} 을 살렸습니다.`);
-        message = `의사가 ${gamePlayer[mafiaNum].nickname} 을/를 살렸습니다.`;
+        message = `의사가 ${
+          gamePlayer[mafiaNum - 1].nickname
+        } 을/를 살렸습니다.`;
       }
 
       this.logger.log(
