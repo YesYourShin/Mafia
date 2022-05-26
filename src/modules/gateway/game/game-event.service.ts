@@ -656,6 +656,8 @@ export class GameEventService {
     const players = await this.getPlayerJobs(roomId);
 
     if (players[vote - 1] === null && players[vote - 1].die === true)
-      return null;
+      throw new WsException('투표할 수 없는 유저입니다.');
+
+    return vote;
   }
 }
