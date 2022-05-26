@@ -24,6 +24,7 @@ import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
 import 'dayjs/locale/ko';
 import dayjs from 'dayjs';
+import { DAY_FIELD } from './constants/game-redis-key-prefix';
 dayjs.locale('ko');
 
 // 직업 부여 분리
@@ -438,6 +439,10 @@ export class GameEventService {
 
   makeGameKey(roomId: number): string {
     return `${GAME}:${roomId}`;
+  }
+
+  async setDay(roomId: number, day: boolean) {
+    await this.redisService.hset(this.makeGameKey(roomId), DAY_FIELD, day);
   }
 
   async setPunish(roomId: number, punish: boolean): Promise<any> {

@@ -11,6 +11,7 @@ export const DOCTOR_FIELD = 'doctor';
 
 export const PLAYERNUM_FIELD = 'player-num';
 export const NUM_FIELD = 'num';
+export const DAY_FIELD = 'day';
 
 export const MAFIAS_FIELD = 'mafias';
 export const EXLEAVE_FIELD = 'player-leave';

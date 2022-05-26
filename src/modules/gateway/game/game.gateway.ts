@@ -24,6 +24,7 @@ import 'dayjs/locale/ko';
 import dayjs from 'dayjs';
 dayjs.locale('ko');
 dayjs.extend(customParseFormat);
+import { EnumGameRole } from '../../../common/constants/enum-game-role';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -112,14 +113,18 @@ export class GameGateway
     if (!winner) return null;
 
     this.logger.log(`우승 ${winner}`);
-    this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
+    // this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
 
-    await this.gameEventService.SaveTheEntireGame(roomId, winner);
+    // await this.gameEventService.SaveTheEntireGame(roomId, winner);
+
     this.server
       .in(`${newNamespace.name}-${roomId}`)
       .emit(GameEvent.WINNER, { winner: winner });
+
+    this.handleGameEnd(socket, { winner: winner });
   }
 
+  // Todo day저장,
   @SubscribeMessage(GameEvent.DAY)
   async HandleDay(
     @ConnectedSocket() socket: AuthenticatedSocket,
@@ -130,42 +135,30 @@ export class GameGateway
     const newNamespace = socket.nsp;
     this.logger.log(data.day);
 
-    // Todo 나갈 때, 승리 조건을 체크,
-    // 승리조건
-    // const winner = await this.gameEventService.winner(roomId);
+    const players = await this.gameEventService.findPlayers(roomId);
+    const playerLeave = (await this.gameEventService.getLeave(roomId)) || 0;
 
-    const Players = await this.gameEventService.findPlayers(roomId);
-    // if (gamePlayers.length < 6)
-    //   //  throw new ForbiddenException()
-    //   throw new ForbiddenException('인원이 부족합니다.');
-
-    this.logger.log(Players);
+    // 총 인원수에서 탈주자만 제외한 나머지 값.
+    const playerSum = players.length - playerLeave;
 
     let count;
     //count
-    for (const player of Players) {
-      if (player.id === user.profile.id) {
+    for (const player of players) {
+      if (player.userId === user.id) {
         count = await this.gameEventService.setPlayerNum(roomId);
       }
     }
 
-    if (Players.length === count) {
+    if (playerSum === count) {
       this.logger.log(`현재 day값 : ${data.day}`);
       await this.gameEventService.delPlayerNum(roomId);
-      // if (winner) {
-      //   this.logger.log(`우승 ${winner}`);
-      //   this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
 
-      //   await this.gameEventService.SaveTheEntireGame(roomId, winner);
-      //   this.server
-      //     .in(`${newNamespace.name}-${roomId}`)
-      //     .emit(GameEvent.WINNER, { winner: winner });
-      // } else {
       // default - 밤 = false
       const winner = await this.handleWinner(socket);
 
       if (!winner) {
         const thisDay = !data.day;
+        this.gameEventService.setDay(roomId, thisDay);
         this.logger.log(`바뀐 day값 : ${thisDay}`);
         this.server
           .in(`${newNamespace.name}-${roomId}`)
@@ -517,6 +510,23 @@ export class GameGateway
     this.server
       .to(`${newNamespace.name}-${roomId}`)
       .emit(GameEvent.LEAVE, leaveUser);
+
+    this.handleWinner(socket);
+  }
+
+  //Todo 게임 끝
+  @SubscribeMessage(GameEvent.GAMEEND)
+  async handleGameEnd(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { winner: EnumGameRole },
+  ) {
+    const { roomId } = socket.data;
+    const newNamespace = socket.nsp;
+
+    // 서비스 제공.
+    await this.gameEventService.SaveTheEntireGame(roomId, data.winner);
+
+    this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.GAMEEND);
   }
 
   // socket이 연결됐을 때
@@ -526,6 +536,7 @@ export class GameGateway
       `socket connected ${socket.nsp.name} ${socket.id} ${socket.data.roomId}`,
     );
   }
+
   // socket이 연결 끊겼을 때
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
     const newNamespace = socket.nsp;
@@ -534,10 +545,10 @@ export class GameGateway
 
     this.logger.log(`socket disconnected: ${roomId} ${newNamespace}`);
 
-    await this.handleLeave(socket);
+    // await this.handleLeave(socket);
 
     // Todo 나갈 때, 승리 조건을 체크,
-    this.handleWinner(socket);
+    // this.handleWinner(socket);
 
     socket.leave(`${newNamespace.name}-${roomId}`);
   }
