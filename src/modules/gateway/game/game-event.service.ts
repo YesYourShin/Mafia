@@ -476,9 +476,8 @@ export class GameEventService {
   }
 
   async setPunish(roomId: number, punish: boolean): Promise<any> {
-    let punishs = await this.getPunish(roomId);
+    const punishs = (await this.getPunish(roomId)) || [];
 
-    if (!punishs) punishs = [];
     punishs.push(punish);
 
     return await this.redisService.hset(
@@ -489,17 +488,21 @@ export class GameEventService {
   }
 
   async getPunishSum(roomId: number) {
-    const punish = await this.getPunish(roomId);
+    const punish = (await this.getPunish(roomId)) || [];
 
-    this.logger.log(punish);
+    return punish.length;
+    // cosnt punisAgreement = punish.length
 
-    const punisAgreement = punish.filter((item) => {
-      return item === true;
-    }).length;
+    // if (!punish.length) return punish.length;
+    // this.logger.log(punish);
 
-    this.logger.log(punisAgreement);
+    // const punisAgreement = punish.filter((item) => {
+    //   return item === true;
+    // }).length;
 
-    return punisAgreement;
+    // this.logger.log(punisAgreement);
+
+    // return punisAgreement;
   }
 
   async delPlayerNum(roomId: number) {

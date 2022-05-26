@@ -99,7 +99,7 @@ export class GameGateway
 
     const winner = await this.gameEventService.winner(roomId);
 
-    if (!winner) return null;
+    // if (!winner) return null;
 
     this.logger.log(`우승 ${winner}`);
     // this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
@@ -135,14 +135,13 @@ export class GameGateway
       // default - 밤 = false
       const winner = await this.handleWinner(socket);
 
-      if (!winner) {
-        const thisDay = !data.day;
-        this.logger.log(`바뀐 day값 : ${thisDay}`);
-        await this.gameEventService.setDay(roomId, thisDay);
-        this.server
-          .in(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.DAY, { day: thisDay });
-      }
+      const thisDay = !data.day;
+      this.logger.log(`바뀐 day값 : ${thisDay}`);
+      await this.gameEventService.setDay(roomId, thisDay);
+      this.server
+        .in(`${newNamespace.name}-${roomId}`)
+        .emit(GameEvent.DAY, { day: thisDay });
+
       // }
     }
   }
