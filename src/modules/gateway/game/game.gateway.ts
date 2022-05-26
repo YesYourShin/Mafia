@@ -99,7 +99,8 @@ export class GameGateway
 
     const winner = await this.gameEventService.winner(roomId);
 
-    if (!winner) return null;
+    // if (!winner) return null;
+    // winner
 
     this.logger.log(`우승 ${winner}`);
     // this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
