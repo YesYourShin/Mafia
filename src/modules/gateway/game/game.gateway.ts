@@ -19,6 +19,11 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import 'dayjs/locale/ko';
+import dayjs from 'dayjs';
+dayjs.locale('ko');
+dayjs.extend(customParseFormat);
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -75,12 +80,22 @@ export class GameGateway
 
     if (Players.length === count) {
       await this.gameEventService.delPlayerNum(roomId);
-      const { start, end } = this.gameEventService.timer();
 
       try {
-        this.server
-          .in(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.TIMER, { start: start }, { end: end });
+        const end = dayjs().add(10, 's');
+
+        const timeInterval = setInterval(() => {
+          const currentTime = dayjs();
+          const time = end.diff(currentTime, 's');
+
+          if (!time) {
+            clearInterval(timeInterval);
+          }
+
+          this.server
+            .in(`${newNamespace.name}-${roomId}`)
+            .emit(GameEvent.TIMER, { time });
+        }, 1000);
       } catch (error) {
         this.logger.error('event error', error);
       }
@@ -278,21 +293,23 @@ export class GameGateway
       }
     }
 
-    const redisVote = {};
-    const result = await this.gameEventService.getVote(roomId);
+    // const redisVote = {};
+    // const result = await this.gameEventService.getVote(roomId);
 
-    if (!vote) {
-      return null;
-    }
+    // if (!vote) {
+    //   return;
+    // }
 
-    // 해당 숫자값 세주기
-    result.forEach((element) => {
-      redisVote[element] = (redisVote[element] || 0) + 1;
-    });
+    // // 해당 숫자값 세주기
+    // result.forEach((element) => {
+    //   redisVote[element] = (redisVote[element] || 0) + 1;
+    // });
 
-    this.server
-      .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.CURRENT_VOTE, result);
+    // console.log(result);
+
+    // this.server
+    //   .to(`${newNamespace.name}-${roomId}`)
+    //   .emit(GameEvent.CURRENT_VOTE, result);
   }
 
   // 투표 합.
