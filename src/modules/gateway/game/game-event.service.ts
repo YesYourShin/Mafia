@@ -44,7 +44,7 @@ export class GameEventService {
     this.logger.log(`start: ${startTime}`);
 
     //만료 신호
-    const endTime = now.add(1, 'm').format();
+    const endTime = now.add(20, 's').format();
     this.logger.log(`end: ${endTime}`);
 
     return { start: startTime, end: endTime };
@@ -407,8 +407,8 @@ export class GameEventService {
   // Todo 죽은 사람, 탈주 유저의 수 redis로 따로 빼서 체크.
   async setPlayerCheckNum(roomId: number, user: UserProfile) {
     const players = await this.getPlayerJobs(roomId);
-    const playerDie = (await this.getDie(roomId)) || 0;
-    const playerLeave = (await this.getLeave(roomId)) || 0;
+    const playerDie = (await this.getDie(roomId)) || [];
+    const playerLeave = (await this.getLeave(roomId)) || [];
 
     let count;
     for (const player of players) {
@@ -417,17 +417,38 @@ export class GameEventService {
         break;
       }
     }
-    const playerSum = players.length - (playerDie.length - playerLeave.length);
+    const playerSum = players.length - (playerDie.length + playerLeave.length);
 
-    this.logger.log(`총 인원 ${playerSum}, count ${count}`);
+    this.logger.log(
+      `총 인원 ${players.length}, count ${playerDie.length}, count ${playerLeave.length}`,
+    );
+
+    return { playerSum: playerSum, count: count };
+  }
+
+  async setPlayerCheckNumExceptLeave(roomId: number, user: UserProfile) {
+    const players = await this.getPlayerJobs(roomId);
+    const playerLeave = (await this.getLeave(roomId)) || [];
+
+    let count;
+    for (const player of players) {
+      if (player.userId === user.id) {
+        count = await this.setPlayerNum(roomId);
+        break;
+      }
+    }
+
+    const playerSum = players.length - playerLeave.length;
+
+    this.logger.log(`총 인원 ${playerSum},  count ${count}`);
 
     return { playerSum: playerSum, count: count };
   }
 
   async CheckNum(roomId: number, user) {
     const players = await this.getPlayerJobs(roomId);
-    const playerDie = (await this.getDie(roomId)) || 0;
-    const playerLeave = (await this.getLeave(roomId)) || 0;
+    const playerDie = (await this.getDie(roomId)) || [];
+    const playerLeave = (await this.getLeave(roomId)) || [];
 
     let count;
     for (const player of players) {

@@ -20,6 +20,7 @@ import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
 import { EnumGameRole } from '../../../common/constants/enum-game-role';
+import { userInfo } from 'os';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -65,16 +66,19 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    const Players = await this.gameEventService.findPlayers(roomId);
+    // const Players = await this.gameEventService.findPlayers(roomId);
 
-    let count;
-    for (const player of Players) {
-      if (player.id === user.profile.id) {
-        count = await this.gameEventService.setPlayerNum(roomId);
-      }
-    }
+    // let count;
+    // for (const player of Players) {
+    //   if (player.id === user.profile.id) {
+    //     count = await this.gameEventService.setPlayerNum(roomId);
+    //   }
+    // }
 
-    if (Players.length === count) {
+    const { playerSum, count } =
+      await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
+
+    if (playerSum === count) {
       await this.gameEventService.delPlayerNum(roomId);
       const { start, end } = this.gameEventService.timer();
 
@@ -118,21 +122,11 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
     const newNamespace = socket.nsp;
-    this.logger.log(data.day);
+    const thisDay = data.day;
+    this.logger.log(`현재 날" ${thisDay}`);
 
-    const players = await this.gameEventService.findPlayers(roomId);
-    const playerLeave = (await this.gameEventService.getLeave(roomId)) || 0;
-
-    // 총 인원수에서 탈주자만 제외한 나머지 값.
-    const playerSum = players.length - playerLeave;
-
-    let count;
-    //count
-    for (const player of players) {
-      if (player.userId === user.id) {
-        count = await this.gameEventService.setPlayerNum(roomId);
-      }
-    }
+    const { playerSum, count } =
+      await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
 
     if (playerSum === count) {
       this.logger.log(`현재 day값 : ${data.day}`);
@@ -143,8 +137,8 @@ export class GameGateway
 
       if (!winner) {
         const thisDay = !data.day;
-        this.gameEventService.setDay(roomId, thisDay);
         this.logger.log(`바뀐 day값 : ${thisDay}`);
+        await this.gameEventService.setDay(roomId, thisDay);
         this.server
           .in(`${newNamespace.name}-${roomId}`)
           .emit(GameEvent.DAY, { day: thisDay });
@@ -524,7 +518,6 @@ export class GameGateway
   async handleDisconnect(@ConnectedSocket() socket: AuthenticatedSocket) {
     const newNamespace = socket.nsp;
     const { roomId } = socket.data;
-    const { user } = socket.request;
 
     this.logger.log(`socket disconnected: ${roomId} ${newNamespace}`);
 
