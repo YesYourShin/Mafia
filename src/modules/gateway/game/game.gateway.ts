@@ -97,14 +97,10 @@ export class GameGateway
     const { roomId } = socket.data;
     const newNamespace = socket.nsp;
 
+    // 우승 값 판단 / 만약에 우승이 아니면 null 반환
     const winner = await this.gameEventService.winner(roomId);
 
-    // if (!winner) return null;
-
     this.logger.log(`우승 ${winner}`);
-    // this.server.in(socket.id).emit(GameEvent.WINNER, { winner: winner });
-
-    // await this.gameEventService.SaveTheEntireGame(roomId, winner);
 
     if (winner) {
       this.server
@@ -113,9 +109,10 @@ export class GameGateway
 
       this.handleGameEnd(socket, { winner: winner });
     }
+
+    return winner;
   }
 
-  // Todo day저장,
   @SubscribeMessage(GameEvent.DAY)
   async HandleDay(
     @ConnectedSocket() socket: AuthenticatedSocket,
@@ -124,8 +121,6 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
     const newNamespace = socket.nsp;
-    const thisDay = data.day;
-    this.logger.log(`현재 날" ${thisDay}`);
 
     const { playerSum, count } =
       await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
@@ -135,16 +130,21 @@ export class GameGateway
       await this.gameEventService.delPlayerNum(roomId);
 
       // default - 밤 = false
+      // 우승값 or null
       const winner = await this.handleWinner(socket);
 
-      const thisDay = !data.day;
-      this.logger.log(`바뀐 day값 : ${thisDay}`);
-      await this.gameEventService.setDay(roomId, thisDay);
-      this.server
-        .in(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.DAY, { day: thisDay });
+      if (!winner) {
+        const thisDay = !data.day;
+        this.logger.log(`바뀐 day값 : ${thisDay}`);
+        await this.gameEventService.setDay(roomId, thisDay);
 
-      // }
+        // 비동기 신호
+        setTimeout(() => {
+          this.server
+            .in(`${newNamespace.name}-${roomId}`)
+            .emit(GameEvent.DAY, { day: thisDay });
+        }, 5000);
+      }
     }
   }
 
@@ -180,7 +180,7 @@ export class GameGateway
         this.server
           .to(`${newNamespace.name}-${roomId}`)
           .emit(GameEvent.START, Players);
-      }, 1000);
+      }, 5000);
 
       const jobData = this.gameEventService.getJobData(Players.length);
       await this.gameEventService.PlayerJobs(roomId, jobData, Players.length);
@@ -198,13 +198,6 @@ export class GameGateway
 
     // 특정 플레이어의 순서 === jobs[순서]
     const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
-
-    // for (let i = 0; i < players.length; i++) {
-    //   if (players[i].id === user.profile.id) {
-    //     players[i].job = gamePlayer[i].job;
-    //     break;
-    //   }
-    // }
 
     players.forEach((player, idx) => {
       if (player.userId === user.id) {
@@ -418,6 +411,8 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
+
+    this.logger.log(`유저 값 ${user.id}`);
 
     // Todo 여러명의 마피아의 동일한 값일 경우만, 체크 -> ok 일단 다 받은 후, usejobs에서 능력사용할 때, 확인.
     const voteUserNum = await this.gameEventService.useMafia(

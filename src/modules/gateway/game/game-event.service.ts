@@ -250,6 +250,7 @@ export class GameEventService {
     const mafiavotes = (await this.getMafia(roomId)) || [];
 
     // let mafia;
+    this.logger.log(`gameEvent 유저 값 ${user.id}`);
 
     // 마피아일 경우에만 값 넣기
     for (const player of maifas) {
@@ -296,6 +297,7 @@ export class GameEventService {
 
     const mafiavotes = await this.getMafia(roomId);
     const set = Array.from(new Set(mafiavotes));
+    let die;
 
     try {
       const mafiaNum = mafias.length === set.length ? +set[0] : null;
@@ -303,12 +305,15 @@ export class GameEventService {
       const doctorNum = await this.getDoctor(roomId);
 
       // 아무 이벤트도 안 일어날 시,
-      if (!mafiaNum) return null;
+      if (!mafiaNum) {
+        this.logger.log(`아무도 죽지 않아요`);
+        return null;
+      }
 
       // 마피아가 죽일 때
       if (mafiaNum !== doctorNum) {
         this.logger.log(`마피아가 ${mafiaNum} 을 살해하였습니다.`);
-        await this.death(roomId, mafiaNum);
+        die = await this.death(roomId, mafiaNum);
       }
 
       if (mafiaNum === doctorNum) {
@@ -316,8 +321,8 @@ export class GameEventService {
       }
 
       // Todo 메세지를 주도록, 살해했습니다.
-      this.logger.log(gamePlayer[mafiaNum - 1].die);
-      return { userNum: mafiaNum, die: gamePlayer[mafiaNum - 1].die };
+      this.logger.log(`die :${die}`);
+      return { userNum: mafiaNum, die: die };
     } catch (error) {
       this.logger.error(`useState error `, error);
     }
