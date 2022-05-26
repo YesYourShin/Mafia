@@ -357,18 +357,10 @@ export class GameGateway
       const agreement = await this.gameEventService.getPunishSum(roomId);
       // const Opposition = gamePlayers.length - Agreement;
 
-      // 버전 1 , 찬성값만 주기
+      // 찬성 값만 주기
       this.server
         .to(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.FINISHP, agreement);
-
-      // 버전 2 , 찬성값만 주기
-      // this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FinishP, {
-      //   voteResult: {
-      //     Agreement: Agreement,
-      //     Opposition: Opposition,
-      //   },
-      // });
 
       if (playerSum / 2 < agreement) {
         const humon = await this.gameEventService.getVoteDeath(roomId);
