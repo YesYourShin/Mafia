@@ -71,25 +71,31 @@ export class GameEventService {
   // }
 
   async PlayerJobs(roomId: number, job: number[], Num: number) {
-    const jobs = this.grantJob(job, Num);
+    const jobs = this.grantJob(job, Num); //직업 배분
     const playerJobs = await this.findPlayers(roomId);
     const mafias = [];
 
     for (let i = 0; i < Num; i++) {
+      // 직업 배분,
       playerJobs[i].job = jobs[i];
+      // 해당 유저의 직업이 마피아일 시!
       if (playerJobs[i].job === EnumGameRole.MAFIA) {
-        playerJobs[i].team = EnumGameRole.MAFIA;
-        mafias.push(playerJobs[i]);
+        playerJobs[i].team = EnumGameRole.MAFIA; //마피아 팀 저장.
+        mafias.push(playerJobs[i]); //마피아 저장
         continue;
       }
-      playerJobs[i].team = EnumGameRole.CITIZEN;
+
+      playerJobs[i].team = EnumGameRole.CITIZEN; //시민 팀 저장.
     }
 
-    await this.setMafiaSearch(roomId, mafias);
+    this.logger.log(`직업 유저 저장`);
+    this.logger.log(playerJobs);
 
-    await this.setPlayerJob(roomId, playerJobs);
+    await this.setMafiaSearch(roomId, mafias); //reids 마피아 저장.
 
-    await this.gameRepository.setRole(playerJobs);
+    await this.setPlayerJob(roomId, playerJobs); //reids 직업유저 저장.
+
+    await this.gameRepository.setRole(playerJobs); //db 직업 유저 저장.
   }
 
   getJobData(playerCount: number) {

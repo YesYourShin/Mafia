@@ -147,6 +147,7 @@ export class GameGateway
 
       // default - 밤 = false
       // 우승값 or null
+      // socket - roomId,newNAmespace 정도 얻기용.
       const winner = await this.handleWinner(socket);
 
       if (!winner) {
