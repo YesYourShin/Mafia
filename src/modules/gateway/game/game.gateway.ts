@@ -19,8 +19,12 @@ import {
 import { AuthenticatedSocket } from '../game-room/constants/authenticated-socket';
 import { GameEventService } from './game-event.service';
 import { GamePlayerGuard } from '../guards/game-player.guard';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import 'dayjs/locale/ko';
+import dayjs from 'dayjs';
+dayjs.locale('ko');
+dayjs.extend(customParseFormat);
 import { EnumGameRole } from '../../../common/constants/enum-game-role';
-import { userInfo } from 'os';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -80,12 +84,23 @@ export class GameGateway
 
     if (playerSum === count) {
       await this.gameEventService.delPlayerNum(roomId);
-      const { start, end } = this.gameEventService.timer();
 
       try {
-        this.server
-          .in(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.TIMER, { start: start }, { end: end });
+        const end = dayjs().add(30, 's');
+        const day = await this.gameEventService.getDay(roomId);
+
+        const timeInterval = setInterval(() => {
+          const currentTime = dayjs();
+          const time = end.diff(currentTime, 's');
+
+          if (!time) {
+            clearInterval(timeInterval);
+          }
+
+          this.server
+            .in(`${newNamespace.name}-${roomId}`)
+            .emit(GameEvent.TIMER, { type: day, time });
+        }, 1000);
       } catch (error) {
         this.logger.error('event error', error);
       }
@@ -250,30 +265,27 @@ export class GameGateway
 
     // Todo 탈주/죽음/실존 플레이어 유효성 체크
     // Todo 죽은 사람을 투표 / 죽은 사람이 투표 유효성 체크 ok
-    const vote = await this.gameEventService.voteValidation(roomId, data.vote);
+    await this.gameEventService.voteValidation(roomId, data.vote);
 
     if (count <= playerSum) {
-      if (vote) {
-        this.logger.log(`1. 소켓투표값 ${vote}`);
-        await this.gameEventService.setVote(roomId, vote);
-      }
+      this.logger.log(`1. 소켓투표값 ${data.vote}`);
+      await this.gameEventService.setVote(roomId, data.vote);
     }
 
     const redisVote = {};
     const result = await this.gameEventService.getVote(roomId);
 
-    if (!vote) {
-      return null;
-    }
+    if (!result || !result?.length) return;
 
-    // 해당 숫자값 세주기
-    result.forEach((element) => {
-      redisVote[element] = (redisVote[element] || 0) + 1;
+    result.forEach((val) => {
+      if (val) redisVote[val] = (redisVote[val] || 0) + 1;
     });
+
+    console.log(redisVote);
 
     this.server
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.CURRENT_VOTE, result);
+      .emit(GameEvent.CURRENT_VOTE, redisVote);
   }
 
   // 투표 합.

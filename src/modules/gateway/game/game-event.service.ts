@@ -36,19 +36,13 @@ export class GameEventService {
     private readonly gameRepository: GameRepository,
   ) {}
 
-  timer() {
-    const now = dayjs();
+  // timer() {
+  //   const now = dayjs();
 
-    //시작 신호
-    const startTime = now.format();
-    this.logger.log(`start: ${startTime}`);
-
-    //만료 신호
-    const endTime = now.add(20, 's').format();
-    this.logger.log(`end: ${endTime}`);
-
-    return { start: startTime, end: endTime };
-  }
+  //   const endTime = now.add(10, 's');
+  //   this.logger.log(`end: ${endTime}`);
+  //   return { start: startTime, end: endTime };
+  // }
 
   // 해당 방의 게임 플레이어 값을 찾아서 제공.
   async findPlayers(roomId: number): Promise<Player[]> {
@@ -663,7 +657,7 @@ export class GameEventService {
   async voteValidation(roomId: number, vote: number) {
     const players = await this.getPlayerJobs(roomId);
 
-    if (players[vote - 1] === null && players[vote - 1].die === true)
+    if (!players[vote - 1] || players[vote - 1].die)
       throw new WsException('투표할 수 없는 유저입니다.');
 
     return vote;
