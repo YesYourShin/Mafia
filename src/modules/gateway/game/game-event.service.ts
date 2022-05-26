@@ -658,7 +658,7 @@ export class GameEventService {
   async voteValidation(roomId: number, vote: number) {
     const players = await this.getPlayerJobs(roomId);
 
-    if (players[vote - 1] === null && players[vote - 1].die === true)
+    if (!players[vote - 1] || players[vote - 1].die)
       throw new WsException('투표할 수 없는 유저입니다.');
 
     return vote;

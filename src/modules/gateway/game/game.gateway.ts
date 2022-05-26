@@ -255,30 +255,25 @@ export class GameGateway
 
     // Todo 탈주/죽음/실존 플레이어 유효성 체크
     // Todo 죽은 사람을 투표 / 죽은 사람이 투표 유효성 체크 ok
-    const vote = await this.gameEventService.voteValidation(roomId, data.vote);
+    await this.gameEventService.voteValidation(roomId, data.vote);
 
     if (count <= playerSum) {
-      if (vote) {
-        this.logger.log(`1. 소켓투표값 ${vote}`);
-        await this.gameEventService.setVote(roomId, vote);
-      }
+      this.logger.log(`1. 소켓투표값 ${data.vote}`);
+      await this.gameEventService.setVote(roomId, data.vote);
     }
 
     const redisVote = {};
     const result = await this.gameEventService.getVote(roomId);
 
-    if (!vote) {
-      return null;
-    }
+    if (!result || !result?.length) return;
 
-    // 해당 숫자값 세주기
-    result.forEach((element) => {
-      redisVote[element] = (redisVote[element] || 0) + 1;
+    result.forEach((val) => {
+      if (val) redisVote[val] = (redisVote[val] || 0) + 1;
     });
 
     this.server
       .to(`${newNamespace.name}-${roomId}`)
-      .emit(GameEvent.CURRENT_VOTE, result);
+      .emit(GameEvent.CURRENT_VOTE, redisVote);
   }
 
   // 투표 합.
