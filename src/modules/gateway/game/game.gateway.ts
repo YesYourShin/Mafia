@@ -287,23 +287,23 @@ export class GameGateway
       }
     }
 
-    // const redisVote = {};
-    // const result = await this.gameEventService.getVote(roomId);
+    const redisVote = {};
+    const result = await this.gameEventService.getVote(roomId);
 
-    // if (!vote) {
-    //   return;
-    // }
+    if (!vote) {
+      return;
+    }
 
-    // // 해당 숫자값 세주기
-    // result.forEach((element) => {
-    //   redisVote[element] = (redisVote[element] || 0) + 1;
-    // });
+    // 해당 숫자값 세주기
+    result.forEach((element) => {
+      redisVote[element] = (redisVote[element] || 0) + 1;
+    });
 
-    // console.log(result);
+    console.log(result);
 
-    // this.server
-    //   .to(`${newNamespace.name}-${roomId}`)
-    //   .emit(GameEvent.CURRENT_VOTE, result);
+    this.server
+      .to(`${newNamespace.name}-${roomId}`)
+      .emit(GameEvent.CURRENT_VOTE, result);
   }
 
   // 투표 합.
