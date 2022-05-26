@@ -306,21 +306,21 @@ export class GameEventService {
 
       const doctorNum = await this.getDoctor(roomId);
 
-      // 아무 이벤트도 안 일어날 시,
-      if (!mafiaNum) {
-        this.logger.log(`아무도 죽지 않아요`);
-        // return null;
-        message = '평화로운 밤이었습니다. 아무도 죽지 않았습니다';
-      }
+      //Todo mafia랑 doctor값이 둘다 null일 경우 제외,
 
       // 마피아가 죽일 때
       if (mafiaNum !== doctorNum) {
         this.logger.log(`마피아가 ${mafiaNum} 을 죽였습니다.`);
         await this.death(roomId, mafiaNum);
         message = `마피아가 ${gamePlayer[mafiaNum].nickname} 을/를 죽였습니다.`;
-      }
+      } else if (!mafiaNum || !doctorNum) {
+        // 아무 이벤트도 안 일어날 시,
+        this.logger.log(`아무도 죽지 않아요`);
+        message = '평화로운 밤이었습니다. 아무도 죽지 않았습니다';
 
-      if (mafiaNum === doctorNum) {
+        return { user: null, message: message };
+      } else if (mafiaNum === doctorNum) {
+        // 의사가 살릴 시
         this.logger.log(`의사가 ${mafiaNum} 을 살렸습니다.`);
         message = `의사가 ${gamePlayer[mafiaNum].nickname} 을/를 살렸습니다.`;
       }
@@ -331,7 +331,7 @@ export class GameEventService {
 
       // Todo 마피아 값이 맞을 시, userNum : 값
       // Todo 마피아 값이 맞지 않을 시, userNum : null
-      return { userNum: gamePlayer[mafiaNum], message: message };
+      return { user: gamePlayer[mafiaNum], message: message };
     } catch (error) {
       this.logger.error(`useState error `, error);
     }
