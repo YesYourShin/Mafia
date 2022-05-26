@@ -1,6 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { MessageBody, WsException } from '@nestjs/websockets';
-import dayjs from 'dayjs';
 import { Player } from 'src/modules/game-room/dto/player';
 import { RedisService } from 'src/modules/redis/redis.service';
 import { UserProfile } from '../../user/dto/user-profile.dto';
@@ -23,7 +22,9 @@ import {
 } from './constants/game-redis-key-prefix';
 import { EnumGameRole } from 'src/common/constants';
 import { GameRepository } from 'src/modules/game/game.repository';
-import { LessThan } from 'typeorm';
+import 'dayjs/locale/ko';
+import dayjs from 'dayjs';
+dayjs.locale('ko');
 
 // 직업 부여 분리
 @Injectable()
@@ -73,88 +74,6 @@ export class GameEventService {
 
   //   return game;
   // }
-
-  async getPlayerJobs(roomId: number): Promise<Player[]> {
-    try {
-      const playerJobs = await this.redisService.hget(
-        this.makeGameKey(roomId),
-        PLAYERJOB_FIELD,
-      );
-      return playerJobs;
-    } catch (err) {
-      console.log(err);
-    }
-  }
-  async setMafiaSearch(roomId: number, player: Player[]) {
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      MAFIAS_FIELD,
-      player,
-    );
-  }
-
-  async getMafiaSearch(roomId: number): Promise<Player[]> {
-    return await this.redisService.hget(this.makeGameKey(roomId), MAFIAS_FIELD);
-  }
-
-  async leaveUser(roomId: number, user: UserProfile) {
-    this.logger.log(`leaveUser event`);
-    const gamePlayer: Player[] = await this.getPlayerJobs(roomId);
-    let leaveplayer;
-
-    const newGamePlayer = gamePlayer.map((player) => {
-      if (player !== null && player.userId === user.id) {
-        leaveplayer = player;
-        player = null;
-      }
-      return player;
-    });
-
-    this.logger.log(`leave 유저 gameId ${leaveplayer.gameId}`);
-    // 탈주 유저  redis 처리
-    await this.setLeave(roomId, leaveplayer);
-
-    await this.gameRepository.leave(leaveplayer);
-
-    //  player 저장
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      PLAYERJOB_FIELD,
-      newGamePlayer,
-    );
-
-    this.logger.log(`leaveplayer`);
-    // this.logger.log(leaveplayer);
-
-    return leaveplayer;
-  }
-
-  async setLeave(roomId: number, player: Player) {
-    const leaveusers = (await this.getLeave(roomId)) || [];
-
-    leaveusers.push(player);
-
-    return this.redisService.hset(
-      this.makeGameKey(roomId),
-      EXLEAVE_FIELD,
-      leaveusers,
-    );
-  }
-
-  async getLeave(roomId: number) {
-    return await this.redisService.hget(
-      this.makeGameKey(roomId),
-      EXLEAVE_FIELD,
-    );
-  }
-
-  async setPlayerJob(roomId, Player: Player[]) {
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      PLAYERJOB_FIELD,
-      Player,
-    );
-  }
 
   async PlayerJobs(roomId: number, job: number[], Num: number) {
     const jobs = this.grantJob(job, Num);
@@ -297,59 +216,6 @@ export class GameEventService {
     return dieUser;
   }
 
-  async setDie(roomId: number, player: Player) {
-    const dieUser = (await this.getDie(roomId)) || [];
-
-    dieUser.push(player);
-
-    return await this.redisService.hset(
-      this.makeGameKey(roomId),
-      EXDIE_FIELD,
-      dieUser,
-    );
-  }
-
-  async getDie(roomId: number) {
-    return await this.redisService.hget(this.makeGameKey(roomId), EXDIE_FIELD);
-  }
-
-  async useState(roomId: number) {
-    const gamePlayer = await this.getPlayerJobs(roomId);
-    const mafias = await this.getMafiaSearch(roomId);
-
-    const mafiavotes = await this.getMafia(roomId);
-    const set = Array.from(new Set(mafiavotes));
-
-    try {
-      const mafiaNum = mafias.length === set.length ? +set[0] : null;
-
-      const doctorNum = await this.getDoctor(roomId);
-
-      // 아무 이벤트도 안 일어날 시,
-      if (!mafiaNum) return null;
-
-      // 마피아가 죽일 때
-      if (mafiaNum !== doctorNum) {
-        this.logger.log(`마피아가 ${mafiaNum} 을 살해하였습니다.`);
-        await this.death(roomId, mafiaNum);
-      }
-
-      if (mafiaNum === doctorNum) {
-        this.logger.log(`의사가 ${mafiaNum} 을 살렸습니다.`);
-      }
-
-      // Todo 메세지를 주도록, 살해했습니다.
-      this.logger.log(gamePlayer[mafiaNum - 1].die);
-      return { userNum: mafiaNum, die: gamePlayer[mafiaNum - 1].die };
-    } catch (error) {
-      this.logger.error(`useState error `, error);
-    }
-  }
-
-  makeGameKey(roomId: number): string {
-    return `${GAME}:${roomId}`;
-  }
-
   async usePolice(
     roomId: number,
     userNum: number,
@@ -404,29 +270,6 @@ export class GameEventService {
 
     return userNum;
   }
-  async getMafia(roomId: number) {
-    return await this.redisService.hget(this.makeGameKey(roomId), MAFIA_FIELD);
-  }
-
-  async setMafia(roomId: number, userNum: number) {
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      MAFIA_FIELD,
-      userNum,
-    );
-  }
-
-  async getDoctor(roomId: number) {
-    return await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
-  }
-
-  async setDoctor(roomId: number, userNum: number) {
-    await this.redisService.hset(
-      this.makeGameKey(roomId),
-      DOCTOR_FIELD,
-      userNum,
-    );
-  }
 
   async useDoctor(
     roomId: number,
@@ -444,6 +287,39 @@ export class GameEventService {
     await this.setDoctor(roomId, userNum);
 
     return userNum;
+  }
+
+  async useState(roomId: number) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+    const mafias = await this.getMafiaSearch(roomId);
+
+    const mafiavotes = await this.getMafia(roomId);
+    const set = Array.from(new Set(mafiavotes));
+
+    try {
+      const mafiaNum = mafias.length === set.length ? +set[0] : null;
+
+      const doctorNum = await this.getDoctor(roomId);
+
+      // 아무 이벤트도 안 일어날 시,
+      if (!mafiaNum) return null;
+
+      // 마피아가 죽일 때
+      if (mafiaNum !== doctorNum) {
+        this.logger.log(`마피아가 ${mafiaNum} 을 살해하였습니다.`);
+        await this.death(roomId, mafiaNum);
+      }
+
+      if (mafiaNum === doctorNum) {
+        this.logger.log(`의사가 ${mafiaNum} 을 살렸습니다.`);
+      }
+
+      // Todo 메세지를 주도록, 살해했습니다.
+      this.logger.log(gamePlayer[mafiaNum - 1].die);
+      return { userNum: mafiaNum, die: gamePlayer[mafiaNum - 1].die };
+    } catch (error) {
+      this.logger.error(`useState error `, error);
+    }
   }
 
   //살아있는 각 팀멤버 수
@@ -476,6 +352,57 @@ export class GameEventService {
     return { mafia: livingMafia, citizen: livingCitizen };
   }
 
+  async winner(roomId: number): Promise<EnumGameRole> | null {
+    const { mafia, citizen } = await this.livingHuman(roomId);
+
+    if (!mafia) {
+      return EnumGameRole.CITIZEN;
+    } else if (mafia >= citizen) {
+      return EnumGameRole.MAFIA;
+    }
+    return null;
+  }
+
+  async leaveUser(roomId: number, user: UserProfile) {
+    this.logger.log(`leaveUser event`);
+    const gamePlayer: Player[] = await this.getPlayerJobs(roomId);
+    let leaveplayer;
+
+    const newGamePlayer = gamePlayer.map((player) => {
+      if (player !== null && player.userId === user.id) {
+        leaveplayer = player;
+        player = null;
+      }
+      return player;
+    });
+
+    this.logger.log(`leave 유저 gameId ${leaveplayer.gameId}`);
+    // 탈주 유저  redis 처리
+    await this.setLeave(roomId, leaveplayer);
+
+    await this.gameRepository.leave(leaveplayer);
+
+    //  player 저장
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERJOB_FIELD,
+      newGamePlayer,
+    );
+
+    this.logger.log(`leaveplayer`);
+    // this.logger.log(leaveplayer);
+
+    return leaveplayer;
+  }
+
+  async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    const saveplayer = gamePlayer.filter((x): x is Player => x !== null);
+
+    return await this.gameRepository.saveGameScore(saveplayer, winner);
+  }
+
   // Todo 죽은 사람, 탈주 유저의 수 redis로 따로 빼서 체크.
   async setPlayerCheckNum(roomId: number, user: UserProfile) {
     const players = await this.getPlayerJobs(roomId);
@@ -496,15 +423,6 @@ export class GameEventService {
     return { playerSum: playerSum, count: count };
   }
 
-  async voteValidation(roomId: number, vote: number) {
-    const players = await this.getPlayerJobs(roomId);
-
-    if (players[vote - 1] === null && players[vote - 1].die === true)
-      throw new WsException('투표할 수 없는 유저입니다.');
-
-    return vote;
-  }
-
   async CheckNum(roomId: number, user) {
     const players = await this.getPlayerJobs(roomId);
     const playerDie = (await this.getDie(roomId)) || 0;
@@ -523,55 +441,8 @@ export class GameEventService {
     return { playerSum: playerSum, count: count };
   }
 
-  async setNum(roomId: number) {
-    return await this.redisService.hincrby(this.makeGameKey(roomId), NUM_FIELD);
-  }
-
-  async delNum(roomId: number) {
-    return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
-  }
-
-  async winner(roomId: number): Promise<EnumGameRole> | null {
-    const { mafia, citizen } = await this.livingHuman(roomId);
-
-    if (!mafia) {
-      return EnumGameRole.CITIZEN;
-    } else if (mafia >= citizen) {
-      return EnumGameRole.MAFIA;
-    }
-    return null;
-  }
-
-  async setVote(roomId: number, vote: number): Promise<any> {
-    let votes = await this.getVote(roomId);
-
-    if (!votes) votes = [];
-
-    votes.push(vote);
-
-    return await this.redisService.hset(
-      this.makeGameKey(roomId),
-      VOTE_FIELD,
-      votes,
-    );
-  }
-
-  async getPunish(roomId: number): Promise<any> {
-    return await this.redisService.hget(this.makeGameKey(roomId), PUNISH_FIELD);
-  }
-
-  async getPunishSum(roomId: number) {
-    const punish = await this.getPunish(roomId);
-
-    this.logger.log(punish);
-
-    const punisAgreement = punish.filter((item) => {
-      return item === true;
-    }).length;
-
-    this.logger.log(punisAgreement);
-
-    return punisAgreement;
+  makeGameKey(roomId: number): string {
+    return `${GAME}:${roomId}`;
   }
 
   async setPunish(roomId: number, punish: boolean): Promise<any> {
@@ -587,15 +458,18 @@ export class GameEventService {
     );
   }
 
-  async getVote(roomId: number): Promise<number[]> {
-    return await this.redisService.hget(this.makeGameKey(roomId), VOTE_FIELD);
-  }
+  async getPunishSum(roomId: number) {
+    const punish = await this.getPunish(roomId);
 
-  async setPlayerNum(roomId: number) {
-    return await this.redisService.hincrby(
-      this.makeGameKey(roomId),
-      PLAYERNUM_FIELD,
-    );
+    this.logger.log(punish);
+
+    const punisAgreement = punish.filter((item) => {
+      return item === true;
+    }).length;
+
+    this.logger.log(punisAgreement);
+
+    return punisAgreement;
   }
 
   async delPlayerNum(roomId: number) {
@@ -624,11 +498,134 @@ export class GameEventService {
     }
   }
 
-  async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
-    const gamePlayer = await this.getPlayerJobs(roomId);
+  async setNum(roomId: number) {
+    return await this.redisService.hincrby(this.makeGameKey(roomId), NUM_FIELD);
+  }
 
-    const saveplayer = gamePlayer.filter((x): x is Player => x !== null);
+  async delNum(roomId: number) {
+    return await this.redisService.hdel(this.makeGameKey(roomId), NUM_FIELD);
+  }
 
-    return await this.gameRepository.saveGameScore(saveplayer, winner);
+  async setPlayerJob(roomId, Player: Player[]) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      PLAYERJOB_FIELD,
+      Player,
+    );
+  }
+
+  async getPlayerJobs(roomId: number): Promise<Player[]> {
+    try {
+      const playerJobs = await this.redisService.hget(
+        this.makeGameKey(roomId),
+        PLAYERJOB_FIELD,
+      );
+      return playerJobs;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async setPlayerNum(roomId: number) {
+    return await this.redisService.hincrby(
+      this.makeGameKey(roomId),
+      PLAYERNUM_FIELD,
+    );
+  }
+
+  async setDie(roomId: number, player: Player) {
+    const dieUser = (await this.getDie(roomId)) || [];
+
+    dieUser.push(player);
+
+    return await this.redisService.hset(
+      this.makeGameKey(roomId),
+      EXDIE_FIELD,
+      dieUser,
+    );
+  }
+  async getDie(roomId: number) {
+    return await this.redisService.hget(this.makeGameKey(roomId), EXDIE_FIELD);
+  }
+
+  async setLeave(roomId: number, player: Player) {
+    const leaveusers = (await this.getLeave(roomId)) || [];
+
+    leaveusers.push(player);
+
+    return this.redisService.hset(
+      this.makeGameKey(roomId),
+      EXLEAVE_FIELD,
+      leaveusers,
+    );
+  }
+
+  async getLeave(roomId: number) {
+    return await this.redisService.hget(
+      this.makeGameKey(roomId),
+      EXLEAVE_FIELD,
+    );
+  }
+  async setMafiaSearch(roomId: number, player: Player[]) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      MAFIAS_FIELD,
+      player,
+    );
+  }
+
+  async getMafiaSearch(roomId: number): Promise<Player[]> {
+    return await this.redisService.hget(this.makeGameKey(roomId), MAFIAS_FIELD);
+  }
+  async setMafia(roomId: number, userNum: number) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      MAFIA_FIELD,
+      userNum,
+    );
+  }
+
+  async getMafia(roomId: number) {
+    return await this.redisService.hget(this.makeGameKey(roomId), MAFIA_FIELD);
+  }
+
+  async setDoctor(roomId: number, userNum: number) {
+    await this.redisService.hset(
+      this.makeGameKey(roomId),
+      DOCTOR_FIELD,
+      userNum,
+    );
+  }
+
+  async getDoctor(roomId: number) {
+    return await this.redisService.hget(this.makeGameKey(roomId), DOCTOR_FIELD);
+  }
+  async getPunish(roomId: number): Promise<any> {
+    return await this.redisService.hget(this.makeGameKey(roomId), PUNISH_FIELD);
+  }
+
+  async setVote(roomId: number, vote: number): Promise<any> {
+    let votes = await this.getVote(roomId);
+
+    if (!votes) votes = [];
+
+    votes.push(vote);
+
+    return await this.redisService.hset(
+      this.makeGameKey(roomId),
+      VOTE_FIELD,
+      votes,
+    );
+  }
+
+  async getVote(roomId: number): Promise<number[]> {
+    return await this.redisService.hget(this.makeGameKey(roomId), VOTE_FIELD);
+  }
+
+  async voteValidation(roomId: number, vote: number) {
+    const players = await this.getPlayerJobs(roomId);
+
+    if (players[vote - 1] === null && players[vote - 1].die === true)
+      return null;
   }
 }
