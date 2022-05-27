@@ -177,8 +177,6 @@ export class GameGateway
     //   //  throw new ForbiddenException()
     //   throw new ForbiddenException('인원이 부족합니다.');
 
-    this.logger.log(Players);
-
     let count;
     //count
     for (const player of Players) {
@@ -191,6 +189,8 @@ export class GameGateway
 
     if (Players.length === count) {
       await this.gameEventService.delPlayerNum(roomId);
+      this.logger.log(`START EVENT발생`);
+      this.logger.log(Players);
       // 비동기 신호
       setTimeout(() => {
         this.server
