@@ -230,6 +230,8 @@ export class GameEventService {
 
     let police;
 
+    this.logger.log(`usePolice 현재 유저 닉네임${user.profile.nickname}`);
+
     for (const player of gamePlayer) {
       if (player.userId === user.id) {
         police = player.job;
@@ -242,6 +244,10 @@ export class GameEventService {
     }
     // 해당 유저가 고른 유저의 직업 제공.
     // 직업 + 메세지
+
+    this.logger.log(
+      `usePolice 메세지 반환 유저 닉네임${user.profile.nickname}`,
+    );
 
     return {
       user: selectUserNum,

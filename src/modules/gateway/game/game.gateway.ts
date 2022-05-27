@@ -400,6 +400,10 @@ export class GameGateway
       user,
     );
 
+    this.logger.log(
+      `POLICE 능력으로 알아낸 ${usePolice.user.nickname}유저의 ${usePolice.user.job} 값`,
+    );
+
     this.server.to(socket.id).emit(GameEvent.POLICE, usePolice);
   }
 
