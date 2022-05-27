@@ -204,6 +204,12 @@ export class GameEventService {
     const gamePlayer = await this.getPlayerJobs(roomId);
     const dieUser = gamePlayer[userNum - 1];
 
+    // die - false 살아있음.
+    // 유저의 값이
+    if (dieUser.die) {
+      throw new WsException('이미 죽은 유저입니다.');
+    }
+
     dieUser.die = !dieUser.die;
 
     await this.redisService.hset(
@@ -217,12 +223,9 @@ export class GameEventService {
     return dieUser;
   }
 
-  async usePolice(
-    roomId: number,
-    userNum: number,
-    user: UserProfile,
-  ): Promise<string> {
+  async usePolice(roomId: number, userNum: number, user: UserProfile) {
     const gamePlayer = await this.getPlayerJobs(roomId);
+    const selectUserNum = gamePlayer[userNum - 1];
 
     let police;
 
@@ -237,7 +240,12 @@ export class GameEventService {
       throw new WsException('경찰이 아닙니다.');
     }
     // 해당 유저가 고른 유저의 직업 제공.
-    return gamePlayer[userNum - 1].job;
+    // 직업 + 메세지
+
+    return {
+      user: selectUserNum,
+      message: `이 유저의 직업은 ${selectUserNum.job} 입니다.`,
+    };
   }
 
   async useMafia(

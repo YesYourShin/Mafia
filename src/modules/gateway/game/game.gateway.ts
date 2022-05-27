@@ -388,13 +388,13 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
 
-    const userJob = await this.gameEventService.usePolice(
+    const usePolice = await this.gameEventService.usePolice(
       roomId,
       data.userNum,
       user,
     );
 
-    this.server.to(socket.id).emit(GameEvent.POLICE, { userJob: userJob });
+    this.server.to(socket.id).emit(GameEvent.POLICE, usePolice);
   }
 
   @SubscribeMessage(GameEvent.MAFIASEARCH)
