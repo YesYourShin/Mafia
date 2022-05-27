@@ -90,7 +90,7 @@ export class GameGateway
 
     try {
       setTimeout(() => {
-        const end = dayjs().add(30, 's');
+        const end = dayjs().add(60, 's');
         const timeInterval = setInterval(() => {
           const currentTime = dayjs();
           const time = end.diff(currentTime, 's');
