@@ -122,7 +122,7 @@ export class GameGateway
       this.server
         .in(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.WINNER, { winner: winner });
-      // this.handleGameEnd(socket, { winner: winner });
+      this.handleGameEnd(socket, { winner: winner });
     }
 
     return winner;
@@ -506,10 +506,18 @@ export class GameGateway
 
     this.logger.log(`GAMEEND userID ${user.id}`);
 
+    // // 인원수 최대값 다 채울 경우 실행
+    // const { playerSum, count } =
+    //   await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
+
+    // if (playerSum === count) {
+    //   await this.gameEventService.delPlayerNum(roomId);
+
     // 서비스 제공.
     await this.gameEventService.SaveTheEntireGame(roomId, data.winner);
 
     this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.GAMEEND);
+    // }
   }
 
   // socket이 연결됐을 때
@@ -527,7 +535,7 @@ export class GameGateway
 
     this.logger.log(`socket disconnected: ${roomId} ${newNamespace}`);
 
-    socket.leave(`${newNamespace.name}-${roomId}`);
+    // socket.leave(`${newNamespace.name}-${roomId}`);
   }
 
   afterInit(server: any) {
