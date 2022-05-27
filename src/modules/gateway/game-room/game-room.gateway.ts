@@ -53,11 +53,11 @@ export class GameRoomGateway
       }
 
       const member = new Member(user.profile);
-      await this.gameRoomEventService.join(roomId, member);
+      const members = await this.gameRoomEventService.join(roomId, member);
 
       newNamespace
         .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameRoomEvent.JOIN, { member });
+        .emit(GameRoomEvent.JOIN, { member, members });
     } catch (error) {
       this.logger.error('socket join event error', error);
     }
