@@ -286,6 +286,8 @@ export class GameEventService {
       }
     }
 
+    this.logger.log(`의사 투표 값: ${userNum}`);
+
     await this.setDoctor(roomId, userNum);
 
     return userNum;
@@ -425,6 +427,7 @@ export class GameEventService {
   async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
+    // 탈주 처리된 값 제외 후, 저장플레이어 추출.
     const saveplayer = gamePlayer.filter((x): x is Player => x !== null);
 
     return await this.gameRepository.saveGameScore(saveplayer, winner);
