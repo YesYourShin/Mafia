@@ -188,6 +188,7 @@ export class GameEventService {
     return arr;
   }
 
+  // 죽이려는 대상의 번호 리턴
   async getVoteDeath(roomId: number) {
     const votehumon = await this.redisService.hget(
       this.makeGameKey(roomId),
@@ -528,18 +529,6 @@ export class GameEventService {
     const punish = (await this.getPunish(roomId)) || [];
 
     return punish.length;
-    // cosnt punisAgreement = punish.length
-
-    // if (!punish.length) return punish.length;
-    // this.logger.log(punish);
-
-    // const punisAgreement = punish.filter((item) => {
-    //   return item === true;
-    // }).length;
-
-    // this.logger.log(punisAgreement);
-
-    // return punisAgreement;
   }
 
   async delPlayerNum(roomId: number) {

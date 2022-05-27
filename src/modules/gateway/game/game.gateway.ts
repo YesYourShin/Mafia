@@ -332,6 +332,7 @@ export class GameGateway
     );
 
     // Todo 탈주/죽음/실존 플레이어 유효성 체크 [이벤트에서]
+    // 여기서 true값만 넣도록 처리되어 있음.
     if (count <= playerSum) {
       if (data.punish) {
         await this.gameEventService.setPunish(roomId, data.punish);
@@ -346,6 +347,7 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
+    // 요청 인원 수 체크
     const { playerSum, count } = await this.gameEventService.setPlayerCheckNum(
       roomId,
       user,
@@ -354,25 +356,29 @@ export class GameGateway
     if (playerSum === count) {
       await this.gameEventService.delPlayerNum(roomId);
 
-      // Todo 네트워크는 느린데, 소켓은 안 끊길 때,
+      const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
+      const deathNum = await this.gameEventService.getVoteDeath(roomId); //죽이려는 대상 번호
+      this.logger.log(`죽이려는 대상의 번호가 맞나..? ${deathNum}`);
+      // Todo 죽는 유저정보.
+      let death = gamePlayer[deathNum - 1]; //죽이려는 대상의 유저정보.
+
+      // Todo 유저의 찬성값 수
       const agreement = await this.gameEventService.getPunishSum(roomId);
-      // const Opposition = gamePlayers.length - Agreement;
+
+      // Todo 과반수 이상일 때, 사형 유무
+      const result = playerSum / 2 < agreement ? true : false;
+
+      if (result) {
+        //죽은 사람 정보
+        death = await this.gameEventService.death(roomId, deathNum);
+      }
 
       // 찬성 값만 주기
-      this.server
-        .to(`${newNamespace.name}-${roomId}`)
-        .emit(GameEvent.FINISHP, agreement);
-
-      if (playerSum / 2 < agreement) {
-        const humon = await this.gameEventService.getVoteDeath(roomId);
-        this.logger.log(`죽이려는 대상의 번호가 맞나..? ${humon}`);
-
-        //죽은 사람의 정보 제공
-        const death = await this.gameEventService.death(roomId, humon);
-        this.server
-          .to(`${newNamespace.name}-${roomId}`)
-          .emit(GameEvent.DEATH, death);
-      }
+      this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FINISHP, {
+        result: result,
+        user: death,
+        punish: agreement,
+      });
 
       await this.gameEventService.delValue(roomId, FINISH_VOTE_FIELD);
     }
