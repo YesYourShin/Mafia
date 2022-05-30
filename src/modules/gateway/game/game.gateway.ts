@@ -54,7 +54,7 @@ export class GameGateway
     const { roomId } = data;
     socket.data['roomId'] = roomId;
 
-    this.logger.log(roomId);
+    this.logger.log(`join ${roomId}`);
 
     try {
       await socket.join(`${newNamespace.name}-${roomId}`);
@@ -70,16 +70,6 @@ export class GameGateway
     const { user } = socket.request;
     const newNamespace = socket.nsp;
 
-    // 서버 타이머
-    // const Players = await this.gameEventService.findPlayers(roomId);
-
-    // let count;
-    // for (const player of Players) {
-    //   if (player.id === user.profile.id) {
-    //     count = await this.gameEventService.setPlayerNum(roomId);
-    //   }
-    // }
-
     const { playerSum, count } =
       await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
 
@@ -90,7 +80,7 @@ export class GameGateway
 
     try {
       setTimeout(() => {
-        const end = dayjs().add(30, 's');
+        const end = dayjs().add(40, 's');
         const timeInterval = setInterval(() => {
           const currentTime = dayjs();
           const time = end.diff(currentTime, 's');
@@ -116,9 +106,9 @@ export class GameGateway
     // 우승 값 판단 / 만약에 우승이 아니면 null 반환
     const winner = await this.gameEventService.winner(roomId);
 
-    this.logger.log(`우승 ${winner}`);
-
     if (winner) {
+      this.logger.log(`WINNER ${winner}`);
+
       this.server
         .in(`${newNamespace.name}-${roomId}`)
         .emit(GameEvent.WINNER, { winner: winner });
@@ -141,7 +131,7 @@ export class GameGateway
       await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
 
     if (playerSum === count) {
-      this.logger.log(`현재 day값 : ${data.day}`);
+      this.logger.log(`현재 DAY  ${data.day}`);
       await this.gameEventService.delPlayerNum(roomId);
 
       // default - 밤 = false
@@ -151,7 +141,7 @@ export class GameGateway
 
       if (!winner) {
         const thisDay = !data.day;
-        this.logger.log(`바뀐 day값 : ${thisDay}`);
+        this.logger.log(`변경 후 DAY  ${thisDay}`);
         await this.gameEventService.setDay(roomId, thisDay);
 
         // 비동기 신호
@@ -188,6 +178,9 @@ export class GameGateway
     this.logger.log(count);
 
     if (Players.length === count) {
+      this.logger.log(
+        `START EVENT 발생  총 인원: ${Players.length} 카운팅 : ${count}`,
+      );
       await this.gameEventService.delPlayerNum(roomId);
       this.logger.log(`START EVENT발생`);
       this.logger.log(Players);
@@ -221,7 +214,7 @@ export class GameGateway
       }
     });
 
-    this.logger.log(`socket.id: ${socket.id}`);
+    this.logger.log(`JOB 직업 제공.`);
     this.server.in(socket.id).emit(GameEvent.JOB, players);
   }
 
@@ -240,6 +233,9 @@ export class GameGateway
       await this.gameEventService.delPlayerNum(roomId);
 
       const status = await this.gameEventService.useState(roomId);
+
+      this.logger.log(`USEJOBS 의사, 마피아 능력사용 `);
+      this.logger.log(status);
 
       this.server
         .in(`${newNamespace.name}-${roomId}`)
@@ -269,7 +265,7 @@ export class GameGateway
     await this.gameEventService.voteValidation(roomId, data.vote);
 
     if (count <= playerSum) {
-      this.logger.log(`1. 소켓투표값 ${data.vote}`);
+      this.logger.log(`VOTE 투표값: ${data.vote}`);
       await this.gameEventService.setVote(roomId, data.vote);
     }
 
@@ -303,11 +299,14 @@ export class GameGateway
     );
 
     if (playerSum === count) {
-      this.logger.log(`투표 합, 총 인원 ${playerSum}, count ${count}`);
+      this.logger.log(`FINISHV , 총 인원 ${playerSum}, count ${count}`);
       await this.gameEventService.delPlayerNum(roomId);
       await this.gameEventService.delNum(roomId);
 
       const result = await this.gameEventService.sortfinishVote(roomId);
+
+      this.logger.log(`FINISHV 값 형태`);
+      // this.logger.log(result); //null일 경우 logger 안 됨
 
       this.server
         .to(`${newNamespace.name}-${roomId}`)
@@ -321,8 +320,6 @@ export class GameGateway
     @MessageBody() data: { punish: boolean },
     @ConnectedSocket() socket: AuthenticatedSocket,
   ) {
-    this.logger.log(`handlePunish`);
-    this.logger.log(`data.punish 값 ${data.punish}`);
     const { roomId } = socket.data;
     const { user } = socket.request;
 
@@ -333,10 +330,11 @@ export class GameGateway
 
     // Todo 탈주/죽음/실존 플레이어 유효성 체크 [이벤트에서]
     // 여기서 true값만 넣도록 처리되어 있음.
-    if (count <= playerSum) {
-      if (data.punish) {
-        await this.gameEventService.setPunish(roomId, data.punish);
-      }
+    if (count > playerSum) return null;
+
+    this.logger.log(`PUNISH , 선택 값 : ${data.punish}`);
+    if (data.punish) {
+      await this.gameEventService.setPunish(roomId, data.punish);
     }
   }
 
@@ -358,7 +356,7 @@ export class GameGateway
 
       const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
       const deathNum = await this.gameEventService.getVoteDeath(roomId); //죽이려는 대상 번호
-      this.logger.log(`죽이려는 대상의 번호가 맞나..? ${deathNum}`);
+      this.logger.log(`FINISHP, 죽이려는 대상의 번호: ${deathNum}`);
       // Todo 죽는 유저정보.
       let death = gamePlayer[deathNum - 1]; //죽이려는 대상의 유저정보.
 
@@ -372,6 +370,10 @@ export class GameGateway
         //죽은 사람 정보
         death = await this.gameEventService.death(roomId, deathNum);
       }
+
+      this.logger.log(
+        `FINISHP, 사형 결과 ${result}, 죽은 사람 : ${death}, 찬성 값: ${agreement}`,
+      );
 
       // 찬성 값만 주기
       this.server.to(`${newNamespace.name}-${roomId}`).emit(GameEvent.FINISHP, {
@@ -394,6 +396,9 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
 
+    this.logger.log(`POLICE, 선택 유저 번호 ${data.userNum}`);
+    if (!data.userNum) return;
+
     const usePolice = await this.gameEventService.usePolice(
       roomId,
       data.userNum,
@@ -403,6 +408,7 @@ export class GameGateway
     this.logger.log(
       `POLICE 능력으로 알아낸 ${usePolice.user.nickname}유저의 ${usePolice.user.job} 값`,
     );
+    this.logger.log(usePolice);
 
     this.server.to(socket.id).emit(GameEvent.POLICE, usePolice);
   }
@@ -413,6 +419,9 @@ export class GameGateway
     this.logger.log(`MAFIASEARCH 실행`);
 
     const mafias = await this.gameEventService.getMafiaSearch(roomId);
+
+    this.logger.log(`MAFIASEARCH 값 형태`);
+    this.logger.log(mafias);
 
     this.server.to(socket.id).emit(GameEvent.MAFIASEARCH, { mafia: mafias });
   }
@@ -427,7 +436,7 @@ export class GameGateway
     const { roomId } = socket.data;
     const { user } = socket.request;
 
-    this.logger.log(`유저 값 ${user.id}`);
+    this.logger.log(`MAFIA 투표 값 ${data.userNum}`);
 
     // Todo 여러명의 마피아의 동일한 값일 경우만, 체크 -> ok 일단 다 받은 후, usejobs에서 능력사용할 때, 확인.
     const voteUserNum = await this.gameEventService.useMafia(
@@ -448,6 +457,8 @@ export class GameGateway
   ) {
     const { roomId } = socket.data;
     const { user } = socket.request;
+
+    this.logger.log(`DOCTOR 투표 값 ${data.userNum}`);
 
     const voteUserNum = await this.gameEventService.useDoctor(
       roomId,
