@@ -196,7 +196,7 @@ export class GameEventService {
     );
 
     this.logger.log(votehumon);
-    this.logger.log(`죽이려는 대상의 번호가 맞나..? ${votehumon[0]}`);
+    this.logger.log(`EVENT getVoteDeath , 죽이려는 대상: ${votehumon[0]}`);
 
     return votehumon[0].userNum;
   }
@@ -210,8 +210,11 @@ export class GameEventService {
     if (dieUser.die) {
       throw new WsException('이미 죽은 유저입니다.');
     }
+    this.logger.log(`EVENT death 죽기 전 fasle여야함., ${dieUser.die}`);
 
     dieUser.die = !dieUser.die;
+
+    this.logger.log(`EVENT death 죽은 후 true여야함., ${dieUser.die}`);
 
     await this.redisService.hset(
       this.makeGameKey(roomId),
@@ -226,7 +229,7 @@ export class GameEventService {
 
   async usePolice(roomId: number, userNum: number, user: UserProfile) {
     const gamePlayer = await this.getPlayerJobs(roomId);
-    const selectUserNum = gamePlayer[userNum - 1];
+    const selectUserNum = gamePlayer[userNum - 1]; //직업이 궁금한 유저정보
 
     let police;
 
@@ -265,7 +268,7 @@ export class GameEventService {
     const mafiavotes = (await this.getMafia(roomId)) || [];
 
     // let mafia;
-    this.logger.log(`gameEvent 유저 값 ${user.id}`);
+    this.logger.log(`gameEvent useMafia 유저 값 ${user.profile.nickname}`);
 
     // 마피아일 경우에만 값 넣기
     for (const player of maifas) {
@@ -295,6 +298,8 @@ export class GameEventService {
   ): Promise<number> {
     const gamePlayer = await this.getPlayerJobs(roomId);
 
+    this.logger.log(`gameEvent useDoctor 유저 값 ${user.profile.nickname}`);
+
     for (const player of gamePlayer) {
       if (player.userId === user.id && player.job !== EnumGameRole.DOCTOR) {
         throw new WsException('의사가 아닙니다.');
@@ -323,6 +328,12 @@ export class GameEventService {
 
       const doctorNum = await this.getDoctor(roomId);
 
+      this.logger.log(
+        `service useState 마피아 값: ${mafiaNum}, 의사 값: ${doctorNum}`,
+      );
+
+      let userDie = gamePlayer[mafiaNum - 1];
+
       //Todo mafia랑 doctor값이 둘다 null일 경우 제외,
 
       if (!mafiaNum) {
@@ -336,31 +347,27 @@ export class GameEventService {
       // 마피아가 죽일 때
       if (mafiaNum !== doctorNum) {
         this.logger.log(
-          `마피아가 ${mafiaNum} ${
-            gamePlayer[mafiaNum - 1].nickname
-          } 을 죽였습니다.`,
+          `마피아가 ${mafiaNum} ${userDie.nickname} 을 죽였습니다.`,
         );
-        await this.death(roomId, mafiaNum);
-        message = `마피아가 ${
-          gamePlayer[mafiaNum - 1].nickname
-        } 을/를 죽였습니다.`;
+        userDie = await this.death(roomId, mafiaNum);
+        message = `마피아가 ${userDie.nickname} 을/를 죽였습니다.`;
       }
 
       if (mafiaNum === doctorNum) {
         // 의사가 살릴 시
         this.logger.log(
-          `의사가 ${mafiaNum} ${
-            gamePlayer[mafiaNum - 1].nickname
-          } 을 살렸습니다.`,
+          `의사가 ${mafiaNum} ${userDie.nickname} 을 살렸습니다.`,
         );
-        message = `의사가 ${
-          gamePlayer[mafiaNum - 1].nickname
-        } 을/를 살렸습니다.`;
+        message = `의사가 ${userDie.nickname} 을/를 살렸습니다.`;
       }
+
+      this.logger.log(
+        `service useState 유저 : ${userDie.nickname} , 죽음 값: ${userDie.die}`,
+      );
 
       // Todo 마피아 값이 맞을 시, userNum : 값
       // Todo 마피아 값이 맞지 않을 시, userNum : null
-      return { user: gamePlayer[mafiaNum - 1], message: message };
+      return { user: userDie, message: message };
     } catch (error) {
       this.logger.error(`useState error `, error);
     }
@@ -420,7 +427,7 @@ export class GameEventService {
       return player;
     });
 
-    this.logger.log(`leave 유저 gameId ${leaveplayer.gameId}`);
+    this.logger.log(`leave 유저 gameId ${leaveplayer.nickname}`);
     // 탈주 유저  redis 처리
     await this.setLeave(roomId, leaveplayer);
 
@@ -441,6 +448,8 @@ export class GameEventService {
 
   async SaveTheEntireGame(roomId: number, winner: EnumGameRole) {
     const gamePlayer = await this.getPlayerJobs(roomId);
+
+    this.logger.log(`EVNET, SaveTheEntireGame 게임 끝! 저장할게요.`);
 
     // 탈주 처리된 값 제외 후, 저장플레이어 추출.
     const saveplayer = gamePlayer.filter((x): x is Player => x !== null);
@@ -464,7 +473,7 @@ export class GameEventService {
     const playerSum = players.length - (playerDie.length + playerLeave.length);
 
     this.logger.log(
-      `총 인원 ${players.length}, count ${playerDie.length}, count ${playerLeave.length}`,
+      `EVENT setPlayerCheckNum, 총 인원 ${players.length}, count ${playerDie.length}, count ${playerLeave.length}`,
     );
 
     return { playerSum: playerSum, count: count };
@@ -484,7 +493,9 @@ export class GameEventService {
 
     const playerSum = players.length - playerLeave.length;
 
-    this.logger.log(`총 인원 ${playerSum},  count ${count}`);
+    this.logger.log(
+      `EVENT setPlayerCheckNumExceptLeave, 총 인원 ${playerSum},  count ${count}`,
+    );
 
     return { playerSum: playerSum, count: count };
   }
@@ -503,6 +514,8 @@ export class GameEventService {
     }
 
     const playerSum = players.length - (playerDie.length - playerLeave.length);
+
+    this.logger.log(`EVENT CheckNum, 총 인원 ${playerSum},  count ${count}`);
 
     return { playerSum: playerSum, count: count };
   }

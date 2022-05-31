@@ -59,3 +59,6 @@ Dockerfile.dev
 
 #eslint
 .eslintrc.js
+
+package.json
+package-lock.json
