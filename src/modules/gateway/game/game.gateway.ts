@@ -353,6 +353,7 @@ export class GameGateway
 
     if (playerSum === count) {
       await this.gameEventService.delPlayerNum(roomId);
+      await this.gameEventService.delNum(roomId);
 
       const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
       const deathNum = await this.gameEventService.getVoteDeath(roomId); //죽이려는 대상 번호
@@ -526,13 +527,6 @@ export class GameGateway
     const { user } = socket.request;
 
     this.logger.log(`GAMEEND userID ${user.id}`);
-
-    // // 인원수 최대값 다 채울 경우 실행
-    // const { playerSum, count } =
-    //   await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
-
-    // if (playerSum === count) {
-    //   await this.gameEventService.delPlayerNum(roomId);
 
     // 서비스 제공.
     await this.gameEventService.SaveTheEntireGame(roomId, data.winner);

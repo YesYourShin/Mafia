@@ -36,14 +36,6 @@ export class GameEventService {
     private readonly gameRepository: GameRepository,
   ) {}
 
-  // timer() {
-  //   const now = dayjs();
-
-  //   const endTime = now.add(10, 's');
-  //   this.logger.log(`end: ${endTime}`);
-  //   return { start: startTime, end: endTime };
-  // }
-
   // 해당 방의 게임 플레이어 값을 찾아서 제공.
   async findPlayers(roomId: number): Promise<Player[]> {
     const players = await this.redisService.hget(
@@ -148,12 +140,17 @@ export class GameEventService {
     return strikeOut;
   }
 
+  //Todo 리펙토링 필수다..
   async sortfinishVote(roomId: number) {
     let redisVote = {};
+    let message;
+    let result = true;
     const vote = await this.getVote(roomId);
 
     if (!vote) {
-      return null;
+      message = '마피아 의심 지목 결과 아무도 지목당하지 않았습니다.';
+      result = false;
+      return { result: result, message: message, voteResult: null };
     }
 
     // 해당 숫자값 세주기
@@ -169,7 +166,19 @@ export class GameEventService {
       redisVote,
     );
 
-    return redisVote;
+    if (redisVote[0].voteNum === redisVote[1].voteNum) {
+      message = '마피아 의심 지목 결과 동률입니다.';
+      result = false;
+      return { result: false, message: message, voteResult: redisVote };
+    }
+
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    message = `마피아 의심 지목 결과 ${
+      gamePlayer[redisVote[0].userNum - 1].nickname
+    } 유저가 지목되었습니다`;
+
+    return { result: true, message: message, voteResult: redisVote };
   }
 
   sortObject(obj, userNum: string, voteNum: string) {
@@ -177,7 +186,7 @@ export class GameEventService {
     for (const prop in obj) {
       if (obj.hasOwnProperty(prop)) {
         arr.push({
-          userNum: prop,
+          userNum: +prop,
           voteNum: obj[prop],
         });
       }
@@ -278,12 +287,6 @@ export class GameEventService {
       }
     }
 
-    // for (const player of gamePlayer) {
-    //   if (player.userId === user.id && player.job !== EnumGameRole.MAFIA) {
-    //     throw new WsException('마피아가 아닙니다.');
-    //   }
-    // }
-
     this.logger.log(`마피아 투표 값: ${userNum}`);
 
     await this.setMafia(roomId, mafiavotes);
@@ -334,8 +337,6 @@ export class GameEventService {
 
       let userDie = gamePlayer[mafiaNum - 1];
 
-      //Todo mafia랑 doctor값이 둘다 null일 경우 제외,
-
       if (!mafiaNum) {
         // 아무 이벤트도 안 일어날 시,
         this.logger.log(`아무도 죽지 않아요`);
@@ -365,8 +366,6 @@ export class GameEventService {
         `service useState 유저 : ${userDie.nickname} , 죽음 값: ${userDie.die}`,
       );
 
-      // Todo 마피아 값이 맞을 시, userNum : 값
-      // Todo 마피아 값이 맞지 않을 시, userNum : null
       return { user: userDie, message: message };
     } catch (error) {
       this.logger.error(`useState error `, error);
@@ -473,7 +472,7 @@ export class GameEventService {
     const playerSum = players.length - (playerDie.length + playerLeave.length);
 
     this.logger.log(
-      `EVENT setPlayerCheckNum, 총 인원 ${players.length}, count ${playerDie.length}, count ${playerLeave.length}`,
+      `EVENT setPlayerCheckNum, 총 인원 ${players.length}, 죽은 유저 수: ${playerDie.length}, 떠난 유저 수: ${playerLeave.length}`,
     );
 
     return { playerSum: playerSum, count: count };
@@ -627,7 +626,12 @@ export class GameEventService {
   }
 
   async setLeave(roomId: number, player: Player) {
+    const dieUser = (await this.getLeave(roomId)) || [];
     const leaveusers = (await this.getLeave(roomId)) || [];
+
+    // for (let user = 0; user < dieUser.length; user++) {
+    //   if()
+    // }
 
     leaveusers.push(player);
 
