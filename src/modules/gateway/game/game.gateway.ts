@@ -25,6 +25,7 @@ import dayjs from 'dayjs';
 dayjs.locale('ko');
 dayjs.extend(customParseFormat);
 import { EnumGameRole } from '../../../common/constants/enum-game-role';
+import { ConfigService } from '@nestjs/config';
 
 @UseGuards(WsAuthenticatedGuard)
 @WebSocketGateway({
@@ -39,6 +40,7 @@ export class GameGateway
   constructor(
     @Inject(Logger) private readonly logger: Logger,
     private readonly gameEventService: GameEventService,
+    private readonly configService: ConfigService,
   ) {}
   @WebSocketServer() public server: Server;
 
@@ -80,7 +82,10 @@ export class GameGateway
 
     try {
       setTimeout(() => {
-        const end = dayjs().add(40, 's');
+        const end = dayjs().add(
+          parseInt(this.configService.get('TIMER'), 10) || 20,
+          's',
+        );
         const timeInterval = setInterval(() => {
           const currentTime = dayjs();
           const time = end.diff(currentTime, 's');
