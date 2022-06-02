@@ -328,13 +328,14 @@ export class GameEventService {
     const mafias = await this.getMafiaSearch(roomId);
 
     const mafiavotes = await this.getMafia(roomId);
+
     const set = Array.from(new Set(mafiavotes));
 
     let message;
 
     try {
       //마피아 값이, 중복제거 값과 같을 시에 마피아 값 들어감. 아닐 시 null 발생
-      const mafiaNum = mafias.length === set.length ? +set[0] : null;
+      const mafiaNum = set.length === 1 ? +set[0] : null;
 
       const doctorNum = await this.getDoctor(roomId);
 
