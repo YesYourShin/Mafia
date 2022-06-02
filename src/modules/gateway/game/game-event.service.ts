@@ -150,10 +150,14 @@ export class GameEventService {
 
   async sortfinishVote(roomId: number) {
     let redisVote = {};
+    let message;
+    let result = true;
     const vote = await this.getVote(roomId);
 
     if (!vote) {
-      return null;
+      message = '아무도 지목당하지 않았습니다.';
+      result = false;
+      return { result: result, message: message, voteResult: null };
     }
 
     // 해당 숫자값 세주기
@@ -169,7 +173,13 @@ export class GameEventService {
       redisVote,
     );
 
-    return redisVote;
+    if (redisVote[0].voteNum === redisVote[1].voteNum) {
+      message = '동률 입니다.';
+      result = false;
+      return { result: false, message: message, voteResult: redisVote };
+    }
+
+    return { result: true, message: message, voteResult: redisVote };
   }
 
   sortObject(obj, userNum: string, voteNum: string) {
@@ -177,7 +187,7 @@ export class GameEventService {
     for (const prop in obj) {
       if (obj.hasOwnProperty(prop)) {
         arr.push({
-          userNum: prop,
+          userNum: +prop,
           voteNum: obj[prop],
         });
       }
@@ -627,7 +637,12 @@ export class GameEventService {
   }
 
   async setLeave(roomId: number, player: Player) {
+    const dieUser = (await this.getLeave(roomId)) || [];
     const leaveusers = (await this.getLeave(roomId)) || [];
+
+    // for (let user = 0; user < dieUser.length; user++) {
+    //   if()
+    // }
 
     leaveusers.push(player);
 
