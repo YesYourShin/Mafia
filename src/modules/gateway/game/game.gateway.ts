@@ -528,13 +528,6 @@ export class GameGateway
 
     this.logger.log(`GAMEEND userID ${user.id}`);
 
-    // // 인원수 최대값 다 채울 경우 실행
-    // const { playerSum, count } =
-    //   await this.gameEventService.setPlayerCheckNumExceptLeave(roomId, user);
-
-    // if (playerSum === count) {
-    //   await this.gameEventService.delPlayerNum(roomId);
-
     // 서비스 제공.
     await this.gameEventService.SaveTheEntireGame(roomId, data.winner);
 
