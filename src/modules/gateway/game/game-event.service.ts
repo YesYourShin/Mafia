@@ -166,19 +166,26 @@ export class GameEventService {
       redisVote,
     );
 
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    if (!redisVote[1]) {
+      message = `마피아 의심 지목 결과 ${
+        gamePlayer[redisVote[0].userNum - 1].nickname
+      } 유저가 지목되었습니다`;
+      return { result: result, message: message, voteResult: redisVote };
+    }
+
     if (redisVote[0].voteNum === redisVote[1].voteNum) {
       message = '마피아 의심 지목 결과 동률입니다.';
       result = false;
       return { result: false, message: message, voteResult: redisVote };
     }
 
-    const gamePlayer = await this.getPlayerJobs(roomId);
-
     message = `마피아 의심 지목 결과 ${
       gamePlayer[redisVote[0].userNum - 1].nickname
     } 유저가 지목되었습니다`;
 
-    return { result: true, message: message, voteResult: redisVote };
+    return { result: result, message: message, voteResult: redisVote };
   }
 
   sortObject(obj, userNum: string, voteNum: string) {
