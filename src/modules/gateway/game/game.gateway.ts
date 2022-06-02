@@ -353,6 +353,7 @@ export class GameGateway
 
     if (playerSum === count) {
       await this.gameEventService.delPlayerNum(roomId);
+      await this.gameEventService.delNum(roomId);
 
       const gamePlayer = await this.gameEventService.getPlayerJobs(roomId);
       const deathNum = await this.gameEventService.getVoteDeath(roomId); //죽이려는 대상 번호
