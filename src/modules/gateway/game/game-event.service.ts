@@ -148,6 +148,7 @@ export class GameEventService {
     return strikeOut;
   }
 
+  //Todo 리펙토링 필수다..
   async sortfinishVote(roomId: number) {
     let redisVote = {};
     let message;
@@ -155,7 +156,7 @@ export class GameEventService {
     const vote = await this.getVote(roomId);
 
     if (!vote) {
-      message = '아무도 지목당하지 않았습니다.';
+      message = '마피아 의심 지목 결과 아무도 지목당하지 않았습니다.';
       result = false;
       return { result: result, message: message, voteResult: null };
     }
@@ -174,10 +175,16 @@ export class GameEventService {
     );
 
     if (redisVote[0].voteNum === redisVote[1].voteNum) {
-      message = '동률 입니다.';
+      message = '마피아 의심 지목 결과 동률입니다.';
       result = false;
       return { result: false, message: message, voteResult: redisVote };
     }
+
+    const gamePlayer = await this.getPlayerJobs(roomId);
+
+    message = `마피아 의심 지목 결과 ${
+      gamePlayer[redisVote[0].userNum].nickname
+    } 유저가 지목되었습니다`;
 
     return { result: true, message: message, voteResult: redisVote };
   }
@@ -483,7 +490,7 @@ export class GameEventService {
     const playerSum = players.length - (playerDie.length + playerLeave.length);
 
     this.logger.log(
-      `EVENT setPlayerCheckNum, 총 인원 ${players.length}, count ${playerDie.length}, count ${playerLeave.length}`,
+      `EVENT setPlayerCheckNum, 총 인원 ${players.length}, 죽은 유저 수: ${playerDie.length}, 떠난 유저 수: ${playerLeave.length}`,
     );
 
     return { playerSum: playerSum, count: count };
