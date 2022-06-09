@@ -37,6 +37,6 @@ serviceのgetScoreにuserIdを送り、勝ち負け回数をReturn
 勝ち負け回数をreturn
 
 ### 顔の座標情報をルームメンバーと共有  
-![image](https://user-images.githubusercontent.com/53047744/172750460-79af5760-6913-4c11-973d-b6aac0d79b95.png)
-dataを受信し、ルームメンバーに送信
+* ![image](https://user-images.githubusercontent.com/53047744/172750460-79af5760-6913-4c11-973d-b6aac0d79b95.png)  
+dataを受信し、ルームメンバーに送信  
 valueがなければ、送信できないので、if文使用
