@@ -1,73 +1,42 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
-</p>
+# FAFIA
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 私が担当したこと
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+### 勝敗結果出力  
+* src/modules/game/game.controller.ts  
+![image](https://user-images.githubusercontent.com/53047744/172741209-f7ecf559-b7f0-4e36-8d90-b5dade6cae7b.png)  
+nickname、 page、 item(perpage)をGET  
+受けたデータをServiceに送り、ユーザの勝敗結果の詳細情報をResponse
 
-## Description
+* src/modules/game/game.service.ts  
+![image](https://user-images.githubusercontent.com/53047744/172741046-de2d7ba6-945b-480d-8306-b291d3465f45.png)  
+勝敗結果の詳細情報を検索するために、ユーザーのnicknameが存在するかを確認  
+repositoryのfindOneにnicknameを送る  
+nicknameがない場合、Error Messageをthrow  
+nicknameがある場合、ユーザーのuserId、page、itemをrepositoryに送り、ユーザの勝敗結果の詳細情報をReturn
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* src/modules/game/game.repository.ts  
+![image](https://user-images.githubusercontent.com/53047744/172740782-8a31bb1f-4374-4084-acbb-4f32c43096f0.png)  
+ユーザーのnicknameを検索する  
+nicknameがなければ、falseをReturn  
+nicknameがあれば、userIdをReturn  
+![image](https://user-images.githubusercontent.com/53047744/172740750-940fe97b-0c2f-4fec-b6d4-d76da8f6d2d9.png)  
+ユーザーの勝敗結果の詳細情報を出力するquery作成  
+そのユーザーのすべての勝敗結果の詳細情報をReturn 
 
-## Installation
+### 勝ち負け回数出力  
+* ![image](https://user-images.githubusercontent.com/53047744/172741237-a9cfeed8-2501-4e94-97d0-9f16d957bcd3.png)  
+userIdをGet  
+serviceのgetScoreにuserIdを送り、勝ち負け回数をReturn  
 
-```bash
-$ npm install
-```
+* ![image](https://user-images.githubusercontent.com/53047744/172741111-f1e74ffe-fa9a-491c-8ade-490f43efe883.png)  
+serviceのgetScoreにuserIdを送り、勝ち負け回数をReturn 
 
-## Running the app
+* ![image](https://user-images.githubusercontent.com/53047744/172741155-d6614ad2-a6e6-466b-95a6-46381b0977fe.png)  
+勝ち負け回数を出力するquery作成
+勝ち負け回数をreturn
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+### 顔の座標情報をルームメンバーと共有  
+![image](https://user-images.githubusercontent.com/53047744/172750460-79af5760-6913-4c11-973d-b6aac0d79b95.png)
+dataを受信し、ルームメンバーに送信
+valueがなければ、送信できないので、if文使用
